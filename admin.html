@@ -158,7 +158,7 @@
   .ops-panel h3{font-size:14px;margin:0 0 5px;}
   .ops-panel>p{margin:0 0 14px;color:var(--ink-soft);font-size:12.5px;line-height:1.45;}
   .admin-grid{display:grid;grid-template-columns:1fr;gap:12px;align-items:start;}
-  .add-course-form{display:grid;grid-template-columns:repeat(6,minmax(104px,1fr)) auto;gap:10px;align-items:end;}
+  .add-course-form{display:grid;grid-template-columns:1.1fr 76px minmax(160px,1.5fr) 132px 132px 86px;gap:10px;align-items:end;}
   .add-course-form div{min-width:0;}
   .add-course-form label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:800;}
   .add-course-form input, .add-course-form select{
@@ -166,11 +166,12 @@
     background:var(--surface-soft);font-family:inherit;font-size:13.5px;outline:none;color:var(--ink);
   }
   .add-course-form input:focus, .add-course-form select:focus{border-color:var(--accent);background:#fff;}
-  .add-course-form button{
-    padding:11px 18px;border:none;border-radius:var(--radius);background:var(--accent);
-    color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;
+  .course-add-actions{display:flex;justify-content:flex-end;margin-top:10px;}
+  .add-course-form button,.primary-action{
+    padding:10px 14px;border:none;border-radius:var(--radius);background:var(--accent-dark);
+    color:#fff;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;
   }
-  .add-course-form button:hover{background:var(--accent-dark);}
+  .add-course-form button:hover,.primary-action:hover{background:var(--accent);}
   .mini-form{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-soft);}
   .compact-add{grid-template-columns:minmax(0,1fr) auto;align-items:end;}
   .mini-form label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:800;}
@@ -180,11 +181,11 @@
   }
   .mini-form textarea{min-height:64px;resize:vertical;line-height:1.45;}
   .mini-form button,.inline-btn{
-    padding:9px 13px;border:none;border-radius:var(--radius);background:var(--accent);
-    color:#fff;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;
+    padding:8px 11px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
+    color:var(--accent-dark);font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;
   }
-  .mini-form button:hover,.inline-btn:hover,.add-course-form button:hover{background:var(--accent-dark);}
-  .inline-btn.secondary{background:var(--ink);}
+  .mini-form button:hover,.inline-btn:hover{border-color:var(--accent);background:var(--accent-soft);}
+  .inline-btn.secondary{background:var(--ink);color:#fff;border-color:var(--ink);}
   .inline-btn.light{background:#fff;color:var(--accent-dark);border:1px solid var(--line);}
   .management-list{display:grid;gap:8px;max-height:420px;overflow:auto;padding-right:2px;}
   .course-management-list{margin-top:14px;}
@@ -192,12 +193,28 @@
     display:grid;grid-template-columns:minmax(140px,1fr) minmax(180px,1.2fr) auto;
     gap:8px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
   }
-  .round-row{grid-template-columns:minmax(150px,0.85fr) minmax(220px,1.2fr) 88px 130px 130px 90px 72px auto;}
+  .round-row{grid-template-columns:minmax(0,1fr) auto;}
   .management-row input,.management-row textarea,.management-row select{
     width:100%;padding:8px 9px;border-radius:7px;border:1px solid var(--line);
     font-family:inherit;font-size:12.5px;background:var(--surface-soft);outline:none;color:var(--ink);
   }
   .management-row textarea{min-height:38px;resize:vertical;line-height:1.4;}
+  .course-row{
+    display:grid;grid-template-columns:minmax(0,1.3fr) 96px 180px 72px auto;gap:10px;align-items:center;
+    padding:12px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
+  }
+  .course-row-title{font-size:13px;font-weight:900;color:var(--ink);line-height:1.35;}
+  .course-row-meta{font-size:11.5px;color:var(--ink-soft);margin-top:3px;line-height:1.4;}
+  .pill{
+    display:inline-flex;align-items:center;justify-content:center;min-height:26px;padding:4px 8px;
+    border-radius:999px;background:var(--surface-soft);border:1px solid var(--line);font-size:11.5px;font-weight:800;color:var(--ink-soft);
+  }
+  .pill.open{background:var(--accent-soft);color:var(--accent-dark);border-color:#BFDDE4;}
+  .course-row-actions{display:flex;gap:6px;justify-content:flex-end;}
+  .course-edit-row{
+    display:grid;grid-template-columns:minmax(150px,0.9fr) minmax(220px,1.3fr) 80px 130px 130px 86px 72px auto;
+    gap:8px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
+  }
   .type-card{
     display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;
     padding:11px 12px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
@@ -282,7 +299,9 @@
     .dashboard-hero,.ops-grid{grid-template-columns:1fr;}
     .add-course-form{grid-template-columns:repeat(3,minmax(0,1fr));}
     .compact-add{grid-template-columns:minmax(0,1fr) auto;}
-    .add-course-form button{grid-column:1 / -1;}
+    .course-row{grid-template-columns:minmax(0,1fr) 92px 160px auto;}
+    .course-row .pill:last-of-type{display:none;}
+    .course-edit-row{grid-template-columns:repeat(2,minmax(0,1fr));}
   }
   @media (max-width:720px){
     .admin-shell{padding:20px 14px 64px;}
@@ -299,7 +318,8 @@
     .add-course-form{grid-template-columns:1fr;}
     .compact-add{grid-template-columns:1fr;}
     .add-course-form div{min-width:0;}
-    .management-row,.round-row{grid-template-columns:1fr;}
+    .management-row,.round-row,.course-row,.course-edit-row{grid-template-columns:1fr;}
+    .course-row-actions{justify-content:flex-start;}
     .management-list{max-height:none;}
     .filters{display:grid;grid-template-columns:1fr;}
     .filters input{min-width:0;}
@@ -481,8 +501,8 @@
             <div><label>시작일</label><input type="date" id="newCourseDate"></div>
             <div><label>종료일</label><input type="date" id="newCourseEndDate"></div>
             <div><label>정원</label><input type="number" id="newCourseCapacity" placeholder="30"></div>
-            <button id="addCourseBtn">회차 추가</button>
           </div>
+          <div class="course-add-actions"><button class="primary-action" id="addCourseBtn">회차 추가</button></div>
           <div class="management-list course-management-list" id="courseRows">
             <div class="empty-row">회차 목록을 불러오는 중...</div>
           </div>
@@ -721,8 +741,32 @@ function renderCourses(){
     return;
   }
 
-  list.innerHTML = visibleCourses.map(course => `
-    <div class="management-row round-row" data-course-id="${escapeHtml(course.id)}">
+  list.innerHTML = visibleCourses.map(course => courseRowHtml(course)).join('');
+  bindCourseButtons(list);
+}
+
+function courseRowHtml(course){
+  const typeName = allCourseTypes.find(type => type.id === course.course_type_id)?.name || course.course_types?.name || '과정 미지정';
+  const period = formatPeriod(course.start_date, course.end_date);
+  return `
+    <div class="course-row" data-course-id="${escapeHtml(course.id)}">
+      <div>
+        <div class="course-row-title">${escapeHtml(course.name)}</div>
+        <div class="course-row-meta">${escapeHtml(typeName)}${course.round ? ` · ${escapeHtml(course.round)}회차` : ''}</div>
+      </div>
+      <span class="pill ${course.is_open !== false ? 'open' : ''}">${course.is_open !== false ? '공개' : '비공개'}</span>
+      <span class="pill">${escapeHtml(period || '일정 미정')}</span>
+      <span class="pill">${course.capacity ?? '-'}명</span>
+      <div class="course-row-actions">
+        <button class="inline-btn light edit-course-btn" data-id="${escapeHtml(course.id)}">편집</button>
+      </div>
+    </div>
+  `;
+}
+
+function courseEditRowHtml(course){
+  return `
+    <div class="course-edit-row" data-course-id="${escapeHtml(course.id)}">
       <select class="course-type-input" aria-label="고정 과정">
         ${allCourseTypes.map(type => `<option value="${escapeHtml(type.id)}" ${type.id === course.course_type_id ? 'selected' : ''}>${escapeHtml(type.name)}</option>`).join('')}
       </select>
@@ -732,11 +776,36 @@ function renderCourses(){
       <input class="course-end-input" type="date" value="${escapeHtml(course.end_date || '')}" aria-label="종료일">
       <input class="course-capacity-input" type="number" min="0" value="${course.capacity ?? ''}" aria-label="정원">
       <label class="toggle-cell"><input class="course-open-input" type="checkbox" ${course.is_open !== false ? 'checked' : ''}>공개</label>
-      <button class="inline-btn save-course-btn" data-id="${escapeHtml(course.id)}">저장</button>
+      <div class="course-row-actions">
+        <button class="inline-btn save-course-btn" data-id="${escapeHtml(course.id)}">저장</button>
+        <button class="inline-btn light cancel-course-btn" data-id="${escapeHtml(course.id)}">취소</button>
+      </div>
     </div>
-  `).join('');
+  `;
+}
 
-  list.querySelectorAll('.save-course-btn').forEach(btn => {
+function bindCourseButtons(scope){
+  scope.querySelectorAll('.edit-course-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const course = allCourses.find(item => item.id === id);
+      const row = btn.closest('[data-course-id]');
+      row.outerHTML = courseEditRowHtml(course);
+      bindCourseButtons(document.getElementById('courseRows'));
+    });
+  });
+
+  scope.querySelectorAll('.cancel-course-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const course = allCourses.find(item => item.id === id);
+      const row = btn.closest('[data-course-id]');
+      row.outerHTML = courseRowHtml(course);
+      bindCourseButtons(document.getElementById('courseRows'));
+    });
+  });
+
+  scope.querySelectorAll('.save-course-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const row = btn.closest('[data-course-id]');
       const id = btn.dataset.id;
@@ -952,6 +1021,12 @@ function yesNo(value){
 
 function nullableNumber(value){
   return value === '' || value === null || value === undefined ? null : Number(value);
+}
+
+function formatPeriod(startDate, endDate){
+  if (!startDate && !endDate) return '';
+  if (startDate && endDate && startDate !== endDate) return `${startDate} - ${endDate}`;
+  return startDate || endDate || '';
 }
 
 function setText(id, value){
