@@ -103,30 +103,63 @@
   .login-msg{margin-top:12px;font-size:12.5px;color:var(--danger);text-align:center;min-height:16px;}
 
   /* ---------- dashboard ---------- */
-  #dashboard{display:none;padding:28px 22px 88px;}
+  #dashboard{display:none;min-height:100vh;background:var(--bg);}
+  .admin-shell{max-width:1400px;margin:0 auto;padding:28px 24px 88px;}
   .topbar{
-    max-width:1320px;margin:0 auto 22px;
-    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+    display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px;
   }
-  .topbar h1{font-size:23px;margin:0;letter-spacing:0;}
+  .topbar h1{font-size:24px;margin:0;letter-spacing:0;}
   .topbar .who{font-size:12.5px;color:var(--ink-soft);}
+  .top-actions{display:flex;align-items:center;gap:10px;}
   .logout-btn{
-    border:1px solid var(--line);background:#fff;padding:9px 16px;border-radius:var(--radius);
-    font-family:inherit;font-size:12.5px;font-weight:700;color:var(--accent-dark);
-    cursor:pointer;box-shadow:var(--shadow-soft);
+    border:1px solid var(--line);background:#fff;padding:9px 15px;border-radius:var(--radius);
+    font-family:inherit;font-size:12.5px;font-weight:800;color:var(--accent-dark);
+    cursor:pointer;box-shadow:0 8px 18px rgba(21,35,52,0.06);
   }
-  .panel{
-    max-width:1320px;margin:0 auto 18px;
+  .dashboard-hero{
+    display:grid;
+    grid-template-columns:minmax(0,1.1fr) minmax(280px,0.9fr);
+    gap:16px;
+    margin-bottom:16px;
+  }
+  .hero-card,.panel{
     background:var(--surface);border-radius:var(--radius);padding:22px;
     box-shadow:var(--shadow-soft);border:1px solid rgba(29,37,48,0.08);
   }
-  .panel h2{font-size:15px;margin:0 0 16px;color:var(--ink);letter-spacing:0;}
+  .hero-card{display:flex;flex-direction:column;justify-content:space-between;min-height:168px;}
+  .hero-kicker{font-size:12px;font-weight:900;color:var(--accent);margin-bottom:10px;}
+  .hero-card h2{font-size:28px;margin:0 0 10px;line-height:1.2;}
+  .hero-card p{margin:0;color:var(--ink-soft);font-size:13.5px;line-height:1.6;}
+  .quick-status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:18px;}
+  .quick-status button{
+    border:1px solid var(--line);background:var(--surface-soft);border-radius:var(--radius);
+    padding:10px 12px;font-family:inherit;font-size:12.5px;font-weight:800;color:var(--ink);
+    cursor:pointer;text-align:left;
+  }
+  .quick-status button:hover,.quick-status button.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-dark);}
+  .metric-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+  .metric-card{
+    min-height:79px;padding:14px;border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--surface-soft);
+  }
+  .metric-label{font-size:11.5px;color:var(--muted);font-weight:800;margin-bottom:8px;}
+  .metric-value{font-size:28px;font-weight:900;line-height:1;color:var(--ink);}
+  .metric-note{font-size:11.5px;color:var(--ink-soft);margin-top:7px;line-height:1.35;}
+  .panel{margin-bottom:16px;}
+  .panel h2{font-size:16px;margin:0;color:var(--ink);letter-spacing:0;}
   .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px;}
   .panel-head h2{margin:0 0 5px;}
   .panel-head p{margin:0;color:var(--ink-soft);font-size:12.5px;line-height:1.45;}
-  .admin-grid{display:grid;grid-template-columns:minmax(260px,0.7fr) minmax(0,1.3fr);gap:16px;align-items:start;}
-  .add-course-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
-  .add-course-form div{flex:1;min-width:140px;}
+  .section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px;}
+  .section-title p{margin:5px 0 0;color:var(--ink-soft);font-size:12.5px;}
+  .result-count{font-size:12px;color:var(--ink-soft);font-weight:800;}
+  .ops-grid{display:grid;grid-template-columns:minmax(320px,0.9fr) minmax(0,1.4fr);gap:16px;align-items:start;}
+  .ops-panel{border:1px solid var(--line);border-radius:var(--radius);padding:16px;background:#fff;}
+  .ops-panel h3{font-size:14px;margin:0 0 5px;}
+  .ops-panel>p{margin:0 0 14px;color:var(--ink-soft);font-size:12.5px;line-height:1.45;}
+  .admin-grid{display:grid;grid-template-columns:1fr;gap:12px;align-items:start;}
+  .add-course-form{display:grid;grid-template-columns:repeat(6,minmax(104px,1fr)) auto;gap:10px;align-items:end;}
+  .add-course-form div{min-width:0;}
   .add-course-form label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:800;}
   .add-course-form input, .add-course-form select{
     width:100%;padding:11px 12px;border-radius:var(--radius);border:1px solid var(--line);
@@ -152,7 +185,8 @@
   .mini-form button:hover,.inline-btn:hover,.add-course-form button:hover{background:var(--accent-dark);}
   .inline-btn.secondary{background:var(--ink);}
   .inline-btn.light{background:#fff;color:var(--accent-dark);border:1px solid var(--line);}
-  .management-list{display:grid;gap:8px;}
+  .management-list{display:grid;gap:8px;max-height:420px;overflow:auto;padding-right:2px;}
+  .course-management-list{margin-top:14px;}
   .management-row{
     display:grid;grid-template-columns:minmax(140px,1fr) minmax(180px,1.2fr) auto;
     gap:8px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
@@ -179,7 +213,7 @@
     padding:10px 12px;border-radius:var(--radius);border:1px solid var(--line);
     font-family:inherit;font-size:13px;background:#fff;outline:none;color:var(--ink);
   }
-  .filters input{min-width:220px;flex:1;}
+  .filters input{min-width:240px;flex:1;}
   .table-shell{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);}
   table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
   th{
@@ -188,7 +222,7 @@
     border-bottom:1px solid var(--line);
     background:#F8FAFC;
   }
-  td{padding:12px 10px;border-bottom:1px solid #EFEAE2;vertical-align:top;}
+  td{padding:13px 10px;border-bottom:1px solid #EDF1F5;vertical-align:top;}
   tr:hover td{background:#FBFCFE;}
   .status-badge{
     display:inline-block;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:700;
@@ -222,21 +256,27 @@
   .compact-info b{display:block;color:var(--ink);font-size:12.5px;}
   .check-list{font-size:12px;line-height:1.6;color:var(--ink-soft);}
   .empty-row{text-align:center;padding:40px;color:var(--ink-soft);font-size:13px;}
-  @media (max-width:980px){
-    .topbar,.panel{max-width:760px;}
-    .admin-grid{grid-template-columns:1fr;}
-    .round-row{grid-template-columns:repeat(2,minmax(0,1fr));}
-    .round-row .inline-btn{grid-column:1 / -1;}
+  @media (max-width:1120px){
+    .dashboard-hero,.ops-grid{grid-template-columns:1fr;}
+    .add-course-form{grid-template-columns:repeat(3,minmax(0,1fr));}
+    .add-course-form button{grid-column:1 / -1;}
   }
   @media (max-width:720px){
-    #dashboard{padding:20px 14px 64px;}
+    .admin-shell{padding:20px 14px 64px;}
     .panel{padding:16px;}
     .topbar h1{font-size:20px;}
-    .topbar>div{width:100%;justify-content:space-between;}
+    .topbar{display:block;}
+    .top-actions{margin-top:12px;justify-content:space-between;}
+    .dashboard-hero{gap:12px;}
+    .hero-card{min-height:auto;padding:18px;}
+    .hero-card h2{font-size:23px;}
+    .metric-grid,.quick-status{grid-template-columns:1fr 1fr;}
     .panel-head{display:block;}
-    .add-course-form{display:grid;grid-template-columns:1fr;}
+    .section-title{display:block;}
+    .add-course-form{grid-template-columns:1fr;}
     .add-course-form div{min-width:0;}
     .management-row,.round-row{grid-template-columns:1fr;}
+    .management-list{max-height:none;}
     .filters{display:grid;grid-template-columns:1fr;}
     .filters input{min-width:0;}
     .table-shell{overflow:visible;border:none;}
@@ -288,86 +328,133 @@
 </div>
 
 <div id="dashboard">
-  <div class="topbar">
-    <h1>재직자 교육 신청 관리</h1>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <span class="who" id="whoAmI"></span>
-      <button class="logout-btn" id="logoutBtn">로그아웃</button>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-head">
-      <div>
-        <h2>고정 과정 관리</h2>
-        <p>드론, 생성형 AI처럼 신청자가 먼저 고르는 상위 과정입니다.</p>
+  <div class="admin-shell">
+    <div class="topbar">
+      <h1>재직자 교육 운영</h1>
+      <div class="top-actions">
+        <span class="who" id="whoAmI"></span>
+        <button class="logout-btn" id="logoutBtn">로그아웃</button>
       </div>
     </div>
-    <div class="admin-grid">
-      <div class="mini-form">
+
+    <section class="dashboard-hero">
+      <div class="hero-card">
         <div>
-          <label>과정명</label>
-          <input type="text" id="typeName" placeholder="예: 드론 교육">
+          <div class="hero-kicker">K-하이테크 플랫폼</div>
+          <h2>신청 현황을 먼저 보고, 필요한 처리만 빠르게</h2>
+          <p>상태별 신청자 수와 공개 회차를 한눈에 확인하고, 아래 신청 현황에서 승인/거절/취소와 신청자 메모를 바로 처리합니다.</p>
         </div>
+        <div class="quick-status" id="quickStatus">
+          <button type="button" data-status="">전체 신청</button>
+          <button type="button" data-status="대기">대기만 보기</button>
+          <button type="button" data-status="승인">승인만 보기</button>
+          <button type="button" data-status="취소">취소만 보기</button>
+        </div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">전체 신청</div>
+          <div class="metric-value" id="metricTotal">0</div>
+          <div class="metric-note" id="metricUnique">신청자 0명</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">대기</div>
+          <div class="metric-value" id="metricPending">0</div>
+          <div class="metric-note">처리 필요</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">승인</div>
+          <div class="metric-value" id="metricApproved">0</div>
+          <div class="metric-note">확정 수강</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">공개 회차</div>
+          <div class="metric-value" id="metricOpenCourses">0</div>
+          <div class="metric-note" id="metricCourseTypes">과정 0개</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
         <div>
-          <label>설명</label>
-          <textarea id="typeDescription" placeholder="신청 화면에 보일 짧은 설명"></textarea>
+          <h2>신청 현황</h2>
+          <p>신청자별 개인정보 확인, 상태 변경, 내부 메모를 한 화면에서 처리합니다.</p>
         </div>
-        <button id="addTypeBtn">고정 과정 추가</button>
+        <div class="result-count" id="resultCount">0건 표시</div>
       </div>
-      <div class="management-list" id="typeRows">
-        <div class="empty-row">과정 목록을 불러오는 중...</div>
+      <div class="filters">
+        <select id="filterStatus">
+          <option value="">전체 상태</option>
+          <option value="대기">대기</option>
+          <option value="승인">승인</option>
+          <option value="거절">거절</option>
+          <option value="취소">취소</option>
+        </select>
+        <select id="filterCourse"><option value="">전체 과정</option></select>
+        <input type="text" id="filterSearch" placeholder="이름/연락처/회사 검색">
       </div>
-    </div>
-  </div>
+      <div class="table-shell">
+        <table>
+          <thead>
+            <tr>
+              <th>신청자</th><th>연락처</th><th>주민번호</th><th>과정</th><th>유입/확인</th><th>상태</th><th>메모</th><th>신청일시</th>
+            </tr>
+          </thead>
+          <tbody id="appRows"><tr><td colspan="8" class="empty-row">불러오는 중...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
 
-  <div class="panel">
-    <div class="panel-head">
-      <div>
-        <h2>회차 관리</h2>
-        <p>각 고정 과정에 연결되는 실제 모집 회차입니다. 신청자는 공개된 회차만 볼 수 있습니다.</p>
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <h2>과정 운영 설정</h2>
+          <p>신청자가 선택하는 상위 과정과 실제 모집 회차를 관리합니다.</p>
+        </div>
       </div>
-    </div>
-    <div class="add-course-form">
-      <div>
-        <label>고정 과정</label>
-        <select id="newCourseType"><option value="">과정 선택</option></select>
+      <div class="ops-grid">
+        <div class="ops-panel">
+          <h3>고정 과정</h3>
+          <p>드론, 생성형 AI처럼 신청자가 먼저 고르는 상위 과정입니다.</p>
+          <div class="admin-grid">
+            <div class="mini-form">
+              <div>
+                <label>과정명</label>
+                <input type="text" id="typeName" placeholder="예: 드론 교육">
+              </div>
+              <div>
+                <label>설명</label>
+                <textarea id="typeDescription" placeholder="신청 화면에 보일 짧은 설명"></textarea>
+              </div>
+              <button id="addTypeBtn">고정 과정 추가</button>
+            </div>
+            <div class="management-list" id="typeRows">
+              <div class="empty-row">과정 목록을 불러오는 중...</div>
+            </div>
+          </div>
+        </div>
+        <div class="ops-panel">
+          <h3>회차 관리</h3>
+          <p>각 고정 과정에 연결되는 실제 모집 회차입니다. 공개된 회차만 신청 화면에 노출됩니다.</p>
+          <div class="add-course-form">
+            <div>
+              <label>고정 과정</label>
+              <select id="newCourseType"><option value="">과정 선택</option></select>
+            </div>
+            <div><label>회차</label><input type="number" id="newCourseRound" placeholder="3" min="1"></div>
+            <div><label>회차명</label><input type="text" id="newCourseName" placeholder="비우면 자동 생성"></div>
+            <div><label>시작일</label><input type="date" id="newCourseDate"></div>
+            <div><label>종료일</label><input type="date" id="newCourseEndDate"></div>
+            <div><label>정원</label><input type="number" id="newCourseCapacity" placeholder="30"></div>
+            <button id="addCourseBtn">회차 추가</button>
+          </div>
+          <div class="management-list course-management-list" id="courseRows">
+            <div class="empty-row">회차 목록을 불러오는 중...</div>
+          </div>
+        </div>
       </div>
-      <div><label>회차</label><input type="number" id="newCourseRound" placeholder="3" min="1"></div>
-      <div><label>회차명</label><input type="text" id="newCourseName" placeholder="비우면 자동 생성"></div>
-      <div><label>시작일</label><input type="date" id="newCourseDate"></div>
-      <div><label>종료일</label><input type="date" id="newCourseEndDate"></div>
-      <div><label>정원</label><input type="number" id="newCourseCapacity" placeholder="30"></div>
-      <button id="addCourseBtn">회차 추가</button>
-    </div>
-    <div class="management-list" id="courseRows" style="margin-top:14px;">
-      <div class="empty-row">회차 목록을 불러오는 중...</div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>신청 현황</h2>
-    <div class="filters">
-      <select id="filterStatus">
-        <option value="">전체 상태</option>
-        <option value="대기">대기</option>
-        <option value="승인">승인</option>
-        <option value="거절">거절</option>
-        <option value="취소">취소</option>
-      </select>
-      <select id="filterCourse"><option value="">전체 과정</option></select>
-      <input type="text" id="filterSearch" placeholder="이름/연락처 검색">
-    </div>
-    <div class="table-shell">
-      <table>
-        <thead>
-          <tr>
-            <th>신청자</th><th>연락처</th><th>주민번호</th><th>과정</th><th>유입/확인</th><th>상태</th><th>메모</th><th>신청일시</th>
-          </tr>
-        </thead>
-        <tbody id="appRows"><tr><td colspan="8" class="empty-row">불러오는 중...</td></tr></tbody>
-      </table>
-    </div>
+    </section>
   </div>
 </div>
 
@@ -502,6 +589,7 @@ async function loadCourses(){
   sel.innerHTML = '<option value="">전체 과정</option>' +
     allCourses.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
   renderCourses();
+  renderMetrics();
 }
 
 document.getElementById('addCourseBtn').addEventListener('click', async () => {
@@ -598,6 +686,7 @@ async function loadApplications(){
     return;
   }
   allApps = data || [];
+  renderMetrics();
   renderApps();
 }
 
@@ -605,6 +694,7 @@ function renderApps(){
   const statusFilter = document.getElementById('filterStatus').value;
   const courseFilter = document.getElementById('filterCourse').value;
   const search = document.getElementById('filterSearch').value.trim().toLowerCase();
+  renderMetrics();
 
   let rows = allApps.filter(a => {
     if (statusFilter && a.status !== statusFilter) return false;
@@ -617,6 +707,7 @@ function renderApps(){
   });
 
   const tbody = document.getElementById('appRows');
+  document.getElementById('resultCount').textContent = `${rows.length.toLocaleString('ko-KR')}건 표시`;
   if (rows.length === 0){
     tbody.innerHTML = '<tr><td colspan="8" class="empty-row">해당하는 신청 내역이 없습니다</td></tr>';
     return;
@@ -687,6 +778,7 @@ function renderApps(){
           if (app.id === id) app.status = status;
           if (app.trainee_id === traineeId && app.trainees) app.trainees.admin_memo = memo;
         });
+        renderMetrics();
         setTimeout(() => { btn.textContent = '저장'; btn.classList.remove('saved'); }, 1500);
       } else {
         btn.textContent = '실패';
@@ -716,6 +808,34 @@ function renderApps(){
 document.getElementById('filterStatus').addEventListener('change', renderApps);
 document.getElementById('filterCourse').addEventListener('change', renderApps);
 document.getElementById('filterSearch').addEventListener('input', renderApps);
+document.querySelectorAll('#quickStatus button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('filterStatus').value = btn.dataset.status;
+    renderApps();
+  });
+});
+
+function renderMetrics(){
+  const byStatus = allApps.reduce((acc, app) => {
+    acc[app.status] = (acc[app.status] || 0) + 1;
+    return acc;
+  }, {});
+  const uniqueTrainees = new Set(allApps.map(app => app.trainee_id).filter(Boolean)).size;
+  const openCourses = allCourses.filter(course => course.is_open !== false).length;
+  const openTypeIds = new Set(allCourses.filter(course => course.is_open !== false).map(course => course.course_type_id).filter(Boolean));
+
+  setText('metricTotal', allApps.length.toLocaleString('ko-KR'));
+  setText('metricPending', (byStatus['대기'] || 0).toLocaleString('ko-KR'));
+  setText('metricApproved', (byStatus['승인'] || 0).toLocaleString('ko-KR'));
+  setText('metricOpenCourses', openCourses.toLocaleString('ko-KR'));
+  setText('metricUnique', `신청자 ${uniqueTrainees.toLocaleString('ko-KR')}명`);
+  setText('metricCourseTypes', `과정 ${openTypeIds.size.toLocaleString('ko-KR')}개`);
+
+  const currentStatus = document.getElementById('filterStatus')?.value || '';
+  document.querySelectorAll('#quickStatus button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.status === currentStatus);
+  });
+}
 
 function formatList(value){
   if (!value || value.length === 0) return '-';
@@ -728,6 +848,11 @@ function yesNo(value){
 
 function nullableNumber(value){
   return value === '' || value === null || value === undefined ? null : Number(value);
+}
+
+function setText(id, value){
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
 }
 
 function escapeHtml(value){
