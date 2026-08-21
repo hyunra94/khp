@@ -162,6 +162,83 @@ for select
 to authenticated
 using (public.current_user_is_admin());
 
+create table if not exists public.admin_audit_log (
+  id uuid primary key default gen_random_uuid(),
+  table_name text not null,
+  row_id uuid,
+  action text not null,
+  changed_by text,
+  changed_at timestamptz not null default now()
+);
+
+alter table public.admin_audit_log enable row level security;
+
+grant select on public.admin_audit_log to authenticated;
+
+drop policy if exists admin_audit_log_admin_read on public.admin_audit_log;
+create policy admin_audit_log_admin_read
+on public.admin_audit_log
+for select
+to authenticated
+using (public.current_user_is_admin());
+
+create or replace function public.write_admin_audit_log()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_row_id uuid;
+begin
+  v_row_id := coalesce(new.id, old.id);
+
+  insert into public.admin_audit_log (
+    table_name,
+    row_id,
+    action,
+    changed_by
+  )
+  values (
+    tg_table_name,
+    v_row_id,
+    tg_op,
+    coalesce(auth.jwt() ->> 'email', 'public')
+  );
+
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  return new;
+end;
+$function$;
+
+revoke all on function public.write_admin_audit_log() from public;
+
+drop trigger if exists trg_audit_trainees on public.trainees;
+create trigger trg_audit_trainees
+after insert or update or delete on public.trainees
+for each row
+execute function public.write_admin_audit_log();
+
+drop trigger if exists trg_audit_applications on public.applications;
+create trigger trg_audit_applications
+after insert or update or delete on public.applications
+for each row
+execute function public.write_admin_audit_log();
+
+drop trigger if exists trg_audit_courses on public.courses;
+create trigger trg_audit_courses
+after insert or update or delete on public.courses
+for each row
+execute function public.write_admin_audit_log();
+
+drop trigger if exists trg_audit_course_types on public.course_types;
+create trigger trg_audit_course_types
+after insert or update or delete on public.course_types
+for each row
+execute function public.write_admin_audit_log();
+
 create or replace function public.submit_application(
   p_name text,
   p_phone text,
