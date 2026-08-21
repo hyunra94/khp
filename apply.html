@@ -81,6 +81,21 @@
     margin:20px 0 8px;
   }
   label:first-of-type{margin-top:0;}
+  .label-row{display:flex;align-items:center;gap:6px;margin:20px 0 8px;}
+  .label-row:first-of-type{margin-top:0;}
+  .label-row label{margin:0;}
+  .info-tip{
+    width:18px;height:18px;border:1px solid var(--line-strong);border-radius:50%;
+    background:#fff;color:var(--accent-dark);font-family:inherit;font-size:11px;font-weight:900;
+    line-height:16px;padding:0;cursor:help;position:relative;
+  }
+  .info-tip span{
+    display:none;position:absolute;z-index:20;left:24px;top:50%;transform:translateY(-50%);
+    width:260px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);
+    background:#fff;box-shadow:var(--shadow-soft);color:var(--ink-soft);
+    font-size:11.5px;font-weight:500;line-height:1.55;text-align:left;
+  }
+  .info-tip:hover span,.info-tip:focus span{display:block;}
   input[type=text], input[type=tel], input[type=email]{
     width:100%;
     padding:14px 15px;
@@ -98,12 +113,13 @@
   .choice-grid{
     display:grid;
     grid-template-columns:repeat(4,minmax(0,1fr));
-    gap:7px;
+    gap:8px;
   }
   .course-item{
     display:flex;
     align-items:center;
     gap:9px;
+    margin:0;
     padding:13px 14px;
     border-radius:var(--radius);
     border:1px solid var(--line);
@@ -125,18 +141,21 @@
   .course-name{font-weight:800;font-size:14px;line-height:1.3;}
   .course-date{font-size:12px;color:var(--ink-soft);margin-top:2px;}
   .choice-item{
-    min-height:32px;
+    height:38px;
     display:flex;
     align-items:center;
     gap:7px;
-    padding:7px 9px;
+    margin:0;
+    padding:0 10px;
     border:1px solid var(--line);
     border-radius:var(--radius);
     background:var(--surface-soft);
     color:var(--ink-soft);
-    font-size:12px;
+    font-size:11.5px;
     font-weight:700;
     cursor:pointer;
+    white-space:nowrap;
+    overflow:hidden;
   }
   .choice-item.checked{
     border-color:var(--accent);
@@ -226,7 +245,43 @@
     color:var(--ink);
   }
   .consent-row input{width:17px;height:17px;margin-top:2px;accent-color:var(--accent-dark);flex:0 0 auto;}
+  .consent-row.inline{
+    margin:12px 0 0;
+    padding:12px 13px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--surface-soft);
+  }
   .field-help{font-size:11.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5;}
+  .modal-overlay{
+    position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;
+    padding:20px;background:rgba(12,20,28,0.46);
+  }
+  .modal-overlay.open{display:flex;}
+  .confirm-modal{
+    width:min(680px,100%);max-height:88vh;overflow:auto;background:#fff;border-radius:var(--radius);
+    box-shadow:0 28px 80px rgba(8,18,28,0.28);border:1px solid rgba(255,255,255,0.7);padding:24px;
+  }
+  .confirm-modal h2{margin:0 0 8px;font-size:21px;line-height:1.3;}
+  .modal-sub{margin:0 0 18px;color:var(--ink-soft);font-size:13px;line-height:1.5;}
+  .summary-list{
+    display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px 12px;
+    padding:14px;border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--surface-soft);font-size:12.5px;
+  }
+  .summary-list dt{font-weight:900;color:var(--ink);}
+  .summary-list dd{margin:0;color:var(--ink-soft);line-height:1.5;}
+  .terms-block{
+    margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
+  }
+  .terms-block h3{margin:0 0 8px;font-size:13px;}
+  .terms-block ul{margin:0;padding-left:18px;color:var(--ink-soft);font-size:12px;line-height:1.7;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+  .modal-actions button{
+    border-radius:var(--radius);padding:11px 15px;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;
+  }
+  .modal-cancel{border:1px solid var(--line);background:#fff;color:var(--ink-soft);}
+  .modal-confirm{border:none;background:var(--accent-dark);color:#fff;}
   @media (max-width:760px){
     .wrap{max-width:560px;}
     .choice-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -236,8 +291,11 @@
     h1{font-size:27px;}
     .card{padding:24px 18px;}
     .notice-card{padding:16px;}
+    .info-tip span{left:auto;right:0;top:24px;transform:none;width:min(260px,78vw);}
     .course-item{align-items:flex-start;}
-    .choice-grid{grid-template-columns:1fr;}
+    .choice-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .summary-list{grid-template-columns:82px minmax(0,1fr);}
+    .modal-actions{display:grid;grid-template-columns:1fr;}
   }
 </style>
 </head>
@@ -262,19 +320,49 @@
   </div>
 
   <div class="card" id="formCard">
-    <label for="name">이름</label>
+    <div class="label-row">
+      <label for="name">이름</label>
+      <button class="info-tip" type="button" aria-label="이름 수집 안내">?
+        <span>교육 신청자 확인, 안내 연락, 수료 처리에 사용됩니다.</span>
+      </button>
+    </div>
     <input type="text" id="name" placeholder="홍길동">
 
-    <label for="phone">연락처</label>
+    <div class="label-row">
+      <label for="phone">연락처</label>
+      <button class="info-tip" type="button" aria-label="연락처 수집 안내">?
+        <span>교육 일정 안내, 신청 확인, 변동 사항 전달을 위해 사용됩니다.</span>
+      </button>
+    </div>
     <input type="tel" id="phone" placeholder="010-0000-0000">
 
-    <label for="email">이메일</label>
+    <div class="label-row">
+      <label for="email">이메일</label>
+      <button class="info-tip" type="button" aria-label="이메일 수집 안내">?
+        <span>교육 안내문, 협약서 안내, 과정 관련 자료 발송을 위해 사용됩니다.</span>
+      </button>
+    </div>
     <input type="email" id="email" placeholder="example@email.com" autocomplete="email" required>
 
-    <label for="company">회사명</label>
+    <div class="label-row">
+      <label for="company">회사명</label>
+      <button class="info-tip" type="button" aria-label="회사명 수집 안내">?
+        <span>재직자 대상 과정 확인 및 협약서 안내를 위해 사용됩니다.</span>
+      </button>
+    </div>
     <input type="text" id="company" placeholder="전주MBC">
 
-    <label for="rrn">주민등록번호</label>
+    <label class="consent-row inline">
+      <input type="checkbox" id="employedCheck">
+      <span>현재 고용보험에 가입된 <b>재직자</b>입니다.</span>
+    </label>
+
+    <div class="label-row">
+      <label for="rrn">주민등록번호</label>
+      <button class="info-tip" type="button" aria-label="주민등록번호 수집 안내">?
+        <span>HRD-Net 등록 및 고용보험 가입 여부 확인에 사용되며, Supabase DB에는 암호화하여 저장됩니다.</span>
+      </button>
+    </div>
     <input type="text" id="rrn" placeholder="900101-1234567" maxlength="14" autocomplete="off">
     <div class="field-help">
       하이픈(-)을 포함해 입력할 수 있습니다. HRD-Net 등록 및 고용보험 가입여부 확인 목적으로만 사용되며, 암호화되어 저장됩니다.
@@ -300,23 +388,6 @@
     <label for="note">기타사항 (선택)</label>
     <input type="text" id="note" placeholder="문의사항 또는 참고사항">
 
-    <label class="consent-row">
-      <input type="checkbox" id="employedCheck">
-      <span>현재 고용보험에 가입된 <b>재직자</b>입니다. (재직자 대상 과정입니다)</span>
-    </label>
-    <label class="consent-row">
-      <input type="checkbox" id="privacyCheck">
-      <span>개인정보 수집·이용에 동의합니다. (성명, 연락처, 이메일 등 교육 운영에 필요한 최소한의 정보를 수집하며, 사업 종료 후 2년간 보관 후 파기됩니다)</span>
-    </label>
-    <label class="consent-row">
-      <input type="checkbox" id="agreementCheck">
-      <span>협약서 제출 안내를 확인했으며, 제출 가능 또는 문의가 필요함을 확인했습니다.</span>
-    </label>
-    <label class="consent-row">
-      <input type="checkbox" id="noshowCheck">
-      <span>교육 시일 내 취소 및 노쇼가 교육 운영에 차질을 줄 수 있음을 확인했습니다.</span>
-    </label>
-
     <button class="submit" id="submitBtn">신청하기</button>
     <div class="msg error" id="msg"></div>
   </div>
@@ -328,6 +399,66 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="confirmOverlay" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="confirm-modal">
+    <h2 id="confirmTitle">신청 내용 확인</h2>
+    <p class="modal-sub">입력하신 내용을 확인한 뒤, 아래 안내 사항에 동의하면 신청이 접수됩니다.</p>
+    <dl class="summary-list">
+      <dt>이름</dt><dd id="summaryName"></dd>
+      <dt>연락처</dt><dd id="summaryPhone"></dd>
+      <dt>이메일</dt><dd id="summaryEmail"></dd>
+      <dt>회사명</dt><dd id="summaryCompany"></dd>
+      <dt>신청 과정</dt><dd id="summaryCourses"></dd>
+      <dt>유입 경로</dt><dd id="summaryReferral"></dd>
+    </dl>
+
+    <div class="terms-block">
+      <h3>개인정보 수집 및 이용 안내</h3>
+      <ul>
+        <li>수집 항목: 이름, 연락처, 이메일, 회사명, 주민등록번호, 신청 과정, 유입 경로, 기타사항</li>
+        <li>이용 목적: 교육 신청 접수, 재직자 여부 확인, HRD-Net 등록, 과정 안내 및 운영 관리</li>
+        <li>보관 기간: 사업 종료 후 2년 보관 후 파기</li>
+        <li>주민등록번호는 고용보험 가입 여부 확인 목적에 한해 사용하며 암호화 저장됩니다.</li>
+      </ul>
+      <label class="consent-row">
+        <input type="checkbox" id="privacyCheck">
+        <span>개인정보 수집·이용 안내를 확인하고 동의합니다.</span>
+      </label>
+    </div>
+
+    <div class="terms-block">
+      <h3>협약서 제출 안내</h3>
+      <ul>
+        <li>본 과정은 재직자 대상 지원 과정으로, 소속 기업의 협약서 제출이 필요할 수 있습니다.</li>
+        <li>협약서 제출 가능 여부가 불확실한 경우 담당자 안내에 따라 확인 절차가 진행됩니다.</li>
+        <li>대기업 종사자는 교육비의 20% 자비 부담이 발생할 수 있습니다.</li>
+      </ul>
+      <label class="consent-row">
+        <input type="checkbox" id="agreementCheck">
+        <span>협약서 제출 안내를 확인했습니다.</span>
+      </label>
+    </div>
+
+    <div class="terms-block">
+      <h3>취소 및 노쇼 안내</h3>
+      <ul>
+        <li>선착순 모집 과정이므로 무단 불참은 다른 신청자의 수강 기회를 제한할 수 있습니다.</li>
+        <li>참여가 어려운 경우 교육 시작 전 담당자에게 취소 의사를 알려주세요.</li>
+      </ul>
+      <label class="consent-row">
+        <input type="checkbox" id="noshowCheck">
+        <span>취소 및 노쇼 안내를 확인했습니다.</span>
+      </label>
+    </div>
+
+    <div class="msg error" id="confirmMsg"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" type="button" id="cancelConfirmBtn">수정하기</button>
+      <button class="modal-confirm" type="button" id="confirmSubmitBtn">동의하고 신청하기</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = "https://siwatwgncoiknnkglvok.supabase.co";
 const SUPABASE_KEY = "sb_publishable_EcpVk6L5gekNjlvJLLcFRw_H7OWeExQ";
@@ -335,9 +466,13 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const courseListEl = document.getElementById('courseList');
 const msgEl = document.getElementById('msg');
+const confirmMsgEl = document.getElementById('confirmMsg');
 const submitBtn = document.getElementById('submitBtn');
+const confirmOverlay = document.getElementById('confirmOverlay');
+const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
 let courses = [];
 const selected = new Set();
+let pendingApplication = null;
 
 document.getElementById('rrn').addEventListener('input', (e) => {
   e.target.value = e.target.value.replace(/[^\d-]/g, '').slice(0, 14);
@@ -402,8 +537,35 @@ document.querySelectorAll('#referralList input').forEach(input => {
   });
 });
 
-submitBtn.addEventListener('click', async () => {
+submitBtn.addEventListener('click', () => {
   msgEl.textContent = '';
+  confirmMsgEl.textContent = '';
+  const application = collectApplication();
+  if (!application) return;
+
+  pendingApplication = application;
+  renderSummary(application);
+  document.getElementById('privacyCheck').checked = false;
+  document.getElementById('agreementCheck').checked = false;
+  document.getElementById('noshowCheck').checked = false;
+  confirmOverlay.classList.add('open');
+});
+
+document.getElementById('cancelConfirmBtn').addEventListener('click', () => {
+  confirmOverlay.classList.remove('open');
+  pendingApplication = null;
+});
+
+confirmOverlay.addEventListener('click', (event) => {
+  if (event.target === confirmOverlay){
+    confirmOverlay.classList.remove('open');
+    pendingApplication = null;
+  }
+});
+
+confirmSubmitBtn.addEventListener('click', submitApplication);
+
+function collectApplication(){
   const name = document.getElementById('name').value.trim();
   const phone = document.getElementById('phone').value.trim();
   const email = document.getElementById('email').value.trim();
@@ -412,53 +574,89 @@ submitBtn.addEventListener('click', async () => {
   const rrn = document.getElementById('rrn').value.replace(/\D/g, '');
   const birth6 = rrn.slice(0, 6);
   const employedConfirmed = document.getElementById('employedCheck').checked;
+  const referralSources = Array.from(document.querySelectorAll('#referralList input:checked')).map(input => input.value);
+  const note = document.getElementById('note').value.trim();
+  const selectedCourseIds = Array.from(selected);
+  const selectedCourses = selectedCourseIds.map(id => courses.find(course => course.id === id)?.name || id);
+
+  if (!name){ msgEl.textContent = '이름을 입력해주세요.'; return null; }
+  if (!phone){ msgEl.textContent = '연락처를 입력해주세요.'; return null; }
+  if (!email){ msgEl.textContent = '이메일을 입력해주세요.'; return null; }
+  if (!emailInput.validity.valid){ msgEl.textContent = '이메일 형식을 확인해주세요.'; return null; }
+  if (!company){ msgEl.textContent = '회사명을 입력해주세요.'; return null; }
+  if (!employedConfirmed){ msgEl.textContent = '재직자 대상 과정임을 확인해주세요.'; return null; }
+  if (rrn.length !== 13){ msgEl.textContent = '주민등록번호 13자리를 정확히 입력해주세요.'; return null; }
+  if (selectedCourseIds.length === 0){ msgEl.textContent = '신청할 과정을 1개 이상 선택해주세요.'; return null; }
+
+  return {
+    name,
+    phone,
+    email,
+    company,
+    rrn,
+    birth6,
+    employedConfirmed,
+    referralSources,
+    note,
+    selectedCourseIds,
+    selectedCourses
+  };
+}
+
+function renderSummary(application){
+  document.getElementById('summaryName').textContent = application.name;
+  document.getElementById('summaryPhone').textContent = application.phone;
+  document.getElementById('summaryEmail').textContent = application.email;
+  document.getElementById('summaryCompany').textContent = application.company;
+  document.getElementById('summaryCourses').textContent = application.selectedCourses.join(', ');
+  document.getElementById('summaryReferral').textContent = application.referralSources.length ? application.referralSources.join(', ') : '-';
+}
+
+async function submitApplication(){
+  confirmMsgEl.textContent = '';
+  if (!pendingApplication) return;
+
   const privacyConsent = document.getElementById('privacyCheck').checked;
   const agreementConfirmed = document.getElementById('agreementCheck').checked;
   const noshowConfirmed = document.getElementById('noshowCheck').checked;
-  const referralSources = Array.from(document.querySelectorAll('#referralList input:checked')).map(input => input.value);
-  const note = document.getElementById('note').value.trim();
-
-  if (!name){ msgEl.textContent = '이름을 입력해주세요.'; return; }
-  if (!phone){ msgEl.textContent = '연락처를 입력해주세요.'; return; }
-  if (!email){ msgEl.textContent = '이메일을 입력해주세요.'; return; }
-  if (!emailInput.validity.valid){ msgEl.textContent = '이메일 형식을 확인해주세요.'; return; }
-  if (!company){ msgEl.textContent = '회사명을 입력해주세요.'; return; }
-  if (rrn.length !== 13){ msgEl.textContent = '주민등록번호 13자리를 정확히 입력해주세요.'; return; }
-  if (selected.size === 0){ msgEl.textContent = '신청할 과정을 1개 이상 선택해주세요.'; return; }
-  if (!employedConfirmed){ msgEl.textContent = '재직자 대상 과정임을 확인해주세요.'; return; }
-  if (!privacyConsent){ msgEl.textContent = '개인정보 수집·이용에 동의해주세요.'; return; }
-  if (!agreementConfirmed){ msgEl.textContent = '협약서 제출 안내를 확인해주세요.'; return; }
-  if (!noshowConfirmed){ msgEl.textContent = '취소 및 노쇼 안내를 확인해주세요.'; return; }
+  if (!privacyConsent){ confirmMsgEl.textContent = '개인정보 수집·이용에 동의해주세요.'; return; }
+  if (!agreementConfirmed){ confirmMsgEl.textContent = '협약서 제출 안내를 확인해주세요.'; return; }
+  if (!noshowConfirmed){ confirmMsgEl.textContent = '취소 및 노쇼 안내를 확인해주세요.'; return; }
 
   submitBtn.disabled = true;
   submitBtn.textContent = '처리 중...';
+  confirmSubmitBtn.disabled = true;
+  confirmSubmitBtn.textContent = '처리 중...';
 
   const { error } = await sb.rpc('submit_application', {
-    p_name: name,
-    p_phone: phone,
-    p_email: email,
-    p_company: company,
-    p_birth6: birth6,
-    p_resident_number: rrn,
-    p_employed: employedConfirmed,
+    p_name: pendingApplication.name,
+    p_phone: pendingApplication.phone,
+    p_email: pendingApplication.email,
+    p_company: pendingApplication.company,
+    p_birth6: pendingApplication.birth6,
+    p_resident_number: pendingApplication.rrn,
+    p_employed: pendingApplication.employedConfirmed,
     p_privacy: privacyConsent,
     p_agreement_confirmed: agreementConfirmed,
     p_noshow_confirmed: noshowConfirmed,
-    p_referral_sources: referralSources,
-    p_note: note || null,
-    p_course_ids: Array.from(selected)
+    p_referral_sources: pendingApplication.referralSources,
+    p_note: pendingApplication.note || null,
+    p_course_ids: pendingApplication.selectedCourseIds
   });
 
   if (error){
-    msgEl.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
+    confirmMsgEl.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
     submitBtn.disabled = false;
     submitBtn.textContent = '신청하기';
+    confirmSubmitBtn.disabled = false;
+    confirmSubmitBtn.textContent = '동의하고 신청하기';
     return;
   }
 
+  confirmOverlay.classList.remove('open');
   document.getElementById('formCard').style.display = 'none';
   document.getElementById('successCard').style.display = 'block';
-});
+}
 </script>
 </body>
 </html>
