@@ -594,6 +594,18 @@ document.getElementById('rrn2').addEventListener('input', (e) => {
   e.target.value = e.target.value.replace(/\D/g, '').slice(0, 7);
 });
 
+['rrn1', 'rrn2'].forEach(id => {
+  document.getElementById(id).addEventListener('paste', (e) => {
+    const digits = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+    if (digits.length < 7) return;
+    e.preventDefault();
+    const merged = digits.slice(0, 13);
+    document.getElementById('rrn1').value = merged.slice(0, 6);
+    document.getElementById('rrn2').value = merged.slice(6, 13);
+    document.getElementById(merged.length >= 13 ? 'rrn2' : 'rrn1').focus();
+  });
+});
+
 document.getElementById('rrn2').addEventListener('keydown', (e) => {
   if (e.key === 'Backspace' && e.target.value.length === 0) document.getElementById('rrn1').focus();
 });

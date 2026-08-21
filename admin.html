@@ -161,16 +161,24 @@
     color:#fff;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;
   }
   .add-course-form button:hover,.primary-action:hover{background:var(--accent);}
-  .course-layout-tools{display:flex;align-items:center;gap:9px;color:var(--ink-soft);font-size:12px;font-weight:900;}
-  .course-layout-tools input{width:112px;accent-color:var(--accent-dark);}
   .course-panels{
-    --course-panel-gap:16px;
+    --course-left-width:1.35fr;
+    --course-right-width:0.65fr;
     display:grid;
-    grid-template-columns:minmax(0,1.35fr) minmax(300px,0.65fr);
-    gap:var(--course-panel-gap);
+    grid-template-columns:minmax(360px,var(--course-left-width)) 14px minmax(280px,var(--course-right-width));
+    gap:0;
     align-items:start;
   }
   .course-panels>.panel{margin-bottom:16px;}
+  .course-resizer{
+    align-self:stretch;min-height:280px;display:flex;align-items:center;justify-content:center;cursor:col-resize;
+    color:#9AA6B2;user-select:none;touch-action:none;
+  }
+  .course-resizer::before{
+    content:"";width:4px;height:54px;border-radius:999px;background:#D7E0EA;
+    box-shadow:0 0 0 1px rgba(15,70,90,0.04);
+  }
+  .course-resizer:hover::before,.course-resizer.dragging::before{background:#176B87;}
   .course-side-panel .add-course-form{grid-template-columns:1fr 1fr;gap:10px;}
   .course-side-panel .add-course-form>div:first-child{grid-column:1 / -1;}
   .course-side-panel .course-add-actions .primary-action{width:100%;}
@@ -338,6 +346,7 @@
   @media (max-width:1120px){
     .dashboard-hero,.ops-grid{grid-template-columns:1fr;}
     .course-panels{grid-template-columns:1fr;}
+    .course-resizer{display:none;}
     .add-course-form{grid-template-columns:repeat(3,minmax(0,1fr));}
     .compact-add{grid-template-columns:minmax(0,1fr) auto;}
     .course-row{grid-template-columns:minmax(0,1fr) 92px auto;}
@@ -358,7 +367,6 @@
     .metric-grid{grid-template-columns:1fr 1fr;}
     .panel-head{display:block;}
     .section-title{display:block;}
-    .course-layout-tools{width:100%;justify-content:space-between;margin-top:12px;}
     .add-course-form{grid-template-columns:1fr;}
     .compact-add{grid-template-columns:1fr;}
     .add-course-form div{min-width:0;}
@@ -701,10 +709,6 @@
     <section class="view" id="view-courses">
       <div class="view-header">
         <h2>과정 관리</h2>
-        <label class="course-layout-tools">
-          <span>패널 간격</span>
-          <input type="range" id="coursePanelGapRange" min="8" max="40" step="2" value="16">
-        </label>
       </div>
       <div class="course-panels" id="coursePanelLayout">
         <section class="panel course-round-panel">
@@ -719,6 +723,8 @@
             <div class="empty-row">회차 목록을 불러오는 중...</div>
           </div>
         </section>
+
+        <div class="course-resizer" id="coursePanelResizer" role="separator" aria-label="과정 관리 패널 폭 조절" tabindex="0"></div>
 
         <section class="panel course-side-panel">
           <div class="section-title">
@@ -800,7 +806,7 @@ const MASKED_RRN = '●●●●●●-●●●●●●●';
 const visibleColumns = { phone: true, rrn: true, referral: true, memo: true };
 let appColumnOrder = ['name', 'phone', 'company', 'email', 'rrn', 'employment', 'referral', 'memo', 'course', 'status', 'actions'];
 let appColumnVisibility = appColumnOrder.reduce((acc, id) => ({ ...acc, [id]: true }), {});
-initCoursePanelGap();
+initCoursePanelResize();
 
 // ---------- auth ----------
 document.getElementById('toggleMode').addEventListener('click', () => {
@@ -851,18 +857,45 @@ document.querySelectorAll('.nav-item').forEach(btn => {
   });
 });
 
-function initCoursePanelGap(){
+function initCoursePanelResize(){
   const layout = document.getElementById('coursePanelLayout');
-  const range = document.getElementById('coursePanelGapRange');
-  if (!layout || !range) return;
-  const saved = localStorage.getItem('khp_course_panel_gap');
-  if (saved) range.value = saved;
-  const applyGap = () => {
-    layout.style.setProperty('--course-panel-gap', `${range.value}px`);
-    localStorage.setItem('khp_course_panel_gap', range.value);
+  const resizer = document.getElementById('coursePanelResizer');
+  if (!layout || !resizer) return;
+  const applyRatio = ratio => {
+    const safeRatio = Math.min(0.76, Math.max(0.42, Number(ratio) || 0.66));
+    layout.style.setProperty('--course-left-width', `${safeRatio}fr`);
+    layout.style.setProperty('--course-right-width', `${1 - safeRatio}fr`);
+    localStorage.setItem('khp_course_panel_ratio', String(safeRatio));
   };
-  range.addEventListener('input', applyGap);
-  applyGap();
+  applyRatio(localStorage.getItem('khp_course_panel_ratio') || 0.66);
+
+  const resizeFromClientX = clientX => {
+    const rect = layout.getBoundingClientRect();
+    if (!rect.width) return;
+    applyRatio((clientX - rect.left) / rect.width);
+  };
+
+  const startDrag = event => {
+    event.preventDefault();
+    resizer.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    const move = moveEvent => resizeFromClientX(moveEvent.clientX ?? moveEvent.touches?.[0]?.clientX);
+    const stop = () => {
+      resizer.classList.remove('dragging');
+      document.body.style.cursor = '';
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', stop);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', stop, { once: true });
+  };
+
+  resizer.addEventListener('pointerdown', startDrag);
+  resizer.addEventListener('keydown', event => {
+    const current = Number(localStorage.getItem('khp_course_panel_ratio') || 0.66);
+    if (event.key === 'ArrowLeft') applyRatio(current - 0.03);
+    if (event.key === 'ArrowRight') applyRatio(current + 0.03);
+  });
 }
 
 // ---------- course types (고정 과정명) ----------
