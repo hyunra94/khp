@@ -584,7 +584,7 @@ wireConsentCollapse('rrnConsentBlock', 'rrnConsentCheck');
 async function loadCourses(){
   const { data, error } = await sb
     .from('courses')
-    .select('id,name,start_date,end_date,course_types(name,description)')
+    .select('id,name,start_date,end_date,course_types(name,description,sort_order)')
     .eq('is_open', true)
     .order('start_date', { ascending: true });
   if (error || !data || data.length === 0){
@@ -595,11 +595,14 @@ async function loadCourses(){
   courseListEl.innerHTML = '';
   const groups = data.reduce((acc, course) => {
     const key = course.course_types?.name || '기타 과정';
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(course);
+    if (!acc[key]) acc[key] = { sortOrder: course.course_types?.sort_order ?? 9999, courses: [] };
+    acc[key].courses.push(course);
     return acc;
   }, {});
-  Object.entries(groups).forEach(([typeName, groupCourses]) => {
+  Object.entries(groups)
+    .sort((a, b) => (a[1].sortOrder - b[1].sortOrder) || a[0].localeCompare(b[0], 'ko'))
+    .forEach(([typeName, group]) => {
+    const groupCourses = group.courses;
     const groupEl = document.createElement('div');
     groupEl.className = 'course-type-group';
     const description = groupCourses.find(c => c.course_types?.description)?.course_types?.description || '';

@@ -42,6 +42,22 @@ $block$;
 alter table public.courses
   add column if not exists is_open boolean not null default true;
 
+alter table public.course_types
+  add column if not exists sort_order integer;
+
+with numbered as (
+  select id, row_number() over (order by name, id)::integer as rn
+  from public.course_types
+  where sort_order is null
+)
+update public.course_types ct
+set sort_order = numbered.rn
+from numbered
+where ct.id = numbered.id;
+
+create index if not exists course_types_sort_order_idx
+on public.course_types (sort_order, name);
+
 alter table public.applications
   add column if not exists attempt_no integer not null default 1,
   add column if not exists status_updated_at timestamptz,

@@ -771,7 +771,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 
 // ---------- course types (고정 과정명) ----------
 async function loadCourseTypes(){
-  const { data, error } = await sb.from('course_types').select('*').order('name');
+  const { data, error } = await sb.from('course_types').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('name');
   if (error){
     document.getElementById('typeRows').innerHTML = `<div class="empty-row">과정 불러오기 실패: ${escapeHtml(error.message)}</div>`;
     return;
@@ -794,22 +794,31 @@ function renderCourseTypes(){
     return;
   }
 
-  list.innerHTML = allCourseTypes.map(type => `
+  list.innerHTML = allCourseTypes.map((type, index) => `
     <tr class="type-row-table" data-type-id="${escapeHtml(type.id)}">
       <td><input class="row-input type-name-input" value="${escapeHtml(type.name)}" aria-label="과정명"></td>
       <td><input class="row-input type-desc-input" value="${escapeHtml(type.description || '')}" aria-label="과정 설명" placeholder="신청 화면에 보일 설명"></td>
       <td>
-        <div class="menu-wrap">
-          <button class="menu-btn" type="button" aria-label="고정 과정 메뉴" data-menu-toggle>⋯</button>
-          <div class="menu-pop">
-            <button type="button" class="save-type-btn" data-id="${escapeHtml(type.id)}">저장</button>
-            <button type="button" class="delete-type-btn danger" data-id="${escapeHtml(type.id)}">삭제</button>
+        <div class="course-row-actions">
+          <button class="inline-btn light move-type-btn" type="button" data-id="${escapeHtml(type.id)}" data-dir="-1" ${index === 0 ? 'disabled' : ''}>위</button>
+          <button class="inline-btn light move-type-btn" type="button" data-id="${escapeHtml(type.id)}" data-dir="1" ${index === allCourseTypes.length - 1 ? 'disabled' : ''}>아래</button>
+          <div class="menu-wrap">
+            <button class="menu-btn" type="button" aria-label="고정 과정 메뉴" data-menu-toggle>⋯</button>
+            <div class="menu-pop">
+              <button type="button" class="save-type-btn" data-id="${escapeHtml(type.id)}">저장</button>
+              <button type="button" class="delete-type-btn danger" data-id="${escapeHtml(type.id)}">삭제</button>
+            </div>
           </div>
         </div>
       </td>
     </tr>
   `).join('');
   bindMenus(list);
+  list.querySelectorAll('.move-type-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await moveCourseType(btn.dataset.id, Number(btn.dataset.dir));
+    });
+  });
   list.querySelectorAll('.delete-type-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       closeMenus();
@@ -860,14 +869,35 @@ document.getElementById('addTypeBtn').addEventListener('click', async () => {
   const name = document.getElementById('typeName').value.trim();
   const description = null;
   if (!name) return;
+  const sort_order = (Math.max(0, ...allCourseTypes.map(type => Number(type.sort_order) || 0)) + 1);
 
-  const { error } = await sb.from('course_types').insert({ name, description });
+  const { error } = await sb.from('course_types').insert({ name, description, sort_order });
   if (!error){
     document.getElementById('typeName').value = '';
     await loadCourseTypes();
     await loadCourses();
   }
 });
+
+async function moveCourseType(id, direction){
+  const currentIndex = allCourseTypes.findIndex(type => type.id === id);
+  const targetIndex = currentIndex + direction;
+  if (currentIndex < 0 || targetIndex < 0 || targetIndex >= allCourseTypes.length) return;
+
+  const reordered = [...allCourseTypes];
+  [reordered[currentIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[currentIndex]];
+  const updates = reordered.map((type, index) =>
+    sb.from('course_types').update({ sort_order: index + 1 }).eq('id', type.id)
+  );
+  const results = await Promise.all(updates);
+  const error = results.find(result => result.error)?.error;
+  if (error){
+    alert(`순서 저장 실패: ${error.message}`);
+    return;
+  }
+  await loadCourseTypes();
+  await loadCourses();
+}
 
 function renderCourseTypeTabs(){
   const tabs = document.getElementById('courseTypeTabs');
