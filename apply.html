@@ -15,39 +15,37 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --bg:#F6F4EF;
+    --bg:#F4F6F8;
     --surface:#FFFFFF;
-    --surface-soft:#FAF9F6;
-    --line:#E8E1D6;
-    --line-strong:#D8CDBD;
-    --ink:#241F1A;
-    --ink-soft:#756B60;
-    --muted:#A3988A;
-    --accent:#1F6F68;
-    --accent-dark:#124C47;
-    --accent-soft:#DDEDEA;
-    --coral:#D66B55;
-    --error:#C44E4E;
-    --shadow:0 24px 70px rgba(49,40,30,0.13);
-    --shadow-soft:0 12px 32px rgba(49,40,30,0.08);
+    --surface-soft:#F8FAFC;
+    --line:#DFE5EC;
+    --line-strong:#C8D2DE;
+    --ink:#1D2530;
+    --ink-soft:#647081;
+    --muted:#8A96A6;
+    --accent:#176B87;
+    --accent-dark:#0F465A;
+    --accent-soft:#E7F4F7;
+    --coral:#D75C48;
+    --error:#C43D3D;
+    --shadow:0 22px 56px rgba(21,35,52,0.12);
+    --shadow-soft:0 12px 28px rgba(21,35,52,0.08);
     --radius:8px;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
     font-family:'Noto Sans KR', sans-serif;
-    background:
-      linear-gradient(120deg, rgba(31,111,104,0.08), transparent 34%),
-      linear-gradient(180deg, #FBFAF7 0%, var(--bg) 50%, #EFE8DC 100%);
+    background:var(--bg);
     min-height:100vh;
     color:var(--ink);
-    padding:36px 18px 82px;
+    padding:42px 18px 82px;
   }
-  .wrap{max-width:560px;margin:0 auto;}
+  .wrap{max-width:720px;margin:0 auto;}
   .eyebrow{
     text-align:center;
     font-size:12px;
-    letter-spacing:0.18em;
+    letter-spacing:0;
     color:var(--accent);
     font-weight:900;
     margin-bottom:12px;
@@ -58,7 +56,7 @@
     font-weight:900;
     margin:0 0 10px;
     color:var(--ink);
-    letter-spacing:-0.025em;
+    letter-spacing:0;
     line-height:1.18;
   }
   .sub{
@@ -69,12 +67,11 @@
     line-height:1.6;
   }
   .card{
-    background:rgba(255,255,255,0.88);
+    background:var(--surface);
     border-radius:var(--radius);
-    padding:30px 28px;
+    padding:34px;
     box-shadow:var(--shadow);
-    border:1px solid rgba(36,31,26,0.1);
-    backdrop-filter:blur(16px);
+    border:1px solid rgba(29,37,48,0.08);
   }
   label{
     display:block;
@@ -86,7 +83,7 @@
   label:first-of-type{margin-top:0;}
   input[type=text], input[type=tel], input[type=email]{
     width:100%;
-    padding:14px 14px;
+    padding:14px 15px;
     border-radius:var(--radius);
     border:1px solid var(--line);
     background:var(--surface-soft);
@@ -96,18 +93,18 @@
     outline:none;
     transition:border-color .16s, box-shadow .16s, background .16s;
   }
-  input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(31,111,104,0.12);background:#fff;}
+  input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(23,107,135,0.12);background:#fff;}
   .course-list{display:flex;flex-direction:column;gap:8px;}
   .choice-grid{
     display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:6px;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:7px;
   }
   .course-item{
     display:flex;
     align-items:center;
     gap:9px;
-    padding:10px 12px;
+    padding:13px 14px;
     border-radius:var(--radius);
     border:1px solid var(--line);
     background:var(--surface-soft);
@@ -116,7 +113,7 @@
   }
   .course-item:hover{
     border-color:var(--line-strong);
-    box-shadow:0 6px 14px rgba(49,40,30,0.06);
+    box-shadow:0 8px 18px rgba(21,35,52,0.06);
     transform:translateY(-1px);
   }
   .course-item.checked{
@@ -128,7 +125,7 @@
   .course-name{font-weight:800;font-size:14px;line-height:1.3;}
   .course-date{font-size:12px;color:var(--ink-soft);margin-top:2px;}
   .choice-item{
-    min-height:34px;
+    min-height:32px;
     display:flex;
     align-items:center;
     gap:7px;
@@ -137,7 +134,7 @@
     border-radius:var(--radius);
     background:var(--surface-soft);
     color:var(--ink-soft);
-    font-size:12.5px;
+    font-size:12px;
     font-weight:700;
     cursor:pointer;
   }
@@ -148,7 +145,7 @@
   }
   .choice-item input{width:15px;height:15px;accent-color:var(--accent-dark);flex:0 0 auto;}
   .round-group{
-    padding:11px;
+    padding:14px;
     border:1px solid var(--line);
     border-radius:var(--radius);
     background:#fff;
@@ -176,10 +173,10 @@
     font-size:15.5px;
     font-weight:700;
     cursor:pointer;
-    box-shadow:0 14px 28px rgba(31,111,104,0.25);
+    box-shadow:0 14px 28px rgba(23,107,135,0.22);
     transition:transform .12s, box-shadow .12s;
   }
-  button.submit:active{transform:translateY(1px);box-shadow:0 8px 18px rgba(31,111,104,0.2);}
+  button.submit:active{transform:translateY(1px);box-shadow:0 8px 18px rgba(23,107,135,0.18);}
   button.submit:disabled{opacity:0.5;cursor:not-allowed;}
   .msg{
     margin-top:14px;
@@ -201,18 +198,21 @@
     font-size:0;
   }
   .success-card .icon::before{content:"";width:18px;height:10px;border-left:3px solid currentColor;border-bottom:3px solid currentColor;transform:rotate(-45deg);margin-top:-4px;}
-  .success-card h2{font-size:22px;margin:0 0 10px;letter-spacing:-0.02em;}
+  .success-card h2{font-size:22px;margin:0 0 10px;letter-spacing:0;}
   .success-card p{font-size:14px;color:var(--ink-soft);margin:0;line-height:1.6;}
   .notice-card{
-    background:var(--surface-soft);
+    background:#FFFFFF;
     border:1px solid var(--line);
     border-radius:var(--radius);
-    padding:20px 22px;
+    padding:18px 20px;
     margin-bottom:20px;
     font-size:13px;
     line-height:1.85;
     color:var(--ink);
   }
+  .notice-line{display:flex;gap:10px;align-items:flex-start;}
+  .notice-line + .notice-line{margin-top:2px;}
+  .notice-key{min-width:64px;color:var(--accent-dark);font-weight:900;}
   .notice-card .warn{color:var(--coral);font-weight:800;}
   .notice-card ul{margin:10px 0 0;padding-left:18px;color:var(--ink-soft);}
   .notice-card a{color:var(--accent-dark);font-weight:700;}
@@ -227,10 +227,15 @@
   }
   .consent-row input{width:17px;height:17px;margin-top:2px;accent-color:var(--accent-dark);flex:0 0 auto;}
   .field-help{font-size:11.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5;}
+  @media (max-width:760px){
+    .wrap{max-width:560px;}
+    .choice-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
   @media (max-width:520px){
     body{padding:28px 14px 64px;}
     h1{font-size:27px;}
     .card{padding:24px 18px;}
+    .notice-card{padding:16px;}
     .course-item{align-items:flex-start;}
     .choice-grid{grid-template-columns:1fr;}
   }
@@ -243,17 +248,17 @@
   <p class="sub">원하는 과정을 선택하고 기본 정보를 남겨주세요</p>
 
   <div class="notice-card">
-    ✅ 교육방식: 오프라인 집체교육(실습 중심)<br>
-    ✅ 필요서류: 재직자 대상 과정(협약서)<br>
-    ✅ 모집방법: 선착순 모집<br>
-    ✅ 모집기준: 교육 일정의 80% 이상 참여 가능자<br>
-    ✅ 교육비용: 전액 지원 (<span class="warn">단, 대기업 종사자는 20% 자비 부담 발생</span>)
+    <div class="notice-line"><span class="notice-key">교육방식</span><span>오프라인 집체교육(실습 중심)</span></div>
+    <div class="notice-line"><span class="notice-key">필요서류</span><span>재직자 대상 과정(협약서)</span></div>
+    <div class="notice-line"><span class="notice-key">모집방법</span><span>선착순 모집</span></div>
+    <div class="notice-line"><span class="notice-key">모집기준</span><span>교육 일정의 80% 이상 참여 가능자</span></div>
+    <div class="notice-line"><span class="notice-key">교육비용</span><span>전액 지원 (<span class="warn">단, 대기업 종사자는 20% 자비 부담 발생</span>)</span></div>
     <ul>
       <li>교육 일정은 상황에 따라 변경될 수 있음</li>
       <li>모집인원이 저조할 시 통합 운영 될 수 있음</li>
       <li>노트북이 필요할 경우 대여 가능</li>
     </ul>
-    👉 상세 커리큘럼은 <a href="https://jmbc.oopy.io/edu" target="_blank" rel="noopener">K-하이테크 플랫폼 홈페이지</a>에서 확인하세요
+    상세 커리큘럼은 <a href="https://jmbc.oopy.io/edu" target="_blank" rel="noopener">K-하이테크 플랫폼 홈페이지</a>에서 확인하세요
   </div>
 
   <div class="card" id="formCard">

@@ -15,31 +15,29 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --bg:#F6F4EF;
+    --bg:#F4F6F8;
     --surface:#FFFFFF;
-    --surface-soft:#FAF9F6;
-    --line:#E8E1D6;
-    --line-strong:#D8CDBD;
-    --ink:#241F1A;
-    --ink-soft:#756B60;
-    --muted:#A3988A;
-    --accent:#1F6F68;
-    --accent-dark:#124C47;
-    --accent-soft:#DDEDEA;
-    --gold:#B9822D;
-    --green:#227653;
-    --danger:#C44E4E;
-    --shadow:0 24px 70px rgba(49,40,30,0.13);
-    --shadow-soft:0 12px 32px rgba(49,40,30,0.08);
+    --surface-soft:#F8FAFC;
+    --line:#DFE5EC;
+    --line-strong:#C8D2DE;
+    --ink:#1D2530;
+    --ink-soft:#647081;
+    --muted:#8A96A6;
+    --accent:#176B87;
+    --accent-dark:#0F465A;
+    --accent-soft:#E7F4F7;
+    --gold:#B77B22;
+    --green:#1F7A55;
+    --danger:#C43D3D;
+    --shadow:0 22px 56px rgba(21,35,52,0.12);
+    --shadow-soft:0 12px 28px rgba(21,35,52,0.08);
     --radius:8px;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
     font-family:'Noto Sans KR', sans-serif;
-    background:
-      linear-gradient(120deg, rgba(31,111,104,0.08), transparent 34%),
-      linear-gradient(180deg, #FBFAF7 0%, var(--bg) 52%, #EFE8DC 100%);
+    background:var(--bg);
     min-height:100vh;
     color:var(--ink);
   }
@@ -57,31 +55,30 @@
     content:"";
     position:absolute;
     inset:20px;
-    border:1px solid rgba(36,31,26,0.08);
+    border:1px solid rgba(29,37,48,0.08);
     pointer-events:none;
   }
   .login-card{
-    background:rgba(255,255,255,0.88);
-    backdrop-filter:blur(18px);
+    background:var(--surface);
     border-radius:var(--radius);
     padding:38px 32px 32px;
     box-shadow:var(--shadow);
     width:100%;
     max-width:390px;
-    border:1px solid rgba(36,31,26,0.1);
+    border:1px solid rgba(29,37,48,0.08);
     position:relative;
   }
   .login-card::before{
     content:"ADMIN";
     display:block;
     font-size:11px;
-    letter-spacing:0.24em;
+    letter-spacing:0;
     color:var(--accent);
     font-weight:900;
     text-align:center;
     margin-bottom:12px;
   }
-  .login-card h1{font-size:24px;margin:0 0 8px;text-align:center;letter-spacing:-0.01em;}
+  .login-card h1{font-size:24px;margin:0 0 8px;text-align:center;letter-spacing:0;}
   .login-card .sub{font-size:13px;color:var(--ink-soft);text-align:center;margin-bottom:28px;}
   .login-card label{display:block;font-size:12px;font-weight:800;margin:15px 0 7px;color:var(--ink-soft);}
   .login-card input{
@@ -90,15 +87,15 @@
     font-family:inherit;font-size:14.5px;outline:none;color:var(--ink);
     transition:border-color .16s, box-shadow .16s, background .16s;
   }
-  .login-card input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(31,111,104,0.12);background:#fff;}
+  .login-card input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(23,107,135,0.12);background:#fff;}
   .login-card button{
     width:100%;margin-top:22px;padding:14px;border:none;border-radius:var(--radius);
     background:linear-gradient(135deg, var(--accent), var(--accent-dark));
     color:#fff;font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer;
-    box-shadow:0 14px 26px rgba(31,111,104,0.24);
+    box-shadow:0 14px 26px rgba(23,107,135,0.22);
     transition:transform .14s, box-shadow .14s;
   }
-  .login-card button:active{transform:translateY(1px);box-shadow:0 8px 18px rgba(31,111,104,0.2);}
+  .login-card button:active{transform:translateY(1px);box-shadow:0 8px 18px rgba(23,107,135,0.18);}
   .login-toggle{
     text-align:center;margin-top:16px;font-size:12.5px;color:var(--ink-soft);
     text-decoration:none;font-weight:700;
@@ -106,12 +103,12 @@
   .login-msg{margin-top:12px;font-size:12.5px;color:var(--danger);text-align:center;min-height:16px;}
 
   /* ---------- dashboard ---------- */
-  #dashboard{display:none;padding:30px 22px 88px;}
+  #dashboard{display:none;padding:28px 22px 88px;}
   .topbar{
-    max-width:1180px;margin:0 auto 22px;
+    max-width:1320px;margin:0 auto 22px;
     display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
   }
-  .topbar h1{font-size:23px;margin:0;letter-spacing:-0.02em;}
+  .topbar h1{font-size:23px;margin:0;letter-spacing:0;}
   .topbar .who{font-size:12.5px;color:var(--ink-soft);}
   .logout-btn{
     border:1px solid var(--line);background:#fff;padding:9px 16px;border-radius:var(--radius);
@@ -119,16 +116,15 @@
     cursor:pointer;box-shadow:var(--shadow-soft);
   }
   .panel{
-    max-width:1180px;margin:0 auto 18px;
-    background:rgba(255,255,255,0.86);border-radius:var(--radius);padding:22px;
-    box-shadow:var(--shadow-soft);border:1px solid rgba(36,31,26,0.09);
-    backdrop-filter:blur(14px);
+    max-width:1320px;margin:0 auto 18px;
+    background:var(--surface);border-radius:var(--radius);padding:22px;
+    box-shadow:var(--shadow-soft);border:1px solid rgba(29,37,48,0.08);
   }
-  .panel h2{font-size:15px;margin:0 0 16px;color:var(--ink);letter-spacing:-0.01em;}
+  .panel h2{font-size:15px;margin:0 0 16px;color:var(--ink);letter-spacing:0;}
   .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px;}
   .panel-head h2{margin:0 0 5px;}
   .panel-head p{margin:0;color:var(--ink-soft);font-size:12.5px;line-height:1.45;}
-  .admin-grid{display:grid;grid-template-columns:minmax(240px,0.8fr) minmax(0,1.2fr);gap:16px;align-items:start;}
+  .admin-grid{display:grid;grid-template-columns:minmax(260px,0.7fr) minmax(0,1.3fr);gap:16px;align-items:start;}
   .add-course-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
   .add-course-form div{flex:1;min-width:140px;}
   .add-course-form label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:800;}
@@ -153,6 +149,7 @@
     padding:9px 13px;border:none;border-radius:var(--radius);background:var(--accent);
     color:#fff;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;
   }
+  .mini-form button:hover,.inline-btn:hover,.add-course-form button:hover{background:var(--accent-dark);}
   .inline-btn.secondary{background:var(--ink);}
   .inline-btn.light{background:#fff;color:var(--accent-dark);border:1px solid var(--line);}
   .management-list{display:grid;gap:8px;}
@@ -160,7 +157,7 @@
     display:grid;grid-template-columns:minmax(140px,1fr) minmax(180px,1.2fr) auto;
     gap:8px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
   }
-  .round-row{grid-template-columns:minmax(150px,0.8fr) minmax(220px,1.2fr) 88px 130px 130px 90px 72px auto;}
+  .round-row{grid-template-columns:minmax(150px,0.85fr) minmax(220px,1.2fr) 88px 130px 130px 90px 72px auto;}
   .management-row input,.management-row textarea,.management-row select{
     width:100%;padding:8px 9px;border-radius:7px;border:1px solid var(--line);
     font-family:inherit;font-size:12.5px;background:var(--surface-soft);outline:none;color:var(--ink);
@@ -182,15 +179,17 @@
     padding:10px 12px;border-radius:var(--radius);border:1px solid var(--line);
     font-family:inherit;font-size:13px;background:#fff;outline:none;color:var(--ink);
   }
+  .filters input{min-width:220px;flex:1;}
+  .table-shell{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);}
   table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
   th{
     text-align:left;padding:12px 10px;color:var(--muted);
-    font-size:11px;text-transform:uppercase;letter-spacing:0.06em;
+    font-size:11px;text-transform:uppercase;letter-spacing:0;
     border-bottom:1px solid var(--line);
-    background:#FBFAF7;
+    background:#F8FAFC;
   }
   td{padding:12px 10px;border-bottom:1px solid #EFEAE2;vertical-align:top;}
-  tr:hover td{background:#FCFBF8;}
+  tr:hover td{background:#FBFCFE;}
   .status-badge{
     display:inline-block;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:700;
   }
@@ -205,7 +204,7 @@
     width:100%;min-width:190px;border-radius:var(--radius);border:1px solid var(--line);
     padding:9px 10px;font-family:inherit;font-size:12.5px;resize:vertical;min-height:40px;outline:none;background:var(--surface-soft);
   }
-  textarea.memo-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(31,111,104,0.1);background:#fff;}
+  textarea.memo-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(23,107,135,0.1);background:#fff;}
   .save-btn{
     border:none;background:var(--ink);color:#fff;padding:7px 12px;border-radius:var(--radius);
     font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;margin-top:6px;
@@ -223,14 +222,52 @@
   .compact-info b{display:block;color:var(--ink);font-size:12.5px;}
   .check-list{font-size:12px;line-height:1.6;color:var(--ink-soft);}
   .empty-row{text-align:center;padding:40px;color:var(--ink-soft);font-size:13px;}
+  @media (max-width:980px){
+    .topbar,.panel{max-width:760px;}
+    .admin-grid{grid-template-columns:1fr;}
+    .round-row{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .round-row .inline-btn{grid-column:1 / -1;}
+  }
   @media (max-width:720px){
     #dashboard{padding:20px 14px 64px;}
     .panel{padding:16px;}
     .topbar h1{font-size:20px;}
-    th,td{white-space:nowrap;}
-    textarea.memo-input{min-width:150px;}
-    .admin-grid{grid-template-columns:1fr;}
+    .topbar>div{width:100%;justify-content:space-between;}
+    .panel-head{display:block;}
+    .add-course-form{display:grid;grid-template-columns:1fr;}
+    .add-course-form div{min-width:0;}
     .management-row,.round-row{grid-template-columns:1fr;}
+    .filters{display:grid;grid-template-columns:1fr;}
+    .filters input{min-width:0;}
+    .table-shell{overflow:visible;border:none;}
+    table, thead, tbody, tr, td{display:block;width:100%;}
+    table{border-spacing:0;}
+    thead{display:none;}
+    tr{
+      margin-bottom:12px;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      background:#fff;
+      box-shadow:0 8px 18px rgba(21,35,52,0.06);
+      overflow:hidden;
+    }
+    td{
+      display:grid;
+      grid-template-columns:88px minmax(0,1fr);
+      gap:10px;
+      padding:11px 12px;
+      border-bottom:1px solid #EDF1F5;
+      white-space:normal;
+    }
+    td:last-child{border-bottom:none;}
+    td::before{
+      content:attr(data-label);
+      color:var(--muted);
+      font-size:11.5px;
+      font-weight:800;
+    }
+    textarea.memo-input{min-width:0;}
+    .empty-row{display:block;text-align:center;}
   }
 </style>
 </head>
@@ -321,7 +358,7 @@
       <select id="filterCourse"><option value="">전체 과정</option></select>
       <input type="text" id="filterSearch" placeholder="이름/연락처 검색">
     </div>
-    <div style="overflow-x:auto;">
+    <div class="table-shell">
       <table>
         <thead>
           <tr>
@@ -587,29 +624,29 @@ function renderApps(){
 
   tbody.innerHTML = rows.map(a => `
     <tr data-id="${a.id}">
-      <td>
+      <td data-label="신청자">
         <div class="compact-info">
           <b>${escapeHtml(a.trainees?.name || '-')}</b>
           ${escapeHtml(a.trainees?.company || '-')}<br>
           생년월일 ${escapeHtml(a.trainees?.birth6 || '-')}
         </div>
       </td>
-      <td>
+      <td data-label="연락처">
         <div class="compact-info">
           ${escapeHtml(a.trainees?.phone || '-')}<br>
           ${escapeHtml(a.trainees?.email || '-')}
         </div>
       </td>
-      <td>
+      <td data-label="주민번호">
         <span class="rrn-value" data-trainee-id="${escapeHtml(a.trainee_id)}">●●●●●●-●●●●●●●</span><br>
         <button class="rrn-btn" data-trainee-id="${escapeHtml(a.trainee_id)}" data-mode="masked">확인</button>
         <button class="rrn-btn" data-trainee-id="${escapeHtml(a.trainee_id)}" data-mode="full">전체보기</button>
       </td>
-      <td>
+      <td data-label="과정">
         ${escapeHtml(a.courses?.name || '-')}
         <div class="compact-info">${escapeHtml(a.attempt_no || 1)}번째 신청</div>
       </td>
-      <td>
+      <td data-label="유입/확인">
         <div class="check-list">
           유입: ${escapeHtml(formatList(a.trainees?.referral_sources))}<br>
           재직 ${yesNo(a.trainees?.employed_confirmed)} · 개인정보 ${yesNo(a.trainees?.privacy_consent)}<br>
@@ -617,16 +654,16 @@ function renderApps(){
           ${a.trainees?.note ? `<br>기타: ${escapeHtml(a.trainees.note)}` : ''}
         </div>
       </td>
-      <td>
+      <td data-label="상태">
         <select class="status-select" data-id="${escapeHtml(a.id)}">
           ${['대기','승인','거절','취소'].map(s => `<option value="${s}" ${s===a.status?'selected':''}>${s}</option>`).join('')}
         </select>
       </td>
-      <td>
+      <td data-label="메모">
         <textarea class="memo-input" data-id="${escapeHtml(a.id)}" data-trainee-id="${escapeHtml(a.trainee_id)}" placeholder="신청자 메모 입력...">${escapeHtml(a.trainees?.admin_memo || '')}</textarea><br>
         <button class="save-btn" data-id="${escapeHtml(a.id)}" data-trainee-id="${escapeHtml(a.trainee_id)}">저장</button>
       </td>
-      <td>
+      <td data-label="신청일시">
         ${new Date(a.applied_at).toLocaleString('ko-KR')}
         ${a.cancelled_at ? `<div class="compact-info">취소 ${new Date(a.cancelled_at).toLocaleString('ko-KR')}</div>` : ''}
       </td>
