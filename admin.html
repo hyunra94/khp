@@ -643,7 +643,7 @@
         <div class="metric-card"><div class="metric-label">전체 신청자</div><div class="metric-value" id="metricUnique">0</div><div class="metric-note">고유 인원</div></div>
         <div class="metric-card"><div class="metric-label">신청 건수</div><div class="metric-value" id="metricTotal">0</div><div class="metric-note">중복 신청 포함</div></div>
         <div class="metric-card"><div class="metric-label">대기중</div><div class="metric-value" id="metricPending">0</div><div class="metric-note">처리 필요</div></div>
-        <div class="metric-card"><div class="metric-label">승인됨</div><div class="metric-value" id="metricApproved">0</div><div class="metric-note">확정 수강</div></div>
+        <div class="metric-card"><div class="metric-label">승인됨</div><div class="metric-value" id="metricApproved">0</div><div class="metric-note">검토 통과</div></div>
       </div>
       <div class="overview-grid">
         <section class="panel">
@@ -695,13 +695,13 @@
       </div>
       <section class="panel">
         <div class="lookup-toolbar">
-          <div class="compact-info" id="courseLookupSummary">승인된 신청자를 과정과 회차별로 조회합니다</div>
+          <div class="compact-info" id="courseLookupSummary">신청 확정 또는 수료 상태의 수강자를 과정과 회차별로 조회합니다</div>
           <select id="courseLookupType" aria-label="조회할 과정 선택">
             <option value="">전체 과정</option>
           </select>
         </div>
         <div class="lookup-groups" id="courseLookupGroups">
-          <div class="empty-row">승인된 신청자를 불러오는 중...</div>
+          <div class="empty-row">확정 수강자를 불러오는 중...</div>
         </div>
       </section>
     </section>
@@ -800,7 +800,7 @@ let editingApplicationId = '';
 let memoTimers = {};
 let auditLoaded = false;
 const APPLICATION_STATUSES = ['대기','승인','신청확정','수료','거절','취소'];
-const COURSE_LOOKUP_STATUSES = ['승인','신청확정','수료'];
+const COURSE_LOOKUP_STATUSES = ['신청확정','수료'];
 const EMPLOYMENT_CATEGORIES = ['대규모','우선지원기업','고용보험미가입'];
 const MASKED_RRN = '●●●●●●-●●●●●●●';
 const visibleColumns = { phone: true, rrn: true, referral: true, memo: true };
@@ -1102,9 +1102,9 @@ function renderCourseLookup(){
     COURSE_LOOKUP_STATUSES.includes(app.status) &&
     (!activeLookupCourseTypeId || app.courses?.course_type_id === activeLookupCourseTypeId)
   );
-  setText('courseLookupSummary', `${rows.length.toLocaleString('ko-KR')}명 표시 중 · 승인/신청확정/수료 상태만 포함`);
+  setText('courseLookupSummary', `${rows.length.toLocaleString('ko-KR')}명 표시 중 · 신청확정/수료 상태만 포함`);
   if (rows.length === 0){
-    target.innerHTML = '<div class="empty-row">조회할 승인 신청자가 없습니다</div>';
+    target.innerHTML = '<div class="empty-row">조회할 확정 수강자가 없습니다</div>';
     return;
   }
 
@@ -1170,7 +1170,8 @@ function bindCourseLookupStatus(scope){
   scope.querySelectorAll('.status-select').forEach(select => {
     select.addEventListener('change', async () => {
       const id = select.dataset.id;
-      const status = select.value;
+      const status = normalizeApplicationStatus(select.value);
+      select.value = status;
       updateStatusSelectClass(select, status);
       await updateApplicationStatus(id, status, select);
     });
@@ -1251,6 +1252,11 @@ function getRoundLabel(courseName, typeName){
 
 function formatStatusLabel(status){
   return status === '신청확정' ? '신청 확정' : status;
+}
+
+function normalizeApplicationStatus(status){
+  const compact = String(status || '').replace(/\s+/g, '');
+  return compact === '신청확정' ? '신청확정' : compact;
 }
 
 document.getElementById('addCourseBtn').addEventListener('click', async () => {
@@ -1525,7 +1531,8 @@ function renderApps(){
   tbody.querySelectorAll('.status-select').forEach(select => {
     select.addEventListener('change', async () => {
       const id = select.dataset.id;
-      const status = select.value;
+      const status = normalizeApplicationStatus(select.value);
+      select.value = status;
       updateStatusSelectClass(select, status);
       await updateApplicationStatus(id, status, select);
     });
@@ -1698,7 +1705,7 @@ const appColumns = {
     render: app => `
       <div>
         <b>${escapeHtml(app.courses?.name || '-')}</b>
-        <div class="compact-info">${escapeHtml(app.courses?.course_types?.name || '과정 미지정')} · ${escapeHtml(app.attempt_no || 1)}번째 신청</div>
+        <div class="compact-info">${escapeHtml(app.courses?.course_types?.name || '과정 미지정')}</div>
       </div>
     `
   },
@@ -1815,7 +1822,7 @@ function renderMetrics(){
   setText('metricTotal', allApps.length.toLocaleString('ko-KR'));
   setText('metricUnique', uniqueTrainees.toLocaleString('ko-KR'));
   setText('metricPending', (byStatus['대기'] || 0).toLocaleString('ko-KR'));
-  setText('metricApproved', COURSE_LOOKUP_STATUSES.reduce((sum, status) => sum + (byStatus[status] || 0), 0).toLocaleString('ko-KR'));
+  setText('metricApproved', (byStatus['승인'] || 0).toLocaleString('ko-KR'));
   setText('metricCancelled', (byStatus['취소'] || 0).toLocaleString('ko-KR'));
   setText('metricOpenCourses', openCourses.toLocaleString('ko-KR'));
   setText('metricCourseTypes', `과정 ${openTypeIds.size.toLocaleString('ko-KR')}개`);
