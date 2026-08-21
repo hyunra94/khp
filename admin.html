@@ -10,17 +10,6 @@
 <meta property="og:image" content="https://hyunra94.github.io/assets/og-default.png">
 <meta property="og:url" content="https://hyunra94.github.io/[레포명]">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>재직자 교육 관리자</title>
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="icon" type="image/png" href="favicon.png">
-<meta property="og:title" content="재직자 교육 관리자">
-<meta property="og:image" content="https://hyunra94.github.io/assets/og-default.png">
-<meta property="og:url" content="https://hyunra94.github.io/[레포명]">
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -111,8 +100,8 @@
   }
   .login-card button:active{transform:translateY(1px);box-shadow:0 8px 18px rgba(31,111,104,0.2);}
   .login-toggle{
-    text-align:center;margin-top:16px;font-size:12.5px;color:var(--accent-dark);
-    cursor:pointer;text-decoration:none;font-weight:700;
+    text-align:center;margin-top:16px;font-size:12.5px;color:var(--ink-soft);
+    text-decoration:none;font-weight:700;
   }
   .login-msg{margin-top:12px;font-size:12.5px;color:var(--danger);text-align:center;min-height:16px;}
 
@@ -136,6 +125,10 @@
     backdrop-filter:blur(14px);
   }
   .panel h2{font-size:15px;margin:0 0 16px;color:var(--ink);letter-spacing:-0.01em;}
+  .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px;}
+  .panel-head h2{margin:0 0 5px;}
+  .panel-head p{margin:0;color:var(--ink-soft);font-size:12.5px;line-height:1.45;}
+  .admin-grid{display:grid;grid-template-columns:minmax(240px,0.8fr) minmax(0,1.2fr);gap:16px;align-items:start;}
   .add-course-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
   .add-course-form div{flex:1;min-width:140px;}
   .add-course-form label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:800;}
@@ -149,6 +142,32 @@
     color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;
   }
   .add-course-form button:hover{background:var(--accent-dark);}
+  .mini-form{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-soft);}
+  .mini-form label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:800;}
+  .mini-form input,.mini-form textarea,.mini-form select{
+    width:100%;padding:10px 11px;border-radius:var(--radius);border:1px solid var(--line);
+    background:#fff;font-family:inherit;font-size:13px;outline:none;color:var(--ink);
+  }
+  .mini-form textarea{min-height:64px;resize:vertical;line-height:1.45;}
+  .mini-form button,.inline-btn{
+    padding:9px 13px;border:none;border-radius:var(--radius);background:var(--accent);
+    color:#fff;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;
+  }
+  .inline-btn.secondary{background:var(--ink);}
+  .inline-btn.light{background:#fff;color:var(--accent-dark);border:1px solid var(--line);}
+  .management-list{display:grid;gap:8px;}
+  .management-row{
+    display:grid;grid-template-columns:minmax(140px,1fr) minmax(180px,1.2fr) auto;
+    gap:8px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
+  }
+  .round-row{grid-template-columns:minmax(150px,0.8fr) minmax(220px,1.2fr) 88px 130px 130px 90px 72px auto;}
+  .management-row input,.management-row textarea,.management-row select{
+    width:100%;padding:8px 9px;border-radius:7px;border:1px solid var(--line);
+    font-family:inherit;font-size:12.5px;background:var(--surface-soft);outline:none;color:var(--ink);
+  }
+  .management-row textarea{min-height:38px;resize:vertical;line-height:1.4;}
+  .toggle-cell{display:flex;align-items:center;gap:6px;min-height:34px;color:var(--ink-soft);font-size:12px;font-weight:800;}
+  .toggle-cell input{width:16px;height:16px;accent-color:var(--accent-dark);}
   .new-type-row{
     margin-top:14px;
   }
@@ -163,12 +182,6 @@
     padding:10px 12px;border-radius:var(--radius);border:1px solid var(--line);
     font-family:inherit;font-size:13px;background:#fff;outline:none;color:var(--ink);
   }
-  .course-edit-input{
-    width:100%;min-width:100px;padding:8px 10px;border-radius:var(--radius);
-    border:1px solid var(--line);font-family:inherit;font-size:12.5px;
-    background:var(--surface-soft);outline:none;color:var(--ink);
-  }
-  .course-edit-input:focus{border-color:var(--accent);background:#fff;}
   table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
   th{
     text-align:left;padding:12px 10px;color:var(--muted);
@@ -206,6 +219,9 @@
   }
   .rrn-btn:hover{border-color:var(--accent);color:var(--accent-dark);}
   .rrn-btn[data-mode="full"]{color:var(--danger);border-color:#EAD0D0;}
+  .compact-info{font-size:12px;line-height:1.55;color:var(--ink-soft);}
+  .compact-info b{display:block;color:var(--ink);font-size:12.5px;}
+  .check-list{font-size:12px;line-height:1.6;color:var(--ink-soft);}
   .empty-row{text-align:center;padding:40px;color:var(--ink-soft);font-size:13px;}
   @media (max-width:720px){
     #dashboard{padding:20px 14px 64px;}
@@ -213,6 +229,8 @@
     .topbar h1{font-size:20px;}
     th,td{white-space:nowrap;}
     textarea.memo-input{min-width:150px;}
+    .admin-grid{grid-template-columns:1fr;}
+    .management-row,.round-row{grid-template-columns:1fr;}
   }
 </style>
 </head>
@@ -227,7 +245,7 @@
     <label>비밀번호</label>
     <input type="password" id="loginPassword" placeholder="••••••••">
     <button id="loginBtn">로그인</button>
-    <div class="login-toggle" id="toggleMode">처음이신가요? 계정 만들기</div>
+    <div class="login-toggle" id="toggleMode">관리자 계정은 Supabase Auth에서 발급합니다</div>
     <div class="login-msg" id="loginMsg"></div>
   </div>
 </div>
@@ -242,35 +260,51 @@
   </div>
 
   <div class="panel">
-    <h2>과정 추가</h2>
-    <div class="add-course-form">
+    <div class="panel-head">
       <div>
-        <label>과정명</label>
-        <select id="newCourseType"><option value="">과정명 선택</option></select>
+        <h2>고정 과정 관리</h2>
+        <p>드론, 생성형 AI처럼 신청자가 먼저 고르는 상위 과정입니다.</p>
       </div>
-      <div><label>회차</label><input type="number" id="newCourseRound" placeholder="3" min="1"></div>
-      <div><label>시작일</label><input type="date" id="newCourseDate"></div>
-      <div><label>종료일</label><input type="date" id="newCourseEndDate"></div>
-      <div><label>정원</label><input type="number" id="newCourseCapacity" placeholder="30"></div>
-      <button id="addCourseBtn">추가</button>
     </div>
-    <div id="newTypeRow" class="new-type-row" style="display:none;">
-      <label>새 과정명</label>
-      <input type="text" id="newCourseTypeName" placeholder="예: 버추얼스튜디오 실무">
+    <div class="admin-grid">
+      <div class="mini-form">
+        <div>
+          <label>과정명</label>
+          <input type="text" id="typeName" placeholder="예: 드론 교육">
+        </div>
+        <div>
+          <label>설명</label>
+          <textarea id="typeDescription" placeholder="신청 화면에 보일 짧은 설명"></textarea>
+        </div>
+        <button id="addTypeBtn">고정 과정 추가</button>
+      </div>
+      <div class="management-list" id="typeRows">
+        <div class="empty-row">과정 목록을 불러오는 중...</div>
+      </div>
     </div>
   </div>
 
   <div class="panel">
-    <h2>등록된 과정</h2>
-    <div style="overflow-x:auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>과정명</th><th>회차</th><th>시작일</th><th>종료일</th><th>정원</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="courseRows"><tr><td colspan="6" class="empty-row">불러오는 중...</td></tr></tbody>
-      </table>
+    <div class="panel-head">
+      <div>
+        <h2>회차 관리</h2>
+        <p>각 고정 과정에 연결되는 실제 모집 회차입니다. 신청자는 공개된 회차만 볼 수 있습니다.</p>
+      </div>
+    </div>
+    <div class="add-course-form">
+      <div>
+        <label>고정 과정</label>
+        <select id="newCourseType"><option value="">과정 선택</option></select>
+      </div>
+      <div><label>회차</label><input type="number" id="newCourseRound" placeholder="3" min="1"></div>
+      <div><label>회차명</label><input type="text" id="newCourseName" placeholder="비우면 자동 생성"></div>
+      <div><label>시작일</label><input type="date" id="newCourseDate"></div>
+      <div><label>종료일</label><input type="date" id="newCourseEndDate"></div>
+      <div><label>정원</label><input type="number" id="newCourseCapacity" placeholder="30"></div>
+      <button id="addCourseBtn">회차 추가</button>
+    </div>
+    <div class="management-list" id="courseRows" style="margin-top:14px;">
+      <div class="empty-row">회차 목록을 불러오는 중...</div>
     </div>
   </div>
 
@@ -291,7 +325,7 @@
       <table>
         <thead>
           <tr>
-            <th>이름</th><th>연락처</th><th>주민번호</th><th>과정</th><th>상태</th><th>메모</th><th>신청일시</th><th></th>
+            <th>신청자</th><th>연락처</th><th>주민번호</th><th>과정</th><th>유입/확인</th><th>상태</th><th>메모</th><th>신청일시</th>
           </tr>
         </thead>
         <tbody id="appRows"><tr><td colspan="8" class="empty-row">불러오는 중...</td></tr></tbody>
@@ -312,9 +346,7 @@ let allCourseTypes = [];
 
 // ---------- auth ----------
 document.getElementById('toggleMode').addEventListener('click', () => {
-  isSignupMode = !isSignupMode;
-  document.getElementById('loginBtn').textContent = isSignupMode ? '계정 만들기' : '로그인';
-  document.getElementById('toggleMode').textContent = isSignupMode ? '이미 계정이 있어요' : '처음이신가요? 계정 만들기';
+  document.getElementById('loginMsg').textContent = '관리자에게 계정 발급을 요청해주세요.';
 });
 
 document.getElementById('loginBtn').addEventListener('click', async () => {
@@ -348,139 +380,192 @@ async function checkExistingSession(){
 }
 checkExistingSession();
 
-function showDashboard(user){
+async function showDashboard(user){
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
   document.getElementById('whoAmI').textContent = user?.email || '';
-  loadCourseTypes();
-  loadCourses();
-  loadApplications();
+  await loadCourseTypes();
+  await loadCourses();
+  await loadApplications();
 }
 
 // ---------- course types (고정 과정명) ----------
 async function loadCourseTypes(){
   const { data, error } = await sb.from('course_types').select('*').order('name');
-  if (error) return;
+  if (error){
+    document.getElementById('typeRows').innerHTML = `<div class="empty-row">과정 불러오기 실패: ${escapeHtml(error.message)}</div>`;
+    return;
+  }
   allCourseTypes = data || [];
   const sel = document.getElementById('newCourseType');
   const prevValue = sel.value;
-  sel.innerHTML = '<option value="">과정명 선택</option>' +
-    allCourseTypes.map(t => `<option value="${t.id}">${t.name}</option>`).join('') +
-    '<option value="__new__">+ 새 과정명 추가</option>';
+  sel.innerHTML = '<option value="">과정 선택</option>' +
+    allCourseTypes.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`).join('');
   sel.value = prevValue;
+  renderCourseTypes();
 }
 
-document.getElementById('newCourseType').addEventListener('change', (e) => {
-  document.getElementById('newTypeRow').style.display = e.target.value === '__new__' ? 'block' : 'none';
+function renderCourseTypes(){
+  const list = document.getElementById('typeRows');
+  if (allCourseTypes.length === 0){
+    list.innerHTML = '<div class="empty-row">등록된 고정 과정이 없습니다</div>';
+    return;
+  }
+
+  list.innerHTML = allCourseTypes.map(type => `
+    <div class="management-row" data-type-id="${escapeHtml(type.id)}">
+      <input class="type-name-input" value="${escapeHtml(type.name)}" aria-label="과정명">
+      <textarea class="type-desc-input" aria-label="과정 설명">${escapeHtml(type.description || '')}</textarea>
+      <button class="inline-btn save-type-btn" data-id="${escapeHtml(type.id)}">저장</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.save-type-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const row = btn.closest('[data-type-id]');
+      const id = btn.dataset.id;
+      const name = row.querySelector('.type-name-input').value.trim();
+      const description = row.querySelector('.type-desc-input').value.trim() || null;
+      if (!name) return;
+
+      btn.textContent = '저장 중...';
+      const { error } = await sb.from('course_types').update({ name, description }).eq('id', id);
+      if (error){
+        btn.textContent = '실패';
+        return;
+      }
+
+      btn.textContent = '저장됨';
+      const target = allCourseTypes.find(type => type.id === id);
+      if (target){ target.name = name; target.description = description; }
+      setTimeout(() => { btn.textContent = '저장'; }, 1200);
+      await loadCourses();
+    });
+  });
+}
+
+document.getElementById('addTypeBtn').addEventListener('click', async () => {
+  const name = document.getElementById('typeName').value.trim();
+  const description = document.getElementById('typeDescription').value.trim() || null;
+  if (!name) return;
+
+  const { error } = await sb.from('course_types').insert({ name, description });
+  if (!error){
+    document.getElementById('typeName').value = '';
+    document.getElementById('typeDescription').value = '';
+    await loadCourseTypes();
+    await loadCourses();
+  }
 });
 
 // ---------- courses (회차별 개설) ----------
 async function loadCourses(){
-  const { data, error } = await sb.from('courses').select('*').order('start_date', { ascending: true });
-  if (error) return;
+  const { data, error } = await sb
+    .from('courses')
+    .select('*, course_types(name)')
+    .order('start_date', { ascending: true });
+  if (error){
+    document.getElementById('courseRows').innerHTML = `<div class="empty-row">회차 불러오기 실패: ${escapeHtml(error.message)}</div>`;
+    return;
+  }
   allCourses = data || [];
   const sel = document.getElementById('filterCourse');
   sel.innerHTML = '<option value="">전체 과정</option>' +
-    allCourses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-  renderCourseRows();
-}
-
-function renderCourseRows(){
-  const tbody = document.getElementById('courseRows');
-  if (allCourses.length === 0){
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-row">등록된 과정이 없습니다</td></tr>';
-    return;
-  }
-  tbody.innerHTML = allCourses.map(c => `
-    <tr data-course-id="${c.id}">
-      <td><input type="text" class="course-edit-input" data-field="name" data-id="${c.id}" value="${(c.name || '').replace(/"/g,'&quot;')}"></td>
-      <td><input type="number" class="course-edit-input" data-field="round" data-id="${c.id}" value="${c.round ?? ''}" style="width:70px;"></td>
-      <td><input type="date" class="course-edit-input" data-field="start_date" data-id="${c.id}" value="${c.start_date || ''}"></td>
-      <td><input type="date" class="course-edit-input" data-field="end_date" data-id="${c.id}" value="${c.end_date || ''}"></td>
-      <td><input type="number" class="course-edit-input" data-field="capacity" data-id="${c.id}" value="${c.capacity ?? ''}" style="width:70px;"></td>
-      <td><button class="save-btn course-save-btn" data-id="${c.id}">저장</button></td>
-    </tr>
-  `).join('');
-
-  tbody.querySelectorAll('.course-save-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const row = tbody.querySelector(`tr[data-course-id="${id}"]`);
-      const name = row.querySelector('[data-field="name"]').value.trim();
-      const round = row.querySelector('[data-field="round"]').value || null;
-      const start_date = row.querySelector('[data-field="start_date"]').value || null;
-      const end_date = row.querySelector('[data-field="end_date"]').value || null;
-      const capacity = row.querySelector('[data-field="capacity"]').value || null;
-      if (!name){ btn.textContent = '과정명 필요'; setTimeout(()=>{btn.textContent='저장';},1500); return; }
-
-      btn.textContent = '저장 중...';
-      const { error } = await sb.from('courses').update({
-        name, round: round ? Number(round) : null, start_date, end_date,
-        capacity: capacity ? Number(capacity) : null
-      }).eq('id', id);
-      if (!error){
-        btn.textContent = '저장됨 ✓';
-        btn.classList.add('saved');
-        const idx = allCourses.findIndex(c => c.id === id);
-        if (idx > -1) allCourses[idx] = { ...allCourses[idx], name, round, start_date, end_date, capacity };
-        setTimeout(() => { btn.textContent = '저장'; btn.classList.remove('saved'); }, 1500);
-        loadApplications();
-      } else {
-        btn.textContent = '실패';
-      }
-    });
-  });
+    allCourses.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
+  renderCourses();
 }
 
 document.getElementById('addCourseBtn').addEventListener('click', async () => {
   const typeSel = document.getElementById('newCourseType').value;
   const round = document.getElementById('newCourseRound').value || null;
+  const customName = document.getElementById('newCourseName').value.trim();
   const start_date = document.getElementById('newCourseDate').value || null;
   const end_date = document.getElementById('newCourseEndDate').value || null;
   const capacity = document.getElementById('newCourseCapacity').value || null;
   if (!typeSel) return;
 
-  let course_type_id = typeSel;
-  let typeName = allCourseTypes.find(t => t.id === typeSel)?.name;
-
-  if (typeSel === '__new__'){
-    const newName = document.getElementById('newCourseTypeName').value.trim();
-    if (!newName) return;
-    const { data, error } = await sb.from('course_types').insert({ name: newName }).select().single();
-    if (error) return;
-    course_type_id = data.id;
-    typeName = data.name;
-  }
-
-  const displayName = round ? `${typeName} ${round}차` : typeName;
+  const typeName = allCourseTypes.find(t => t.id === typeSel)?.name || '과정';
+  const displayName = customName || (round ? `${typeName} ${round}회차` : typeName);
   const { error: courseError } = await sb.from('courses').insert({
     name: displayName,
-    course_type_id,
+    course_type_id: typeSel,
     round: round ? Number(round) : null,
-    start_date, end_date, capacity
+    start_date,
+    end_date,
+    capacity: capacity ? Number(capacity) : null,
+    is_open: true
   });
 
   if (!courseError){
     document.getElementById('newCourseRound').value = '';
+    document.getElementById('newCourseName').value = '';
     document.getElementById('newCourseDate').value = '';
     document.getElementById('newCourseEndDate').value = '';
     document.getElementById('newCourseCapacity').value = '';
-    document.getElementById('newCourseTypeName').value = '';
-    document.getElementById('newTypeRow').style.display = 'none';
     document.getElementById('newCourseType').value = '';
-    loadCourseTypes();
-    loadCourses();
+    await loadCourses();
   }
 });
+
+function renderCourses(){
+  const list = document.getElementById('courseRows');
+  if (allCourses.length === 0){
+    list.innerHTML = '<div class="empty-row">등록된 회차가 없습니다</div>';
+    return;
+  }
+
+  list.innerHTML = allCourses.map(course => `
+    <div class="management-row round-row" data-course-id="${escapeHtml(course.id)}">
+      <select class="course-type-input" aria-label="고정 과정">
+        ${allCourseTypes.map(type => `<option value="${escapeHtml(type.id)}" ${type.id === course.course_type_id ? 'selected' : ''}>${escapeHtml(type.name)}</option>`).join('')}
+      </select>
+      <input class="course-name-input" value="${escapeHtml(course.name)}" aria-label="회차명">
+      <input class="course-round-input" type="number" min="1" value="${course.round ?? ''}" aria-label="회차">
+      <input class="course-start-input" type="date" value="${escapeHtml(course.start_date || '')}" aria-label="시작일">
+      <input class="course-end-input" type="date" value="${escapeHtml(course.end_date || '')}" aria-label="종료일">
+      <input class="course-capacity-input" type="number" min="0" value="${course.capacity ?? ''}" aria-label="정원">
+      <label class="toggle-cell"><input class="course-open-input" type="checkbox" ${course.is_open !== false ? 'checked' : ''}>공개</label>
+      <button class="inline-btn save-course-btn" data-id="${escapeHtml(course.id)}">저장</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.save-course-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const row = btn.closest('[data-course-id]');
+      const id = btn.dataset.id;
+      const payload = {
+        course_type_id: row.querySelector('.course-type-input').value || null,
+        name: row.querySelector('.course-name-input').value.trim(),
+        round: nullableNumber(row.querySelector('.course-round-input').value),
+        start_date: row.querySelector('.course-start-input').value || null,
+        end_date: row.querySelector('.course-end-input').value || null,
+        capacity: nullableNumber(row.querySelector('.course-capacity-input').value),
+        is_open: row.querySelector('.course-open-input').checked
+      };
+      if (!payload.name) return;
+
+      btn.textContent = '저장 중...';
+      const { error } = await sb.from('courses').update(payload).eq('id', id);
+      if (error){
+        btn.textContent = '실패';
+        return;
+      }
+      btn.textContent = '저장됨';
+      setTimeout(() => { btn.textContent = '저장'; }, 1200);
+      await loadCourses();
+      await loadApplications();
+    });
+  });
+}
 
 // ---------- applications ----------
 async function loadApplications(){
   const { data, error } = await sb
     .from('applications')
-    .select('id, status, memo, applied_at, trainee_id, trainees(name, phone, email), courses(id, name)')
+    .select('id, status, attempt_no, applied_at, cancelled_at, status_updated_at, trainee_id, trainees(name, phone, email, company, birth6, employed_confirmed, privacy_consent, agreement_confirmed, noshow_confirmed, referral_sources, note, admin_memo), courses(id, name)')
     .order('applied_at', { ascending: false });
   if (error){
-    document.getElementById('appRows').innerHTML = `<tr><td colspan="8" class="empty-row">불러오기 실패: ${error.message}</td></tr>`;
+    document.getElementById('appRows').innerHTML = `<tr><td colspan="8" class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</td></tr>`;
     return;
   }
   allApps = data || [];
@@ -496,7 +581,7 @@ function renderApps(){
     if (statusFilter && a.status !== statusFilter) return false;
     if (courseFilter && a.courses?.id !== courseFilter) return false;
     if (search){
-      const hay = `${a.trainees?.name || ''} ${a.trainees?.phone || ''}`.toLowerCase();
+      const hay = `${a.trainees?.name || ''} ${a.trainees?.phone || ''} ${a.trainees?.company || ''} ${a.trainees?.email || ''}`.toLowerCase();
       if (!hay.includes(search)) return false;
     }
     return true;
@@ -510,40 +595,69 @@ function renderApps(){
 
   tbody.innerHTML = rows.map(a => `
     <tr data-id="${a.id}">
-      <td>${a.trainees?.name || '-'}</td>
-      <td>${a.trainees?.phone || '-'}</td>
       <td>
-        <span class="rrn-value" data-trainee-id="${a.trainee_id}">●●●●●●-●●●●●●●</span><br>
-        <button class="rrn-btn" data-trainee-id="${a.trainee_id}" data-mode="masked">확인</button>
-        <button class="rrn-btn" data-trainee-id="${a.trainee_id}" data-mode="full">전체보기</button>
+        <div class="compact-info">
+          <b>${escapeHtml(a.trainees?.name || '-')}</b>
+          ${escapeHtml(a.trainees?.company || '-')}<br>
+          생년월일 ${escapeHtml(a.trainees?.birth6 || '-')}
+        </div>
       </td>
-      <td>${a.courses?.name || '-'}</td>
       <td>
-        <select class="status-select" data-id="${a.id}">
+        <div class="compact-info">
+          ${escapeHtml(a.trainees?.phone || '-')}<br>
+          ${escapeHtml(a.trainees?.email || '-')}
+        </div>
+      </td>
+      <td>
+        <span class="rrn-value" data-trainee-id="${escapeHtml(a.trainee_id)}">●●●●●●-●●●●●●●</span><br>
+        <button class="rrn-btn" data-trainee-id="${escapeHtml(a.trainee_id)}" data-mode="masked">확인</button>
+        <button class="rrn-btn" data-trainee-id="${escapeHtml(a.trainee_id)}" data-mode="full">전체보기</button>
+      </td>
+      <td>
+        ${escapeHtml(a.courses?.name || '-')}
+        <div class="compact-info">${escapeHtml(a.attempt_no || 1)}번째 신청</div>
+      </td>
+      <td>
+        <div class="check-list">
+          유입: ${escapeHtml(formatList(a.trainees?.referral_sources))}<br>
+          재직 ${yesNo(a.trainees?.employed_confirmed)} · 개인정보 ${yesNo(a.trainees?.privacy_consent)}<br>
+          협약서 ${yesNo(a.trainees?.agreement_confirmed)} · 노쇼 ${yesNo(a.trainees?.noshow_confirmed)}
+          ${a.trainees?.note ? `<br>기타: ${escapeHtml(a.trainees.note)}` : ''}
+        </div>
+      </td>
+      <td>
+        <select class="status-select" data-id="${escapeHtml(a.id)}">
           ${['대기','승인','거절','취소'].map(s => `<option value="${s}" ${s===a.status?'selected':''}>${s}</option>`).join('')}
         </select>
       </td>
       <td>
-        <textarea class="memo-input" data-id="${a.id}" placeholder="메모 입력...">${a.memo || ''}</textarea><br>
-        <button class="save-btn" data-id="${a.id}">저장</button>
+        <textarea class="memo-input" data-id="${escapeHtml(a.id)}" data-trainee-id="${escapeHtml(a.trainee_id)}" placeholder="신청자 메모 입력...">${escapeHtml(a.trainees?.admin_memo || '')}</textarea><br>
+        <button class="save-btn" data-id="${escapeHtml(a.id)}" data-trainee-id="${escapeHtml(a.trainee_id)}">저장</button>
       </td>
-      <td>${new Date(a.applied_at).toLocaleString('ko-KR')}</td>
-      <td></td>
+      <td>
+        ${new Date(a.applied_at).toLocaleString('ko-KR')}
+        ${a.cancelled_at ? `<div class="compact-info">취소 ${new Date(a.cancelled_at).toLocaleString('ko-KR')}</div>` : ''}
+      </td>
     </tr>
   `).join('');
 
   tbody.querySelectorAll('.save-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
+      const traineeId = btn.dataset.traineeId;
       const status = tbody.querySelector(`.status-select[data-id="${id}"]`).value;
       const memo = tbody.querySelector(`.memo-input[data-id="${id}"]`).value;
       btn.textContent = '저장 중...';
-      const { error } = await sb.from('applications').update({ status, memo }).eq('id', id);
+      const { error: appError } = await sb.from('applications').update({ status }).eq('id', id);
+      const { error: traineeError } = await sb.from('trainees').update({ admin_memo: memo || null }).eq('id', traineeId);
+      const error = appError || traineeError;
       if (!error){
         btn.textContent = '저장됨 ✓';
         btn.classList.add('saved');
-        const app = allApps.find(a => a.id === id);
-        if (app){ app.status = status; app.memo = memo; }
+        allApps.forEach(app => {
+          if (app.id === id) app.status = status;
+          if (app.trainee_id === traineeId && app.trainees) app.trainees.admin_memo = memo;
+        });
         setTimeout(() => { btn.textContent = '저장'; btn.classList.remove('saved'); }, 1500);
       } else {
         btn.textContent = '실패';
@@ -573,6 +687,28 @@ function renderApps(){
 document.getElementById('filterStatus').addEventListener('change', renderApps);
 document.getElementById('filterCourse').addEventListener('change', renderApps);
 document.getElementById('filterSearch').addEventListener('input', renderApps);
+
+function formatList(value){
+  if (!value || value.length === 0) return '-';
+  return Array.isArray(value) ? value.join(', ') : String(value);
+}
+
+function yesNo(value){
+  return value ? '확인' : '미확인';
+}
+
+function nullableNumber(value){
+  return value === '' || value === null || value === undefined ? null : Number(value);
+}
+
+function escapeHtml(value){
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
 </script>
 </body>
 </html>
