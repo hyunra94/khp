@@ -60,9 +60,27 @@ on public.course_types (sort_order, name);
 
 alter table public.applications
   add column if not exists attempt_no integer not null default 1,
+  add column if not exists employment_category text,
   add column if not exists status_updated_at timestamptz,
   add column if not exists status_updated_by text,
   add column if not exists cancelled_at timestamptz;
+
+alter table public.applications
+  drop constraint if exists applications_employment_category_check;
+
+alter table public.applications
+  add constraint applications_employment_category_check
+  check (
+    employment_category is null
+    or employment_category in ('대규모', '우선지원기업', '고용보험미가입')
+  );
+
+alter table public.applications
+  drop constraint if exists applications_status_check;
+
+alter table public.applications
+  add constraint applications_status_check
+  check (status in ('대기', '승인', '신청확정', '수료', '거절', '취소'));
 
 create or replace function public.set_application_status_audit()
 returns trigger

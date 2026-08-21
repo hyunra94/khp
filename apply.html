@@ -276,9 +276,8 @@
   }
   .notice-line{display:inline;gap:0;align-items:initial;}
   .notice-line + .notice-line{margin-top:0;}
-  .notice-line + .notice-line::before{content:" · ";}
-  .notice-key{min-width:0;color:#000;font-weight:900;}
-  .notice-key::after{content:" ";}
+  .notice-line + .notice-line::before{content:" · ";margin:0 3px;}
+  .notice-key{min-width:0;color:#000;font-weight:900;margin-right:4px;}
   .notice-card .warn{color:var(--coral);font-weight:800;}
   .notice-card ul{margin:10px 0 0;padding-left:18px;color:var(--ink-soft);}
   .notice-card a{color:var(--accent-dark);font-weight:700;}
@@ -679,8 +678,6 @@ submitBtn.addEventListener('click', () => {
 
   pendingApplication = application;
   renderSummary(application);
-  document.getElementById('agreementCheck').checked = false;
-  document.getElementById('noshowCheck').checked = false;
   openConfirmModal();
 });
 
@@ -793,7 +790,7 @@ async function submitApplication(){
   });
 
   if (error){
-    confirmMsgEl.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
+    confirmMsgEl.textContent = error.message || '오류가 발생했습니다. 다시 시도해주세요.';
     submitBtn.disabled = false;
     submitBtn.textContent = '신청하기';
     confirmSubmitBtn.disabled = false;

@@ -161,6 +161,19 @@
     color:#fff;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;
   }
   .add-course-form button:hover,.primary-action:hover{background:var(--accent);}
+  .course-layout-tools{display:flex;align-items:center;gap:9px;color:var(--ink-soft);font-size:12px;font-weight:900;}
+  .course-layout-tools input{width:112px;accent-color:var(--accent-dark);}
+  .course-panels{
+    --course-panel-gap:16px;
+    display:grid;
+    grid-template-columns:minmax(0,1.35fr) minmax(300px,0.65fr);
+    gap:var(--course-panel-gap);
+    align-items:start;
+  }
+  .course-panels>.panel{margin-bottom:16px;}
+  .course-side-panel .add-course-form{grid-template-columns:1fr 1fr;gap:10px;}
+  .course-side-panel .add-course-form>div:first-child{grid-column:1 / -1;}
+  .course-side-panel .course-add-actions .primary-action{width:100%;}
   .mini-form{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-soft);}
   .compact-add{grid-template-columns:minmax(0,1fr) auto;align-items:end;}
   .mini-form label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:800;}
@@ -299,6 +312,8 @@
   }
   .status-대기{background:#FFF1D6;color:#9B6414;}
   .status-승인{background:#DDEDEA;color:#14624B;}
+  .status-신청확정{background:#E7F4F7;color:#0F465A;}
+  .status-수료{background:#E8E4F8;color:#4E3C8A;}
   .status-거절{background:#F7DEDE;color:#A33C3C;}
   .status-취소{background:#EDEDED;color:#888;}
   select.status-select{
@@ -322,6 +337,7 @@
   .empty-row{text-align:center;padding:40px;color:var(--ink-soft);font-size:13px;}
   @media (max-width:1120px){
     .dashboard-hero,.ops-grid{grid-template-columns:1fr;}
+    .course-panels{grid-template-columns:1fr;}
     .add-course-form{grid-template-columns:repeat(3,minmax(0,1fr));}
     .compact-add{grid-template-columns:minmax(0,1fr) auto;}
     .course-row{grid-template-columns:minmax(0,1fr) 92px auto;}
@@ -342,6 +358,7 @@
     .metric-grid{grid-template-columns:1fr 1fr;}
     .panel-head{display:block;}
     .section-title{display:block;}
+    .course-layout-tools{width:100%;justify-content:space-between;margin-top:12px;}
     .add-course-form{grid-template-columns:1fr;}
     .compact-add{grid-template-columns:1fr;}
     .add-course-form div{min-width:0;}
@@ -450,10 +467,12 @@
   }
   .column-order-menu summary::-webkit-details-marker{display:none;}
   .column-order-panel{
-    position:absolute;right:0;top:44px;z-index:35;width:250px;padding:10px;border:1px solid #D8DEE6;
+    position:absolute;right:0;top:44px;z-index:35;width:292px;padding:10px;border:1px solid #D8DEE6;
     border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(21,35,52,0.16);display:grid;gap:6px;
   }
-  .column-order-item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:5px;align-items:center;font-size:12.5px;font-weight:800;color:#1D2530;}
+  .column-order-item{display:grid;grid-template-columns:18px minmax(0,1fr) auto auto;gap:6px;align-items:center;font-size:12.5px;font-weight:800;color:#1D2530;}
+  .column-order-item input{width:15px;height:15px;accent-color:#0F465A;}
+  .column-order-item span.disabled{color:#A1ABB7;}
   .column-order-item button{
     width:28px;height:28px;border:1px solid #D8DEE6;border-radius:7px;background:#F8FAFC;color:#0F465A;
     font-family:inherit;font-weight:900;cursor:pointer;
@@ -493,6 +512,8 @@
   .dup-badge{display:inline-flex;margin-left:6px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);font-size:10.5px;color:var(--accent-dark);background:#fff;font-weight:900;}
   .status-select.status-대기{border-color:#E4B75E;background:#FFF7E8;color:#7A5C1E;}
   .status-select.status-승인{border-color:#9DCEB7;background:#EEF8F3;color:#1F7A55;}
+  .status-select.status-신청확정{border-color:#BFDDE4;background:#E7F4F7;color:#0F465A;}
+  .status-select.status-수료{border-color:#C9BDF0;background:#F1EEFB;color:#4E3C8A;}
   .status-select.status-거절{border-color:#E3A0A0;background:#FFF1F1;color:#A33C3C;}
   .status-select.status-취소{border-color:#CDD4DC;background:#F3F5F7;color:#697381;}
   .trainee-actions{display:flex;justify-content:flex-end;gap:8px;padding:0 18px 18px;}
@@ -523,6 +544,24 @@
     width:18px;height:18px;accent-color:#0F465A;cursor:pointer;
   }
   .rrn-toggle-label{display:inline-flex;align-items:center;margin:0;}
+  .lookup-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+  .lookup-toolbar select{
+    min-width:220px;padding:9px 10px;border:1px solid #D7E0EA;border-radius:7px;background:#fff;
+    font-family:inherit;font-size:12.5px;font-weight:800;color:#1D2530;
+  }
+  .lookup-groups{display:grid;gap:14px;}
+  .lookup-course-group{border:1px solid #DDE4EC;border-radius:8px;background:#fff;overflow:hidden;}
+  .lookup-course-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:#FBFCFE;border-bottom:1px solid #E6ECF2;}
+  .lookup-course-head h3{margin:0;font-size:15px;}
+  .lookup-rounds{display:grid;gap:10px;padding:12px;}
+  .lookup-round{border:1px solid #E3E9F0;border-radius:8px;background:#fff;}
+  .lookup-round-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 13px;border-bottom:1px solid #EEF2F6;}
+  .lookup-round-title{font-size:13.5px;font-weight:900;color:#1D2530;}
+  .lookup-round-date{font-size:11.5px;color:#7A8796;font-weight:800;}
+  .lookup-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .lookup-table th,.lookup-table td{padding:10px 12px;border-bottom:1px solid #EEF2F6;text-align:left;vertical-align:middle;white-space:nowrap;}
+  .lookup-table th{color:#7A8796;background:#FBFCFE;font-size:11.5px;}
+  .lookup-table tr:last-child td{border-bottom:none;}
   .type-row-table td{vertical-align:middle;}
   .course-row,.course-edit-row{
     border-color:#DDE4EC;background:#fff;box-shadow:0 8px 20px rgba(21,35,52,0.05);
@@ -577,8 +616,9 @@
     <nav class="nav">
       <button class="nav-item active" type="button" data-view="overview"><span>01</span>개요</button>
       <button class="nav-item" type="button" data-view="applications"><span>02</span>신청 현황</button>
-      <button class="nav-item" type="button" data-view="courses"><span>03</span>과정 관리</button>
-      <button class="nav-item" type="button" data-view="log"><span>04</span>활동 로그</button>
+      <button class="nav-item" type="button" data-view="course-lookup"><span>03</span>과정 조회</button>
+      <button class="nav-item" type="button" data-view="courses"><span>04</span>과정 관리</button>
+      <button class="nav-item" type="button" data-view="log"><span>05</span>활동 로그</button>
     </nav>
     <div class="sidebar-footer">
       <span class="who" id="whoAmI"></span>
@@ -621,12 +661,14 @@
             <option value="">전체 상태</option>
             <option value="대기">대기</option>
             <option value="승인">승인</option>
+            <option value="신청확정">신청 확정</option>
+            <option value="수료">수료</option>
             <option value="거절">거절</option>
             <option value="취소">취소</option>
           </select>
           <input type="text" id="filterSearch" placeholder="이름/연락처/이메일/회사 검색">
           <details class="column-order-menu" id="columnOrderMenu">
-            <summary>컬럼 순서</summary>
+            <summary>컬럼 설정</summary>
             <div class="column-order-panel" id="columnOrderPanel"></div>
           </details>
         </div>
@@ -639,10 +681,66 @@
       </div>
     </section>
 
+    <section class="view" id="view-course-lookup">
+      <div class="view-header">
+        <h2>과정 조회</h2>
+      </div>
+      <section class="panel">
+        <div class="lookup-toolbar">
+          <div class="compact-info" id="courseLookupSummary">승인된 신청자를 과정과 회차별로 조회합니다</div>
+          <select id="courseLookupType" aria-label="조회할 과정 선택">
+            <option value="">전체 과정</option>
+          </select>
+        </div>
+        <div class="lookup-groups" id="courseLookupGroups">
+          <div class="empty-row">승인된 신청자를 불러오는 중...</div>
+        </div>
+      </section>
+    </section>
+
     <section class="view" id="view-courses">
       <div class="view-header">
         <h2>과정 관리</h2>
+        <label class="course-layout-tools">
+          <span>패널 간격</span>
+          <input type="range" id="coursePanelGapRange" min="8" max="40" step="2" value="16">
+        </label>
       </div>
+      <div class="course-panels" id="coursePanelLayout">
+        <section class="panel course-round-panel">
+          <div class="section-title">
+            <div>
+              <h2>등록된 회차</h2>
+              <p>과정별 회차, 기간, 정원, 공개 여부를 수정합니다.</p>
+            </div>
+            <select class="type-filter-select" id="courseTypeTabs" aria-label="회차 과정 필터"></select>
+          </div>
+          <div class="management-list course-management-list" id="courseRows">
+            <div class="empty-row">회차 목록을 불러오는 중...</div>
+          </div>
+        </section>
+
+        <section class="panel course-side-panel">
+          <div class="section-title">
+            <div>
+              <h2>회차 추가</h2>
+              <p>공개된 회차만 신청 화면에 노출됩니다.</p>
+            </div>
+          </div>
+          <div class="add-course-form">
+            <div>
+              <label>고정 과정</label>
+              <select id="newCourseType"><option value="">과정 선택</option></select>
+            </div>
+            <div><label>회차</label><input type="number" id="newCourseRound" placeholder="3" min="1"></div>
+            <div><label>정원</label><input type="number" id="newCourseCapacity" placeholder="30"></div>
+            <div><label>시작일</label><input type="date" id="newCourseDate"></div>
+            <div><label>종료일</label><input type="date" id="newCourseEndDate"></div>
+          </div>
+          <div class="course-add-actions"><button class="primary-action" id="addCourseBtn">회차 추가</button></div>
+        </section>
+      </div>
+
       <section class="panel">
         <div class="section-title">
           <div>
@@ -662,39 +760,6 @@
             <thead><tr><th>과정명</th><th>설명</th><th>관리</th></tr></thead>
             <tbody id="typeRows"><tr><td colspan="3" class="empty-row">과정 목록을 불러오는 중...</td></tr></tbody>
           </table>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="section-title">
-          <div>
-            <h2>회차 추가</h2>
-            <p>공개된 회차만 신청 화면에 노출됩니다.</p>
-          </div>
-        </div>
-        <div class="add-course-form">
-          <div>
-            <label>고정 과정</label>
-            <select id="newCourseType"><option value="">과정 선택</option></select>
-          </div>
-          <div><label>회차</label><input type="number" id="newCourseRound" placeholder="3" min="1"></div>
-          <div><label>시작일</label><input type="date" id="newCourseDate"></div>
-          <div><label>종료일</label><input type="date" id="newCourseEndDate"></div>
-          <div><label>정원</label><input type="number" id="newCourseCapacity" placeholder="30"></div>
-        </div>
-        <div class="course-add-actions"><button class="primary-action" id="addCourseBtn">회차 추가</button></div>
-      </section>
-
-      <section class="panel">
-        <div class="section-title">
-          <div>
-            <h2>등록된 회차</h2>
-            <p>과정별 회차, 기간, 정원, 공개 여부를 수정합니다.</p>
-          </div>
-          <select class="type-filter-select" id="courseTypeTabs" aria-label="회차 과정 필터"></select>
-        </div>
-        <div class="management-list course-management-list" id="courseRows">
-          <div class="empty-row">회차 목록을 불러오는 중...</div>
         </div>
       </section>
     </section>
@@ -724,11 +789,18 @@ let allCourses = [];
 let allCourseTypes = [];
 let activeCourseTypeId = '';
 let activeApplicationCourseTypeId = '';
+let activeLookupCourseTypeId = '';
 let editingApplicationId = '';
 let memoTimers = {};
 let auditLoaded = false;
+const APPLICATION_STATUSES = ['대기','승인','신청확정','수료','거절','취소'];
+const COURSE_LOOKUP_STATUSES = ['승인','신청확정','수료'];
+const EMPLOYMENT_CATEGORIES = ['대규모','우선지원기업','고용보험미가입'];
+const MASKED_RRN = '●●●●●●-●●●●●●●';
 const visibleColumns = { phone: true, rrn: true, referral: true, memo: true };
-let appColumnOrder = ['name', 'phone', 'company', 'email', 'rrn', 'referral', 'memo', 'course', 'status', 'actions'];
+let appColumnOrder = ['name', 'phone', 'company', 'email', 'rrn', 'employment', 'referral', 'memo', 'course', 'status', 'actions'];
+let appColumnVisibility = appColumnOrder.reduce((acc, id) => ({ ...acc, [id]: true }), {});
+initCoursePanelGap();
 
 // ---------- auth ----------
 document.getElementById('toggleMode').addEventListener('click', () => {
@@ -779,6 +851,20 @@ document.querySelectorAll('.nav-item').forEach(btn => {
   });
 });
 
+function initCoursePanelGap(){
+  const layout = document.getElementById('coursePanelLayout');
+  const range = document.getElementById('coursePanelGapRange');
+  if (!layout || !range) return;
+  const saved = localStorage.getItem('khp_course_panel_gap');
+  if (saved) range.value = saved;
+  const applyGap = () => {
+    layout.style.setProperty('--course-panel-gap', `${range.value}px`);
+    localStorage.setItem('khp_course_panel_gap', range.value);
+  };
+  range.addEventListener('input', applyGap);
+  applyGap();
+}
+
 // ---------- course types (고정 과정명) ----------
 async function loadCourseTypes(){
   const { data, error } = await sb.from('course_types').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('name');
@@ -795,6 +881,8 @@ async function loadCourseTypes(){
   renderCourseTypes();
   renderCourseTypeTabs();
   renderApplicationCourseTags();
+  renderCourseLookupFilters();
+  renderCourseLookup();
 }
 
 function renderCourseTypes(){
@@ -939,6 +1027,8 @@ async function loadCourses(){
   }
   renderApplicationCourseTags();
   renderCourses();
+  renderCourseLookupFilters();
+  renderCourseLookup();
   renderMetrics();
 }
 
@@ -956,6 +1046,178 @@ function renderApplicationCourseTags(){
       renderApps();
     });
   });
+}
+
+function renderCourseLookupFilters(){
+  const select = document.getElementById('courseLookupType');
+  if (!select) return;
+  const prev = activeLookupCourseTypeId || select.value;
+  select.innerHTML = '<option value="">전체 과정</option>' +
+    allCourseTypes.map(type => `<option value="${escapeHtml(type.id)}">${escapeHtml(type.name)}</option>`).join('');
+  select.value = allCourseTypes.some(type => type.id === prev) ? prev : '';
+  activeLookupCourseTypeId = select.value;
+  select.onchange = () => {
+    activeLookupCourseTypeId = select.value;
+    renderCourseLookup();
+  };
+}
+
+function renderCourseLookup(){
+  const target = document.getElementById('courseLookupGroups');
+  if (!target) return;
+  const rows = allApps.filter(app =>
+    COURSE_LOOKUP_STATUSES.includes(app.status) &&
+    (!activeLookupCourseTypeId || app.courses?.course_type_id === activeLookupCourseTypeId)
+  );
+  setText('courseLookupSummary', `${rows.length.toLocaleString('ko-KR')}명 표시 중 · 승인/신청확정/수료 상태만 포함`);
+  if (rows.length === 0){
+    target.innerHTML = '<div class="empty-row">조회할 승인 신청자가 없습니다</div>';
+    return;
+  }
+
+  const grouped = rows.reduce((acc, app) => {
+    const typeId = app.courses?.course_type_id || 'none';
+    const typeName = app.courses?.course_types?.name || '과정 미지정';
+    const courseId = app.courses?.id || 'none';
+    const courseName = app.courses?.name || '회차 미지정';
+    if (!acc[typeId]) acc[typeId] = { name: typeName, rounds: {} };
+    if (!acc[typeId].rounds[courseId]) acc[typeId].rounds[courseId] = { name: courseName, apps: [] };
+    acc[typeId].rounds[courseId].apps.push(app);
+    return acc;
+  }, {});
+
+  target.innerHTML = Object.values(grouped).map(group => {
+    const total = Object.values(group.rounds).reduce((sum, round) => sum + round.apps.length, 0);
+    const rounds = Object.values(group.rounds).map(round => renderLookupRound(group.name, round)).join('');
+    return `
+      <section class="lookup-course-group">
+        <div class="lookup-course-head">
+          <h3>${escapeHtml(group.name)}</h3>
+          <span class="pill">${total.toLocaleString('ko-KR')}명</span>
+        </div>
+        <div class="lookup-rounds">${rounds}</div>
+      </section>
+    `;
+  }).join('');
+
+  bindCourseLookupStatus(target);
+}
+
+function renderLookupRound(typeName, round){
+  const first = round.apps[0]?.courses || {};
+  const period = formatCoursePeriod(first.start_date, first.end_date);
+  return `
+    <section class="lookup-round">
+      <div class="lookup-round-head">
+        <div>
+          <div class="lookup-round-title">${escapeHtml(getRoundLabel(round.name, typeName))}</div>
+          <div class="lookup-round-date">${escapeHtml(period || '일정 미정')}</div>
+        </div>
+        <span class="pill">${round.apps.length.toLocaleString('ko-KR')}명</span>
+      </div>
+      <table class="lookup-table">
+        <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>이메일</th><th>운영 상태</th></tr></thead>
+        <tbody>
+          ${round.apps.map(app => `
+            <tr>
+              <td>${escapeHtml(app.trainees?.name || '-')}</td>
+              <td>${escapeHtml(app.trainees?.phone || '-')}</td>
+              <td>${escapeHtml(app.trainees?.company || '-')}</td>
+              <td>${escapeHtml(app.trainees?.email || '-')}</td>
+              <td>${renderStatusSelect(app, COURSE_LOOKUP_STATUSES)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </section>
+  `;
+}
+
+function bindCourseLookupStatus(scope){
+  scope.querySelectorAll('.status-select').forEach(select => {
+    select.addEventListener('change', async () => {
+      const id = select.dataset.id;
+      const status = select.value;
+      updateStatusSelectClass(select, status);
+      await updateApplicationStatus(id, status, select);
+    });
+  });
+}
+
+async function updateApplicationStatus(id, status, select){
+  const app = allApps.find(item => item.id === id);
+  const previous = app?.status;
+  const payload = { status, cancelled_at: status === '취소' ? new Date().toISOString() : null };
+  select.disabled = true;
+  const { error } = await sb.from('applications').update(payload).eq('id', id);
+  select.disabled = false;
+  if (error){
+    alert(`상태 저장 실패: ${error.message}`);
+    if (previous){
+      select.value = previous;
+      updateStatusSelectClass(select, previous);
+    }
+    return false;
+  }
+  if (app){
+    app.status = status;
+    app.cancelled_at = payload.cancelled_at;
+  }
+  renderMetrics();
+  renderApps();
+  renderCourseLookup();
+  return true;
+}
+
+async function updateEmploymentCategory(id, value, select){
+  const app = allApps.find(item => item.id === id);
+  const previous = app?.employment_category || '';
+  const next = value || null;
+  select.disabled = true;
+  const { error } = await sb.from('applications').update({ employment_category: next }).eq('id', id);
+  select.disabled = false;
+  if (error){
+    alert(`재직 구분 저장 실패: ${error.message}`);
+    select.value = previous;
+    return false;
+  }
+  if (app) app.employment_category = next;
+  return true;
+}
+
+function renderStatusSelect(app, statuses = APPLICATION_STATUSES){
+  return `
+    <select class="status-select status-${escapeHtml(app.status)}" data-id="${escapeHtml(app.id)}">
+      ${statuses.map(s => `<option value="${s}" ${s===app.status?'selected':''}>${escapeHtml(formatStatusLabel(s))}</option>`).join('')}
+    </select>
+  `;
+}
+
+function renderEmploymentCategorySelect(app){
+  return `
+    <select class="status-select employment-category-select" data-id="${escapeHtml(app.id)}" aria-label="재직 구분">
+      <option value="">미확인</option>
+      ${EMPLOYMENT_CATEGORIES.map(item => `<option value="${item}" ${item===app.employment_category?'selected':''}>${escapeHtml(item)}</option>`).join('')}
+    </select>
+  `;
+}
+
+function formatCoursePeriod(start, end){
+  if (start && end && end !== start) return `${start} - ${end}`;
+  return start || end || '';
+}
+
+function getRoundLabel(courseName, typeName){
+  const name = String(courseName || '').trim();
+  const type = String(typeName || '').trim();
+  const withoutType = type && name.startsWith(type) ? name.slice(type.length).trim() : name;
+  const match = withoutType.match(/(\d+\s*회차)/);
+  if (match) return match[1].replace(/\s+/g, '');
+  return withoutType || name;
+}
+
+function formatStatusLabel(status){
+  return status === '신청확정' ? '신청 확정' : status;
 }
 
 document.getElementById('addCourseBtn').addEventListener('click', async () => {
@@ -1175,7 +1437,7 @@ function bindCourseButtons(scope){
 async function loadApplications(){
   const { data, error } = await sb
     .from('applications')
-    .select('id, status, attempt_no, applied_at, cancelled_at, status_updated_at, trainee_id, trainees(id, name, phone, email, company, referral_sources, note, admin_memo), courses(id, name, course_type_id, course_types(name))')
+    .select('id, status, employment_category, attempt_no, applied_at, cancelled_at, status_updated_at, trainee_id, trainees(id, name, phone, email, company, referral_sources, note, admin_memo), courses(id, name, course_type_id, start_date, end_date, course_types(name))')
     .order('applied_at', { ascending: false });
   if (error){
     document.getElementById('appRows').innerHTML = `<tr><td class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</td></tr>`;
@@ -1184,6 +1446,7 @@ async function loadApplications(){
   allApps = data || [];
   renderMetrics();
   renderApps();
+  renderCourseLookup();
 }
 
 function renderApps(){
@@ -1207,7 +1470,10 @@ function renderApps(){
   setText('activeFilterText', `${courseName ? `${courseName} · ` : ''}${rows.length.toLocaleString('ko-KR')}건 표시 중`);
   renderColumnOrderPanel();
 
-  const columns = appColumnOrder.map(id => appColumns[id]).filter(Boolean);
+  const columns = appColumnOrder
+    .filter(id => appColumnVisibility[id] !== false || id === 'actions')
+    .map(id => appColumns[id])
+    .filter(Boolean);
   head.innerHTML = `<tr>${columns.map(col => `<th>${escapeHtml(col.label)}</th>`).join('')}</tr>`;
 
   if (rows.length === 0){
@@ -1227,27 +1493,14 @@ function renderApps(){
     select.addEventListener('change', async () => {
       const id = select.dataset.id;
       const status = select.value;
-      const payload = { status, cancelled_at: status === '취소' ? new Date().toISOString() : null };
-      select.disabled = true;
       updateStatusSelectClass(select, status);
-      const { error } = await sb.from('applications').update(payload).eq('id', id);
-      select.disabled = false;
-      if (error){
-        alert(`상태 저장 실패: ${error.message}`);
-        const app = allApps.find(item => item.id === id);
-        if (app){
-          select.value = app.status;
-          updateStatusSelectClass(select, app.status);
-        }
-        return;
-      }
-      const app = allApps.find(item => item.id === id);
-      if (app){
-        app.status = status;
-        app.cancelled_at = payload.cancelled_at;
-      }
-      renderMetrics();
-      renderApps();
+      await updateApplicationStatus(id, status, select);
+    });
+  });
+
+  tbody.querySelectorAll('.employment-category-select').forEach(select => {
+    select.addEventListener('change', async () => {
+      await updateEmploymentCategory(select.dataset.id, select.value, select);
     });
   });
 
@@ -1362,6 +1615,7 @@ function loadMaskedResidentNumbers(scope){
     if (!traineeId) return;
     const { data, error } = await sb.rpc('get_trainee_rrn_masked', { p_trainee_id: traineeId });
     if (!error && data) valueEl.textContent = formatResidentNumber(data);
+    else valueEl.textContent = MASKED_RRN;
   });
 }
 
@@ -1386,13 +1640,17 @@ const appColumns = {
     label: '주민등록번호',
     render: app => `
       <div class="rrn-cell">
-        <span class="rrn-value" data-trainee-id="${escapeHtml(app.trainee_id)}">●●●●●●-●●●●●●●</span>
+        <span class="rrn-value" data-trainee-id="${escapeHtml(app.trainee_id)}">${MASKED_RRN}</span>
         <button class="rrn-copy" type="button" aria-label="주민등록번호 복사">복사</button>
         <label class="rrn-toggle-label" title="전체 주민등록번호 보기">
           <input class="rrn-toggle" type="checkbox" data-trainee-id="${escapeHtml(app.trainee_id)}" aria-label="전체 주민등록번호 보기">
         </label>
       </div>
     `
+  },
+  employment: {
+    label: '재직 구분',
+    render: app => renderEmploymentCategorySelect(app)
   },
   referral: {
     label: '유입경로',
@@ -1413,11 +1671,7 @@ const appColumns = {
   },
   status: {
     label: '상태',
-    render: app => `
-      <select class="status-select status-${escapeHtml(app.status)}" data-id="${escapeHtml(app.id)}">
-        ${['대기','승인','거절','취소'].map(s => `<option value="${s}" ${s===app.status?'selected':''}>${s}</option>`).join('')}
-      </select>
-    `
+    render: app => renderStatusSelect(app)
   },
   actions: {
     label: '관리',
@@ -1454,11 +1708,22 @@ function renderColumnOrderPanel(){
   if (!panel) return;
   panel.innerHTML = appColumnOrder.map((id, index) => `
     <div class="column-order-item">
-      <span>${escapeHtml(appColumns[id]?.label || id)}</span>
+      <input type="checkbox" class="column-visible-toggle" data-id="${escapeHtml(id)}" ${appColumnVisibility[id] !== false || id === 'actions' ? 'checked' : ''} ${id === 'actions' ? 'disabled' : ''} aria-label="${escapeHtml(appColumns[id]?.label || id)} 표시">
+      <span class="${appColumnVisibility[id] === false ? 'disabled' : ''}">${escapeHtml(appColumns[id]?.label || id)}</span>
       <button type="button" class="column-move-btn" data-index="${index}" data-dir="-1" ${index === 0 ? 'disabled' : ''}>‹</button>
       <button type="button" class="column-move-btn" data-index="${index}" data-dir="1" ${index === appColumnOrder.length - 1 ? 'disabled' : ''}>›</button>
     </div>
   `).join('');
+  panel.querySelectorAll('.column-visible-toggle').forEach(toggle => {
+    toggle.addEventListener('change', event => {
+      event.preventDefault();
+      const id = toggle.dataset.id;
+      if (id === 'actions') return;
+      appColumnVisibility[id] = toggle.checked;
+      renderApps();
+      document.getElementById('columnOrderMenu')?.setAttribute('open', '');
+    });
+  });
   panel.querySelectorAll('.column-move-btn').forEach(btn => {
     btn.addEventListener('click', event => {
       event.preventDefault();
@@ -1517,7 +1782,7 @@ function renderMetrics(){
   setText('metricTotal', allApps.length.toLocaleString('ko-KR'));
   setText('metricUnique', uniqueTrainees.toLocaleString('ko-KR'));
   setText('metricPending', (byStatus['대기'] || 0).toLocaleString('ko-KR'));
-  setText('metricApproved', (byStatus['승인'] || 0).toLocaleString('ko-KR'));
+  setText('metricApproved', COURSE_LOOKUP_STATUSES.reduce((sum, status) => sum + (byStatus[status] || 0), 0).toLocaleString('ko-KR'));
   setText('metricCancelled', (byStatus['취소'] || 0).toLocaleString('ko-KR'));
   setText('metricOpenCourses', openCourses.toLocaleString('ko-KR'));
   setText('metricCourseTypes', `과정 ${openTypeIds.size.toLocaleString('ko-KR')}개`);
@@ -1652,7 +1917,7 @@ function updateActiveFilterText(){
 }
 
 function updateStatusSelectClass(select, status){
-  select.classList.remove('status-대기', 'status-승인', 'status-거절', 'status-취소');
+  select.classList.remove(...APPLICATION_STATUSES.map(item => `status-${item}`));
   select.classList.add(`status-${status}`);
 }
 
@@ -1685,11 +1950,12 @@ function formatPeriod(startDate, endDate){
 
 function formatResidentNumber(value){
   const raw = String(value ?? '').trim();
+  if (!raw) return MASKED_RRN;
   if (raw.includes('-')) return raw;
   const digits = raw.replace(/\D/g, '');
   if (digits.length === 13) return `${digits.slice(0, 6)}-${digits.slice(6)}`;
   if (raw.length > 6) return `${raw.slice(0, 6)}-${raw.slice(6)}`;
-  return raw;
+  return raw || MASKED_RRN;
 }
 
 function setText(id, value){
