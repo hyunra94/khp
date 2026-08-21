@@ -181,6 +181,14 @@
     font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;margin-top:6px;
   }
   .save-btn.saved{background:var(--green);}
+  .rrn-value{font-family:monospace;font-size:12px;color:var(--ink-soft);}
+  .rrn-btn{
+    border:1px solid var(--line);background:#fff;color:var(--ink-soft);
+    padding:3px 8px;border-radius:6px;font-family:inherit;font-size:10.5px;
+    cursor:pointer;margin-top:4px;margin-right:4px;
+  }
+  .rrn-btn:hover{border-color:var(--accent);color:var(--accent-dark);}
+  .rrn-btn[data-mode="full"]{color:var(--danger);border-color:#EAD0D0;}
   .empty-row{text-align:center;padding:40px;color:var(--ink-soft);font-size:13px;}
   @media (max-width:720px){
     #dashboard{padding:20px 14px 64px;}
@@ -252,10 +260,10 @@
       <table>
         <thead>
           <tr>
-            <th>이름</th><th>연락처</th><th>과정</th><th>상태</th><th>메모</th><th>신청일시</th><th></th>
+            <th>이름</th><th>연락처</th><th>주민번호</th><th>과정</th><th>상태</th><th>메모</th><th>신청일시</th><th></th>
           </tr>
         </thead>
-        <tbody id="appRows"><tr><td colspan="7" class="empty-row">불러오는 중...</td></tr></tbody>
+        <tbody id="appRows"><tr><td colspan="8" class="empty-row">불러오는 중...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -390,10 +398,10 @@ document.getElementById('addCourseBtn').addEventListener('click', async () => {
 async function loadApplications(){
   const { data, error } = await sb
     .from('applications')
-    .select('id, status, memo, applied_at, trainees(name, phone, email), courses(id, name)')
+    .select('id, status, memo, applied_at, trainee_id, trainees(name, phone, email), courses(id, name)')
     .order('applied_at', { ascending: false });
   if (error){
-    document.getElementById('appRows').innerHTML = `<tr><td colspan="7" class="empty-row">불러오기 실패: ${error.message}</td></tr>`;
+    document.getElementById('appRows').innerHTML = `<tr><td colspan="8" class="empty-row">불러오기 실패: ${error.message}</td></tr>`;
     return;
   }
   allApps = data || [];
@@ -417,7 +425,7 @@ function renderApps(){
 
   const tbody = document.getElementById('appRows');
   if (rows.length === 0){
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">해당하는 신청 내역이 없습니다</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-row">해당하는 신청 내역이 없습니다</td></tr>';
     return;
   }
 
@@ -425,6 +433,11 @@ function renderApps(){
     <tr data-id="${a.id}">
       <td>${a.trainees?.name || '-'}</td>
       <td>${a.trainees?.phone || '-'}</td>
+      <td>
+        <span class="rrn-value" data-trainee-id="${a.trainee_id}">●●●●●●-●●●●●●●</span><br>
+        <button class="rrn-btn" data-trainee-id="${a.trainee_id}" data-mode="masked">확인</button>
+        <button class="rrn-btn" data-trainee-id="${a.trainee_id}" data-mode="full">전체보기</button>
+      </td>
       <td>${a.courses?.name || '-'}</td>
       <td>
         <select class="status-select" data-id="${a.id}">
@@ -455,6 +468,24 @@ function renderApps(){
         setTimeout(() => { btn.textContent = '저장'; btn.classList.remove('saved'); }, 1500);
       } else {
         btn.textContent = '실패';
+      }
+    });
+  });
+
+  tbody.querySelectorAll('.rrn-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const traineeId = btn.dataset.traineeId;
+      const mode = btn.dataset.mode;
+      const valueEl = tbody.querySelector(`.rrn-value[data-trainee-id="${traineeId}"]`);
+      if (mode === 'full'){
+        if (!confirm('주민등록번호 전체를 조회합니다. 이 열람 기록은 감사 로그에 남습니다. 계속할까요?')) return;
+      }
+      const fn = mode === 'full' ? 'get_trainee_rrn_full' : 'get_trainee_rrn_masked';
+      const { data, error } = await sb.rpc(fn, { p_trainee_id: traineeId });
+      if (!error && data){
+        valueEl.textContent = data;
+      } else {
+        valueEl.textContent = '조회 실패';
       }
     });
   });
