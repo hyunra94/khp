@@ -33,6 +33,7 @@
     --radius:8px;
   }
   *{box-sizing:border-box;}
+  body.modal-open{overflow:hidden;}
   body{
     margin:0;
     font-family:'Noto Sans KR', sans-serif;
@@ -235,6 +236,16 @@
   .notice-card .warn{color:var(--coral);font-weight:800;}
   .notice-card ul{margin:10px 0 0;padding-left:18px;color:var(--ink-soft);}
   .notice-card a{color:var(--accent-dark);font-weight:700;}
+  .privacy-gate{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:#fff;
+    padding:18px 20px;
+    margin:0 0 20px;
+  }
+  .privacy-gate h2{font-size:15px;margin:0 0 10px;color:var(--ink);}
+  .privacy-gate ul{margin:0;padding-left:18px;color:var(--ink-soft);font-size:12.5px;line-height:1.75;}
+  .privacy-gate .consent-row{margin-top:14px;}
   .consent-row{
     display:flex;
     align-items:flex-start;
@@ -255,11 +266,11 @@
   .field-help{font-size:11.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5;}
   .modal-overlay{
     position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;
-    padding:20px;background:rgba(12,20,28,0.46);
+    padding:20px;background:rgba(12,20,28,0.46);overscroll-behavior:contain;
   }
   .modal-overlay.open{display:flex;}
   .confirm-modal{
-    width:min(680px,100%);max-height:88vh;overflow:auto;background:#fff;border-radius:var(--radius);
+    width:min(680px,100%);max-height:88vh;overflow:auto;overscroll-behavior:contain;background:#fff;border-radius:var(--radius);
     box-shadow:0 28px 80px rgba(8,18,28,0.28);border:1px solid rgba(255,255,255,0.7);padding:24px;
   }
   .confirm-modal h2{margin:0 0 8px;font-size:21px;line-height:1.3;}
@@ -320,6 +331,20 @@
   </div>
 
   <div class="card" id="formCard">
+    <div class="privacy-gate">
+      <h2>개인정보 수집 및 이용 안내</h2>
+      <ul>
+        <li>수집 항목: 이름, 연락처, 이메일, 회사명, 주민등록번호, 신청 과정, 유입 경로, 기타사항</li>
+        <li>이용 목적: 교육 신청 접수, 재직자 여부 확인, HRD-Net 등록, 과정 안내 및 운영 관리</li>
+        <li>보관 기간: 사업 종료 후 2년 보관 후 파기</li>
+        <li>주민등록번호는 고용보험 가입 여부 확인 목적에 한해 사용하며 암호화 저장됩니다.</li>
+      </ul>
+      <label class="consent-row">
+        <input type="checkbox" id="privacyCheck">
+        <span>위 개인정보 수집·이용 안내를 확인하고 동의합니다.</span>
+      </label>
+    </div>
+
     <div class="label-row">
       <label for="name">이름</label>
       <button class="info-tip" type="button" aria-label="이름 수집 안내">?
@@ -402,7 +427,7 @@
 <div class="modal-overlay" id="confirmOverlay" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
   <div class="confirm-modal">
     <h2 id="confirmTitle">신청 내용 확인</h2>
-    <p class="modal-sub">입력하신 내용을 확인한 뒤, 아래 안내 사항에 동의하면 신청이 접수됩니다.</p>
+    <p class="modal-sub">입력하신 내용을 확인한 뒤, 아래 안내 사항을 확인하면 신청이 접수됩니다.</p>
     <dl class="summary-list">
       <dt>이름</dt><dd id="summaryName"></dd>
       <dt>연락처</dt><dd id="summaryPhone"></dd>
@@ -411,20 +436,6 @@
       <dt>신청 과정</dt><dd id="summaryCourses"></dd>
       <dt>유입 경로</dt><dd id="summaryReferral"></dd>
     </dl>
-
-    <div class="terms-block">
-      <h3>개인정보 수집 및 이용 안내</h3>
-      <ul>
-        <li>수집 항목: 이름, 연락처, 이메일, 회사명, 주민등록번호, 신청 과정, 유입 경로, 기타사항</li>
-        <li>이용 목적: 교육 신청 접수, 재직자 여부 확인, HRD-Net 등록, 과정 안내 및 운영 관리</li>
-        <li>보관 기간: 사업 종료 후 2년 보관 후 파기</li>
-        <li>주민등록번호는 고용보험 가입 여부 확인 목적에 한해 사용하며 암호화 저장됩니다.</li>
-      </ul>
-      <label class="consent-row">
-        <input type="checkbox" id="privacyCheck">
-        <span>개인정보 수집·이용 안내를 확인하고 동의합니다.</span>
-      </label>
-    </div>
 
     <div class="terms-block">
       <h3>협약서 제출 안내</h3>
@@ -454,7 +465,7 @@
     <div class="msg error" id="confirmMsg"></div>
     <div class="modal-actions">
       <button class="modal-cancel" type="button" id="cancelConfirmBtn">수정하기</button>
-      <button class="modal-confirm" type="button" id="confirmSubmitBtn">동의하고 신청하기</button>
+      <button class="modal-confirm" type="button" id="confirmSubmitBtn">확인하고 신청하기</button>
     </div>
   </div>
 </div>
@@ -545,23 +556,32 @@ submitBtn.addEventListener('click', () => {
 
   pendingApplication = application;
   renderSummary(application);
-  document.getElementById('privacyCheck').checked = false;
   document.getElementById('agreementCheck').checked = false;
   document.getElementById('noshowCheck').checked = false;
-  confirmOverlay.classList.add('open');
+  openConfirmModal();
 });
 
 document.getElementById('cancelConfirmBtn').addEventListener('click', () => {
-  confirmOverlay.classList.remove('open');
+  closeConfirmModal();
   pendingApplication = null;
 });
 
 confirmOverlay.addEventListener('click', (event) => {
   if (event.target === confirmOverlay){
-    confirmOverlay.classList.remove('open');
+    closeConfirmModal();
     pendingApplication = null;
   }
 });
+
+function openConfirmModal(){
+  document.body.classList.add('modal-open');
+  confirmOverlay.classList.add('open');
+}
+
+function closeConfirmModal(){
+  confirmOverlay.classList.remove('open');
+  document.body.classList.remove('modal-open');
+}
 
 confirmSubmitBtn.addEventListener('click', submitApplication);
 
@@ -578,7 +598,9 @@ function collectApplication(){
   const note = document.getElementById('note').value.trim();
   const selectedCourseIds = Array.from(selected);
   const selectedCourses = selectedCourseIds.map(id => courses.find(course => course.id === id)?.name || id);
+  const privacyConsent = document.getElementById('privacyCheck').checked;
 
+  if (!privacyConsent){ msgEl.textContent = '개인정보 수집·이용 안내 확인 및 동의가 필요합니다.'; return null; }
   if (!name){ msgEl.textContent = '이름을 입력해주세요.'; return null; }
   if (!phone){ msgEl.textContent = '연락처를 입력해주세요.'; return null; }
   if (!email){ msgEl.textContent = '이메일을 입력해주세요.'; return null; }
@@ -596,6 +618,7 @@ function collectApplication(){
     rrn,
     birth6,
     employedConfirmed,
+    privacyConsent,
     referralSources,
     note,
     selectedCourseIds,
@@ -616,10 +639,8 @@ async function submitApplication(){
   confirmMsgEl.textContent = '';
   if (!pendingApplication) return;
 
-  const privacyConsent = document.getElementById('privacyCheck').checked;
   const agreementConfirmed = document.getElementById('agreementCheck').checked;
   const noshowConfirmed = document.getElementById('noshowCheck').checked;
-  if (!privacyConsent){ confirmMsgEl.textContent = '개인정보 수집·이용에 동의해주세요.'; return; }
   if (!agreementConfirmed){ confirmMsgEl.textContent = '협약서 제출 안내를 확인해주세요.'; return; }
   if (!noshowConfirmed){ confirmMsgEl.textContent = '취소 및 노쇼 안내를 확인해주세요.'; return; }
 
@@ -636,7 +657,7 @@ async function submitApplication(){
     p_birth6: pendingApplication.birth6,
     p_resident_number: pendingApplication.rrn,
     p_employed: pendingApplication.employedConfirmed,
-    p_privacy: privacyConsent,
+    p_privacy: pendingApplication.privacyConsent,
     p_agreement_confirmed: agreementConfirmed,
     p_noshow_confirmed: noshowConfirmed,
     p_referral_sources: pendingApplication.referralSources,
@@ -649,11 +670,11 @@ async function submitApplication(){
     submitBtn.disabled = false;
     submitBtn.textContent = '신청하기';
     confirmSubmitBtn.disabled = false;
-    confirmSubmitBtn.textContent = '동의하고 신청하기';
+    confirmSubmitBtn.textContent = '확인하고 신청하기';
     return;
   }
 
-  confirmOverlay.classList.remove('open');
+  closeConfirmModal();
   document.getElementById('formCard').style.display = 'none';
   document.getElementById('successCard').style.display = 'block';
 }
