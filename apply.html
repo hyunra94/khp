@@ -15,22 +15,23 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --bg:#F4F6F8;
+    --bg:#FEFDFB;
     --surface:#FFFFFF;
-    --surface-soft:#F8FAFC;
-    --line:#DFE5EC;
-    --line-strong:#C8D2DE;
-    --ink:#1D2530;
-    --ink-soft:#647081;
-    --muted:#8A96A6;
-    --accent:#176B87;
-    --accent-dark:#0F465A;
-    --accent-soft:#E7F4F7;
+    --surface-soft:#FBF9F3;
+    --line:#161616;
+    --line-soft:#CFC8BA;
+    --line-strong:#161616;
+    --ink:#111111;
+    --ink-soft:#4C4A45;
+    --muted:#9A9287;
+    --accent:#164E63;
+    --accent-dark:#0B3D52;
+    --accent-soft:#E5F5F9;
     --coral:#D75C48;
     --error:#C43D3D;
-    --shadow:0 22px 56px rgba(21,35,52,0.12);
-    --shadow-soft:0 12px 28px rgba(21,35,52,0.08);
-    --radius:8px;
+    --shadow:none;
+    --shadow-soft:none;
+    --radius:0;
   }
   *{box-sizing:border-box;}
   body.modal-open{overflow:hidden;}
@@ -40,39 +41,42 @@
     background:var(--bg);
     min-height:100vh;
     color:var(--ink);
-    padding:42px 18px 82px;
+    padding:38px 18px 82px;
   }
-  .wrap{max-width:720px;margin:0 auto;}
+  .wrap{max-width:600px;margin:0 auto;}
   .eyebrow{
     text-align:center;
-    font-size:12px;
-    letter-spacing:0;
-    color:var(--accent);
+    font-size:11px;
+    letter-spacing:0.32em;
+    color:var(--ink);
     font-weight:900;
-    margin-bottom:12px;
+    margin:0 0 12px;
   }
   h1{
     text-align:center;
-    font-size:32px;
+    font-size:34px;
     font-weight:900;
-    margin:0 0 10px;
-    color:var(--ink);
+    margin:0 0 12px;
+    color:#000;
     letter-spacing:0;
     line-height:1.18;
   }
   .sub{
     text-align:center;
-    font-size:14.5px;
-    color:var(--ink-soft);
+    font-size:12.5px;
+    color:var(--ink);
     margin:0 auto 30px;
-    line-height:1.6;
+    padding:12px 0 24px;
+    border-top:1px solid var(--line-soft);
+    border-bottom:3px solid var(--line);
+    line-height:1.5;
   }
   .card{
-    background:var(--surface);
-    border-radius:var(--radius);
-    padding:34px;
-    box-shadow:var(--shadow);
-    border:1px solid rgba(29,37,48,0.08);
+    background:transparent;
+    border-radius:0;
+    padding:0;
+    box-shadow:none;
+    border:none;
   }
   label{
     display:block;
@@ -82,12 +86,12 @@
     margin:20px 0 8px;
   }
   label:first-of-type{margin-top:0;}
-  .label-row{display:flex;align-items:center;gap:6px;margin:20px 0 8px;}
+  .label-row{display:flex;align-items:center;gap:6px;margin:22px 0 8px;}
   .label-row:first-of-type{margin-top:0;}
   .label-row label{margin:0;}
   .info-tip{
-    width:18px;height:18px;border:1px solid var(--line-strong);border-radius:50%;
-    background:#fff;color:var(--accent-dark);font-family:inherit;font-size:11px;font-weight:900;
+    width:18px;height:18px;border:1px solid var(--line-soft);border-radius:50%;
+    background:var(--surface-soft);color:var(--ink-soft);font-family:inherit;font-size:11px;font-weight:900;
     line-height:16px;padding:0;cursor:help;position:relative;
   }
   .info-tip span{
@@ -99,41 +103,51 @@
   .info-tip:hover span,.info-tip:focus span{display:block;}
   input[type=text], input[type=tel], input[type=email], select{
     width:100%;
-    padding:14px 15px;
-    border-radius:var(--radius);
-    border:1px solid var(--line);
+    min-height:48px;
+    padding:13px 14px;
+    border-radius:0;
+    border:1.5px solid var(--line);
     background:var(--surface-soft);
     font-family:inherit;
     font-size:15px;
     color:var(--ink);
     outline:none;
-    transition:border-color .16s, box-shadow .16s, background .16s;
+    transition:border-color .16s, background .16s;
   }
-  input:focus, select:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(23,107,135,0.12);background:#fff;}
-  .course-list{display:flex;flex-direction:column;gap:8px;}
+  input::placeholder{color:#B6AEA2;}
+  input:focus, select:focus{border-color:var(--accent);box-shadow:none;background:#fff;}
+  .section-title{
+    margin:32px 0 14px;
+    padding-bottom:8px;
+    border-bottom:2px solid var(--line);
+    color:#000;
+    font-size:14px;
+    font-weight:900;
+  }
+  .course-list{display:flex;flex-direction:column;gap:0;}
   .course-type-group{
-    padding:15px 16px;
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    background:#fff;
+    padding:0;
+    border:none;
+    border-radius:0;
+    background:transparent;
   }
-  .course-type-group + .course-type-group{margin-top:10px;}
-  .course-type-title{font-size:15px;font-weight:900;color:var(--ink);margin:0;}
-  .course-type-desc{font-size:12.5px;color:var(--ink-soft);margin:4px 0 10px;line-height:1.55;}
+  .course-type-group + .course-type-group{margin-top:18px;}
+  .course-type-title{font-size:15px;font-weight:900;color:#000;margin:0 0 4px;}
+  .course-type-desc{font-size:12.5px;color:var(--ink-soft);margin:0 0 10px;line-height:1.6;white-space:pre-wrap;}
   .round-row{
     display:flex;
-    align-items:center;
+    align-items:flex-start;
     gap:10px;
     margin:0;
-    padding:10px 0;
-    border-top:1px solid #EDF1F5;
+    padding:14px 0;
+    border-bottom:1px solid var(--line-soft);
     cursor:pointer;
   }
-  .round-row input{width:16px;height:16px;accent-color:var(--accent-dark);flex:0 0 auto;}
+  .round-row input{width:16px;height:16px;accent-color:var(--line);flex:0 0 auto;margin-top:2px;}
   .round-row.checked .round-name{color:var(--accent-dark);}
-  .round-main{min-width:0;flex:1;display:flex;align-items:center;justify-content:space-between;gap:12px;}
-  .round-name{font-size:13.5px;font-weight:800;color:var(--ink);}
-  .round-date{font-size:12.5px;color:var(--ink-soft);white-space:nowrap;}
+  .round-main{min-width:0;flex:1;display:block;}
+  .round-name{display:block;font-size:14px;font-weight:900;color:var(--ink);line-height:1.35;}
+  .round-date{display:block;font-size:12.5px;color:var(--ink);font-weight:800;letter-spacing:0.04em;line-height:1.45;}
   .choice-grid{
     display:grid;
     grid-template-columns:repeat(4,minmax(0,1fr));
@@ -200,26 +214,26 @@
     color:var(--ink-soft);
     padding:18px;
     text-align:center;
-    border:1px dashed var(--line-strong);
+    border:1px dashed var(--line-soft);
     border-radius:var(--radius);
     background:#FBFAF7;
   }
   button.submit{
     width:100%;
-    margin-top:30px;
+    margin-top:44px;
     padding:15px;
     border:none;
-    border-radius:var(--radius);
-    background:linear-gradient(135deg, var(--accent), var(--accent-dark));
+    border-radius:0;
+    background:#111;
     color:#fff;
     font-family:inherit;
     font-size:15.5px;
-    font-weight:700;
+    font-weight:900;
     cursor:pointer;
-    box-shadow:0 14px 28px rgba(23,107,135,0.22);
-    transition:transform .12s, box-shadow .12s;
+    box-shadow:none;
+    transition:background .12s;
   }
-  button.submit:active{transform:translateY(1px);box-shadow:0 8px 18px rgba(23,107,135,0.18);}
+  button.submit:active{background:#333;}
   button.submit:disabled{opacity:0.5;cursor:not-allowed;}
   .msg{
     margin-top:14px;
@@ -244,18 +258,22 @@
   .success-card h2{font-size:22px;margin:0 0 10px;letter-spacing:0;}
   .success-card p{font-size:14px;color:var(--ink-soft);margin:0;line-height:1.6;}
   .notice-card{
-    background:#FFFFFF;
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    padding:18px 20px;
-    margin-bottom:20px;
+    background:transparent;
+    border:none;
+    border-top:1.5px solid var(--line);
+    border-bottom:1.5px solid var(--line);
+    border-radius:0;
+    padding:22px 0;
+    margin-bottom:30px;
     font-size:13px;
-    line-height:1.85;
+    line-height:1.9;
     color:var(--ink);
   }
-  .notice-line{display:flex;gap:10px;align-items:flex-start;}
-  .notice-line + .notice-line{margin-top:2px;}
-  .notice-key{min-width:64px;color:var(--accent-dark);font-weight:900;}
+  .notice-line{display:inline;gap:0;align-items:initial;}
+  .notice-line + .notice-line{margin-top:0;}
+  .notice-line + .notice-line::before{content:" · ";}
+  .notice-key{min-width:0;color:#000;font-weight:900;}
+  .notice-key::after{content:" ";}
   .notice-card .warn{color:var(--coral);font-weight:800;}
   .notice-card ul{margin:10px 0 0;padding-left:18px;color:var(--ink-soft);}
   .notice-card a{color:var(--accent-dark);font-weight:700;}
@@ -270,34 +288,36 @@
   .privacy-gate ul{margin:0;padding-left:18px;color:var(--ink-soft);font-size:12.5px;line-height:1.75;}
   .privacy-gate .consent-row{margin-top:14px;}
   .consent-block{
-    border:1px solid var(--line);
-    border-radius:var(--radius);
+    border:1.5px solid var(--line);
+    border-radius:0;
     background:#fff;
-    padding:18px 20px;
-    margin:0 0 20px;
+    padding:18px 20px 20px;
+    margin:0 0 22px;
     transition:border-color .18s, background .18s;
   }
-  .consent-block h2{font-size:15px;margin:0 0 10px;color:var(--ink);}
+  .consent-block h2{font-size:14px;margin:0 0 10px;color:#000;font-weight:900;}
   .consent-block ul{margin:0;padding-left:18px;color:var(--ink-soft);font-size:12.5px;line-height:1.75;}
-  .consent-block.done{border-color:#BFDDE4;background:var(--accent-soft);}
+  .consent-block.done{border-color:#B6D9E2;background:var(--accent-soft);padding:18px 20px 22px;}
   .consent-block.done ul{display:none;}
-  .consent-block.done h2{margin-bottom:0;color:var(--accent-dark);}
+  .consent-block.done h2{margin-bottom:8px;color:var(--accent-dark);}
+  .consent-block.done .consent-row{margin-top:6px;}
   .consent-row{
     display:flex;
     align-items:flex-start;
     gap:10px;
-    margin-top:18px;
+    margin-top:16px;
     font-size:13px;
     line-height:1.6;
     color:var(--ink);
+    font-weight:800;
   }
-  .consent-row input{width:17px;height:17px;margin-top:2px;accent-color:var(--accent-dark);flex:0 0 auto;}
+  .consent-row input{width:17px;height:17px;margin-top:2px;accent-color:var(--line);flex:0 0 auto;}
   .consent-row.inline{
     margin:12px 0 0;
-    padding:12px 13px;
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    background:var(--surface-soft);
+    padding:0;
+    border:none;
+    border-radius:0;
+    background:transparent;
   }
   .field-help{font-size:11.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5;}
   .rrn-split{display:flex;align-items:center;gap:10px;}
@@ -345,8 +365,9 @@
   @media (max-width:520px){
     body{padding:28px 14px 64px;}
     h1{font-size:27px;}
-    .card{padding:24px 18px;}
-    .notice-card{padding:16px;}
+    .notice-card{padding:18px 0;}
+    .notice-line{display:block;}
+    .notice-line + .notice-line::before{content:"";}
     .info-tip span{left:auto;right:0;top:24px;transform:none;width:min(260px,78vw);}
     .course-item{align-items:flex-start;}
     .choice-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -376,6 +397,7 @@
   </div>
 
   <div class="card" id="formCard">
+    <div class="section-title">개인정보 수집·이용 동의</div>
     <div class="consent-block" id="privacyConsentBlock">
       <h2>개인정보 수집 및 이용 안내</h2>
       <ul>
@@ -390,6 +412,7 @@
       </label>
     </div>
 
+    <div class="section-title">신청자 정보</div>
     <div class="label-row">
       <label for="name">이름</label>
       <button class="info-tip" type="button" aria-label="이름 수집 안내">?
@@ -427,6 +450,21 @@
       <span>현재 고용보험에 가입된 <b>재직자</b>입니다.</span>
     </label>
 
+    <label for="sourceChannel">본 교육을 알게된 경로</label>
+    <select id="sourceChannel">
+      <option value="">선택해주세요</option>
+      <option value="방송매체홍보(TV)">방송매체홍보(TV)</option>
+      <option value="방송매체홍보(라디오)">방송매체홍보(라디오)</option>
+      <option value="SNS(인스타그램)">SNS(인스타그램)</option>
+      <option value="SNS(당근)">SNS(당근)</option>
+      <option value="SNS(페이스북)">SNS(페이스북)</option>
+      <option value="지자체 홈페이지">지자체 홈페이지</option>
+      <option value="지인 소개">지인 소개</option>
+      <option value="문자 안내">문자 안내</option>
+      <option value="현수막/포스터">현수막/포스터</option>
+      <option value="기타">기타</option>
+    </select>
+
     <div class="label-row">
       <label for="rrn1">주민등록번호</label>
       <button class="info-tip" type="button" aria-label="주민등록번호 수집 안내">?
@@ -455,25 +493,10 @@
       </label>
     </div>
 
-    <label>수강 희망 과목 및 회차 (복수 선택 가능)</label>
+    <div class="section-title">신청 과정 · 회차 선택</div>
     <div class="course-list" id="courseList">
       <div class="empty-courses">과정 목록을 불러오는 중...</div>
     </div>
-
-    <label for="sourceChannel">본 교육을 알게된 경로</label>
-    <select id="sourceChannel">
-      <option value="">선택해주세요</option>
-      <option value="방송매체홍보(TV)">방송매체홍보(TV)</option>
-      <option value="방송매체홍보(라디오)">방송매체홍보(라디오)</option>
-      <option value="SNS(인스타그램)">SNS(인스타그램)</option>
-      <option value="SNS(당근)">SNS(당근)</option>
-      <option value="SNS(페이스북)">SNS(페이스북)</option>
-      <option value="지자체 홈페이지">지자체 홈페이지</option>
-      <option value="지인 소개">지인 소개</option>
-      <option value="문자 안내">문자 안내</option>
-      <option value="현수막/포스터">현수막/포스터</option>
-      <option value="기타">기타</option>
-    </select>
 
     <label for="note">기타사항 (선택)</label>
     <input type="text" id="note" placeholder="문의사항 또는 참고사항">

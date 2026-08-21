@@ -480,6 +480,7 @@
     width:100%;border:1px solid #D7E0EA;border-radius:7px;background:#fff;padding:9px 10px;
     font-family:inherit;font-size:12.5px;color:var(--ink);outline:none;
   }
+  textarea.type-desc-input{min-height:72px;resize:vertical;line-height:1.5;white-space:pre-wrap;}
   .trainee-name{font-weight:900;font-size:16px;background:#fff;}
   .row-input:focus,.trainee-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(23,107,135,0.1);background:#fff;}
   .rrn-panel{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
@@ -797,7 +798,7 @@ function renderCourseTypes(){
   list.innerHTML = allCourseTypes.map((type, index) => `
     <tr class="type-row-table" data-type-id="${escapeHtml(type.id)}">
       <td><input class="row-input type-name-input" value="${escapeHtml(type.name)}" aria-label="과정명"></td>
-      <td><input class="row-input type-desc-input" value="${escapeHtml(type.description || '')}" aria-label="과정 설명" placeholder="신청 화면에 보일 설명"></td>
+      <td><textarea class="row-input type-desc-input" aria-label="과정 설명" placeholder="신청 화면에 보일 설명">${escapeHtml(type.description || '')}</textarea></td>
       <td>
         <div class="course-row-actions">
           <button class="inline-btn light move-type-btn" type="button" data-id="${escapeHtml(type.id)}" data-dir="-1" ${index === 0 ? 'disabled' : ''}>위</button>
