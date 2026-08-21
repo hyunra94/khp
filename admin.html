@@ -228,14 +228,6 @@
     padding:7px 11px;font-family:inherit;font-size:12px;font-weight:800;color:var(--ink-soft);cursor:pointer;
   }
   .type-tab.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-dark);}
-  .column-panel{
-    margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);
-    background:var(--surface-soft);
-  }
-  .column-panel summary{cursor:pointer;font-size:12px;font-weight:900;color:var(--accent-dark);}
-  .column-options{display:flex;flex-wrap:wrap;gap:8px 12px;margin-top:10px;}
-  .column-options label{display:flex;align-items:center;gap:6px;margin:0;font-size:12px;color:var(--ink-soft);}
-  .column-options input{width:15px;height:15px;accent-color:var(--accent-dark);}
   .toggle-cell{display:flex;align-items:center;gap:6px;min-height:34px;color:var(--ink-soft);font-size:12px;font-weight:800;}
   .toggle-cell input{width:16px;height:16px;accent-color:var(--accent-dark);}
   .new-type-row{
@@ -438,24 +430,11 @@
         <select id="filterCourse"><option value="">전체 과정</option></select>
         <input type="text" id="filterSearch" placeholder="이름/연락처/회사 검색">
       </div>
-      <details class="column-panel">
-        <summary>신청자 명단 열 설정</summary>
-        <div class="column-options" id="columnOptions">
-          <label><input type="checkbox" data-column="applicant" checked disabled>신청자</label>
-          <label><input type="checkbox" data-column="contact" checked>연락처</label>
-          <label><input type="checkbox" data-column="rrn" checked>주민번호</label>
-          <label><input type="checkbox" data-column="course" checked>과정</label>
-          <label><input type="checkbox" data-column="checks" checked>유입/확인</label>
-          <label><input type="checkbox" data-column="status" checked>상태</label>
-          <label><input type="checkbox" data-column="memo" checked>메모</label>
-          <label><input type="checkbox" data-column="applied" checked>신청일시</label>
-        </div>
-      </details>
       <div class="table-shell">
         <table>
           <thead>
             <tr>
-              <th data-column="applicant">신청자</th><th data-column="contact">연락처</th><th data-column="rrn">주민번호</th><th data-column="course">과정</th><th data-column="checks">유입/확인</th><th data-column="status">상태</th><th data-column="memo">메모</th><th data-column="applied">신청일시</th>
+              <th>신청자</th><th>연락처</th><th>주민번호</th><th>과정</th><th>유입/기타</th><th>상태</th><th>메모</th><th>신청일시</th>
             </tr>
           </thead>
           <tbody id="appRows"><tr><td colspan="8" class="empty-row">불러오는 중...</td></tr></tbody>
@@ -521,16 +500,6 @@ let allApps = [];
 let allCourses = [];
 let allCourseTypes = [];
 let activeCourseTypeId = '';
-const visibleColumns = {
-  applicant: true,
-  contact: true,
-  rrn: true,
-  course: true,
-  checks: true,
-  status: true,
-  memo: true,
-  applied: true
-};
 
 // ---------- auth ----------
 document.getElementById('toggleMode').addEventListener('click', () => {
@@ -838,7 +807,7 @@ function bindCourseButtons(scope){
 async function loadApplications(){
   const { data, error } = await sb
     .from('applications')
-    .select('id, status, attempt_no, applied_at, cancelled_at, status_updated_at, trainee_id, trainees(name, phone, email, company, employed_confirmed, privacy_consent, agreement_confirmed, noshow_confirmed, referral_sources, note, admin_memo), courses(id, name)')
+    .select('id, status, attempt_no, applied_at, cancelled_at, status_updated_at, trainee_id, trainees(name, phone, email, company, referral_sources, note, admin_memo), courses(id, name)')
     .order('applied_at', { ascending: false });
   if (error){
     document.getElementById('appRows').innerHTML = `<tr><td colspan="8" class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</td></tr>`;
@@ -874,51 +843,48 @@ function renderApps(){
 
   tbody.innerHTML = rows.map(a => `
     <tr data-id="${a.id}">
-      <td data-label="신청자" data-column="applicant">
+      <td data-label="신청자">
         <div class="compact-info">
           <b>${escapeHtml(a.trainees?.name || '-')}</b>
           ${escapeHtml(a.trainees?.company || '-')}
         </div>
       </td>
-      <td data-label="연락처" data-column="contact">
+      <td data-label="연락처">
         <div class="compact-info">
           ${escapeHtml(a.trainees?.phone || '-')}<br>
           ${escapeHtml(a.trainees?.email || '-')}
         </div>
       </td>
-      <td data-label="주민번호" data-column="rrn">
+      <td data-label="주민번호">
         <span class="rrn-value" data-trainee-id="${escapeHtml(a.trainee_id)}">●●●●●●-●●●●●●●</span><br>
         <button class="rrn-btn" data-trainee-id="${escapeHtml(a.trainee_id)}" data-mode="masked">확인</button>
         <button class="rrn-btn" data-trainee-id="${escapeHtml(a.trainee_id)}" data-mode="full">전체보기</button>
       </td>
-      <td data-label="과정" data-column="course">
+      <td data-label="과정">
         ${escapeHtml(a.courses?.name || '-')}
         <div class="compact-info">${escapeHtml(a.attempt_no || 1)}번째 신청</div>
       </td>
-      <td data-label="유입/확인" data-column="checks">
+      <td data-label="유입/기타">
         <div class="check-list">
-          유입: ${escapeHtml(formatList(a.trainees?.referral_sources))}<br>
-          재직 ${yesNo(a.trainees?.employed_confirmed)} · 개인정보 ${yesNo(a.trainees?.privacy_consent)}<br>
-          협약서 ${yesNo(a.trainees?.agreement_confirmed)} · 노쇼 ${yesNo(a.trainees?.noshow_confirmed)}
+          ${escapeHtml(formatList(a.trainees?.referral_sources))}
           ${a.trainees?.note ? `<br>기타: ${escapeHtml(a.trainees.note)}` : ''}
         </div>
       </td>
-      <td data-label="상태" data-column="status">
+      <td data-label="상태">
         <select class="status-select" data-id="${escapeHtml(a.id)}">
           ${['대기','승인','거절','취소'].map(s => `<option value="${s}" ${s===a.status?'selected':''}>${s}</option>`).join('')}
         </select>
       </td>
-      <td data-label="메모" data-column="memo">
+      <td data-label="메모">
         <textarea class="memo-input" data-id="${escapeHtml(a.id)}" data-trainee-id="${escapeHtml(a.trainee_id)}" placeholder="신청자 메모 입력...">${escapeHtml(a.trainees?.admin_memo || '')}</textarea><br>
         <button class="save-btn" data-id="${escapeHtml(a.id)}" data-trainee-id="${escapeHtml(a.trainee_id)}">저장</button>
       </td>
-      <td data-label="신청일시" data-column="applied">
+      <td data-label="신청일시">
         ${new Date(a.applied_at).toLocaleString('ko-KR')}
         ${a.cancelled_at ? `<div class="compact-info">취소 ${new Date(a.cancelled_at).toLocaleString('ko-KR')}</div>` : ''}
       </td>
     </tr>
   `).join('');
-  applyColumnVisibility();
 
   tbody.querySelectorAll('.save-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -967,12 +933,6 @@ function renderApps(){
 document.getElementById('filterStatus').addEventListener('change', renderApps);
 document.getElementById('filterCourse').addEventListener('change', renderApps);
 document.getElementById('filterSearch').addEventListener('input', renderApps);
-document.querySelectorAll('#columnOptions input').forEach(input => {
-  input.addEventListener('change', () => {
-    visibleColumns[input.dataset.column] = input.checked;
-    applyColumnVisibility();
-  });
-});
 document.querySelectorAll('#quickStatus button').forEach(btn => {
   btn.addEventListener('click', () => {
     document.getElementById('filterStatus').value = btn.dataset.status;
@@ -999,14 +959,6 @@ function renderMetrics(){
   const currentStatus = document.getElementById('filterStatus')?.value || '';
   document.querySelectorAll('#quickStatus button').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.status === currentStatus);
-  });
-}
-
-function applyColumnVisibility(){
-  Object.entries(visibleColumns).forEach(([column, visible]) => {
-    document.querySelectorAll(`[data-column="${column}"]`).forEach(el => {
-      el.style.display = visible ? '' : 'none';
-    });
   });
 }
 
