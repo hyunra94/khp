@@ -268,8 +268,8 @@
     <label for="phone">연락처</label>
     <input type="tel" id="phone" placeholder="010-0000-0000">
 
-    <label for="email">이메일 (선택)</label>
-    <input type="email" id="email" placeholder="example@email.com">
+    <label for="email">이메일</label>
+    <input type="email" id="email" placeholder="example@email.com" autocomplete="email" required>
 
     <label for="company">회사명</label>
     <input type="text" id="company" placeholder="전주MBC">
@@ -277,11 +277,8 @@
     <label for="rrn">주민등록번호</label>
     <input type="text" id="rrn" placeholder="900101-1234567" maxlength="14" autocomplete="off">
     <div class="field-help">
-      HRD-Net 등록 및 고용보험 가입여부 확인 목적으로만 사용되며, 암호화되어 저장됩니다.
+      하이픈(-)을 포함해 입력할 수 있습니다. HRD-Net 등록 및 고용보험 가입여부 확인 목적으로만 사용되며, 암호화되어 저장됩니다.
     </div>
-
-    <label for="birth6">생년월일</label>
-    <input type="text" id="birth6" placeholder="900101" maxlength="6" autocomplete="off">
 
     <label>수강 희망 과목 및 회차 (복수 선택 가능)</label>
     <div class="course-list" id="courseList">
@@ -343,11 +340,13 @@ let courses = [];
 const selected = new Set();
 
 document.getElementById('rrn').addEventListener('input', (e) => {
-  let digits = e.target.value.replace(/\D/g, '').slice(0, 13);
-  if (digits.length > 6){
-    e.target.value = digits.slice(0,6) + '-' + digits.slice(6);
-  } else {
-    e.target.value = digits;
+  e.target.value = e.target.value.replace(/[^\d-]/g, '').slice(0, 14);
+});
+
+document.getElementById('rrn').addEventListener('blur', (e) => {
+  const digits = e.target.value.replace(/\D/g, '').slice(0, 13);
+  if (digits.length === 13){
+    e.target.value = `${digits.slice(0, 6)}-${digits.slice(6)}`;
   }
 });
 
@@ -408,9 +407,10 @@ submitBtn.addEventListener('click', async () => {
   const name = document.getElementById('name').value.trim();
   const phone = document.getElementById('phone').value.trim();
   const email = document.getElementById('email').value.trim();
+  const emailInput = document.getElementById('email');
   const company = document.getElementById('company').value.trim();
   const rrn = document.getElementById('rrn').value.replace(/\D/g, '');
-  const birth6 = document.getElementById('birth6').value.replace(/\D/g, '');
+  const birth6 = rrn.slice(0, 6);
   const employedConfirmed = document.getElementById('employedCheck').checked;
   const privacyConsent = document.getElementById('privacyCheck').checked;
   const agreementConfirmed = document.getElementById('agreementCheck').checked;
@@ -420,9 +420,10 @@ submitBtn.addEventListener('click', async () => {
 
   if (!name){ msgEl.textContent = '이름을 입력해주세요.'; return; }
   if (!phone){ msgEl.textContent = '연락처를 입력해주세요.'; return; }
+  if (!email){ msgEl.textContent = '이메일을 입력해주세요.'; return; }
+  if (!emailInput.validity.valid){ msgEl.textContent = '이메일 형식을 확인해주세요.'; return; }
   if (!company){ msgEl.textContent = '회사명을 입력해주세요.'; return; }
   if (rrn.length !== 13){ msgEl.textContent = '주민등록번호 13자리를 정확히 입력해주세요.'; return; }
-  if (birth6.length !== 6){ msgEl.textContent = '생년월일 6자리를 입력해주세요.'; return; }
   if (selected.size === 0){ msgEl.textContent = '신청할 과정을 1개 이상 선택해주세요.'; return; }
   if (!employedConfirmed){ msgEl.textContent = '재직자 대상 과정임을 확인해주세요.'; return; }
   if (!privacyConsent){ msgEl.textContent = '개인정보 수집·이용에 동의해주세요.'; return; }
@@ -435,7 +436,7 @@ submitBtn.addEventListener('click', async () => {
   const { error } = await sb.rpc('submit_application', {
     p_name: name,
     p_phone: phone,
-    p_email: email || null,
+    p_email: email,
     p_company: company,
     p_birth6: birth6,
     p_resident_number: rrn,

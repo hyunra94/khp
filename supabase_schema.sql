@@ -187,11 +187,13 @@ declare
   v_digits text;
   v_hash text;
   v_trainee_id uuid;
+  v_birth6 text;
   v_course record;
   v_existing_count integer;
   v_inserted_count integer := 0;
 begin
   v_digits := regexp_replace(coalesce(p_resident_number, ''), '\D', '', 'g');
+  v_birth6 := substring(v_digits from 1 for 6);
 
   if length(v_digits) <> 13 then
     raise exception '주민등록번호 형식이 올바르지 않습니다 (13자리 필요)';
@@ -202,11 +204,11 @@ begin
   if p_phone is null or length(trim(p_phone)) = 0 then
     raise exception '연락처를 입력해주세요';
   end if;
+  if p_email is null or length(trim(p_email)) = 0 then
+    raise exception '이메일을 입력해주세요';
+  end if;
   if p_company is null or length(trim(p_company)) = 0 then
     raise exception '회사명을 입력해주세요';
-  end if;
-  if p_birth6 is null or p_birth6 !~ '^[0-9]{6}$' then
-    raise exception '생년월일 6자리를 입력해주세요';
   end if;
   if coalesce(array_length(p_course_ids, 1), 0) = 0 then
     raise exception '신청할 과정을 1개 이상 선택해주세요';
@@ -250,9 +252,9 @@ begin
       v_trainee_id,
       trim(p_name),
       trim(p_phone),
-      nullif(trim(coalesce(p_email, '')), ''),
+      trim(p_email),
       trim(p_company),
-      p_birth6,
+      v_birth6,
       p_employed,
       p_privacy,
       true,
@@ -267,9 +269,9 @@ begin
     update public.trainees
     set name = trim(p_name),
         phone = trim(p_phone),
-        email = nullif(trim(coalesce(p_email, '')), ''),
+        email = trim(p_email),
         company = trim(p_company),
-        birth6 = p_birth6,
+        birth6 = v_birth6,
         employed_confirmed = p_employed,
         privacy_consent = p_privacy,
         rrn_consent = true,

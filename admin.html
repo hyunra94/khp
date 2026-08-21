@@ -679,7 +679,7 @@ function renderCourses(){
 async function loadApplications(){
   const { data, error } = await sb
     .from('applications')
-    .select('id, status, attempt_no, applied_at, cancelled_at, status_updated_at, trainee_id, trainees(name, phone, email, company, birth6, employed_confirmed, privacy_consent, agreement_confirmed, noshow_confirmed, referral_sources, note, admin_memo), courses(id, name)')
+    .select('id, status, attempt_no, applied_at, cancelled_at, status_updated_at, trainee_id, trainees(name, phone, email, company, employed_confirmed, privacy_consent, agreement_confirmed, noshow_confirmed, referral_sources, note, admin_memo), courses(id, name)')
     .order('applied_at', { ascending: false });
   if (error){
     document.getElementById('appRows').innerHTML = `<tr><td colspan="8" class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</td></tr>`;
@@ -718,8 +718,7 @@ function renderApps(){
       <td data-label="신청자">
         <div class="compact-info">
           <b>${escapeHtml(a.trainees?.name || '-')}</b>
-          ${escapeHtml(a.trainees?.company || '-')}<br>
-          생년월일 ${escapeHtml(a.trainees?.birth6 || '-')}
+          ${escapeHtml(a.trainees?.company || '-')}
         </div>
       </td>
       <td data-label="연락처">
