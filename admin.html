@@ -1152,7 +1152,7 @@ function renderLookupRound(typeName, round){
         <span class="pill">${round.apps.length.toLocaleString('ko-KR')}명</span>
       </div>
       <table class="lookup-table">
-        <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>이메일</th><th>운영 상태</th></tr></thead>
+        <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>이메일</th><th>재직 구분</th><th>운영 상태</th></tr></thead>
         <tbody>
           ${round.apps.map(app => `
             <tr>
@@ -1160,6 +1160,7 @@ function renderLookupRound(typeName, round){
               <td>${escapeHtml(app.trainees?.phone || '-')}</td>
               <td>${escapeHtml(app.trainees?.company || '-')}</td>
               <td>${escapeHtml(app.trainees?.email || '-')}</td>
+              <td>${escapeHtml(app.employment_category || '미확인')}</td>
               <td>${renderStatusSelect(app, COURSE_LOOKUP_STATUSES)}</td>
             </tr>
           `).join('')}
