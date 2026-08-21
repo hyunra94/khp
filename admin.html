@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>재직자 교육 관리자</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="favicon.png">
+<meta property="og:title" content="재직자 교육 관리자">
+<meta property="og:image" content="https://hyunra94.github.io/assets/og-default.png">
+<meta property="og:url" content="https://hyunra94.github.io/[레포명]">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#F6F4EF;
+    --surface:#FFFFFF;
+    --surface-soft:#FAF9F6;
+    --line:#E8E1D6;
+    --line-strong:#D8CDBD;
+    --ink:#241F1A;
+    --ink-soft:#756B60;
+    --muted:#A3988A;
+    --accent:#1F6F68;
+    --accent-dark:#124C47;
+    --accent-soft:#DDEDEA;
+    --gold:#B9822D;
+    --green:#227653;
+    --danger:#C44E4E;
+    --shadow:0 24px 70px rgba(49,40,30,0.13);
+    --shadow-soft:0 12px 32px rgba(49,40,30,0.08);
+    --radius:8px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Noto Sans KR', sans-serif;
+    background:
+      linear-gradient(120deg, rgba(31,111,104,0.08), transparent 34%),
+      linear-gradient(180deg, #FBFAF7 0%, var(--bg) 52%, #EFE8DC 100%);
+    min-height:100vh;
+    color:var(--ink);
+  }
+  /* ---------- login ---------- */
+  #loginScreen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    position:relative;
+    overflow:hidden;
+  }
+  #loginScreen::before{
+    content:"";
+    position:absolute;
+    inset:20px;
+    border:1px solid rgba(36,31,26,0.08);
+    pointer-events:none;
+  }
+  .login-card{
+    background:rgba(255,255,255,0.88);
+    backdrop-filter:blur(18px);
+    border-radius:var(--radius);
+    padding:38px 32px 32px;
+    box-shadow:var(--shadow);
+    width:100%;
+    max-width:390px;
+    border:1px solid rgba(36,31,26,0.1);
+    position:relative;
+  }
+  .login-card::before{
+    content:"ADMIN";
+    display:block;
+    font-size:11px;
+    letter-spacing:0.24em;
+    color:var(--accent);
+    font-weight:900;
+    text-align:center;
+    margin-bottom:12px;
+  }
+  .login-card h1{font-size:24px;margin:0 0 8px;text-align:center;letter-spacing:-0.01em;}
+  .login-card .sub{font-size:13px;color:var(--ink-soft);text-align:center;margin-bottom:28px;}
+  .login-card label{display:block;font-size:12px;font-weight:800;margin:15px 0 7px;color:var(--ink-soft);}
+  .login-card input{
+    width:100%;padding:13px 14px;border-radius:var(--radius);
+    border:1px solid var(--line);background:var(--surface-soft);
+    font-family:inherit;font-size:14.5px;outline:none;color:var(--ink);
+    transition:border-color .16s, box-shadow .16s, background .16s;
+  }
+  .login-card input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(31,111,104,0.12);background:#fff;}
+  .login-card button{
+    width:100%;margin-top:22px;padding:14px;border:none;border-radius:var(--radius);
+    background:linear-gradient(135deg, var(--accent), var(--accent-dark));
+    color:#fff;font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer;
+    box-shadow:0 14px 26px rgba(31,111,104,0.24);
+    transition:transform .14s, box-shadow .14s;
+  }
+  .login-card button:active{transform:translateY(1px);box-shadow:0 8px 18px rgba(31,111,104,0.2);}
+  .login-toggle{
+    text-align:center;margin-top:16px;font-size:12.5px;color:var(--accent-dark);
+    cursor:pointer;text-decoration:none;font-weight:700;
+  }
+  .login-msg{margin-top:12px;font-size:12.5px;color:var(--danger);text-align:center;min-height:16px;}
+
+  /* ---------- dashboard ---------- */
+  #dashboard{display:none;padding:30px 22px 88px;}
+  .topbar{
+    max-width:1180px;margin:0 auto 22px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+  }
+  .topbar h1{font-size:23px;margin:0;letter-spacing:-0.02em;}
+  .topbar .who{font-size:12.5px;color:var(--ink-soft);}
+  .logout-btn{
+    border:1px solid var(--line);background:#fff;padding:9px 16px;border-radius:var(--radius);
+    font-family:inherit;font-size:12.5px;font-weight:700;color:var(--accent-dark);
+    cursor:pointer;box-shadow:var(--shadow-soft);
+  }
+  .panel{
+    max-width:1180px;margin:0 auto 18px;
+    background:rgba(255,255,255,0.86);border-radius:var(--radius);padding:22px;
+    box-shadow:var(--shadow-soft);border:1px solid rgba(36,31,26,0.09);
+    backdrop-filter:blur(14px);
+  }
+  .panel h2{font-size:15px;margin:0 0 16px;color:var(--ink);letter-spacing:-0.01em;}
+  .add-course-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+  .add-course-form div{flex:1;min-width:140px;}
+  .add-course-form label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:800;}
+  .add-course-form input{
+    width:100%;padding:11px 12px;border-radius:var(--radius);border:1px solid var(--line);
+    background:var(--surface-soft);font-family:inherit;font-size:13.5px;outline:none;color:var(--ink);
+  }
+  .add-course-form button{
+    padding:11px 18px;border:none;border-radius:var(--radius);background:var(--accent);
+    color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;
+  }
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .filters select, .filters input{
+    padding:10px 12px;border-radius:var(--radius);border:1px solid var(--line);
+    font-family:inherit;font-size:13px;background:#fff;outline:none;color:var(--ink);
+  }
+  table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
+  th{
+    text-align:left;padding:12px 10px;color:var(--muted);
+    font-size:11px;text-transform:uppercase;letter-spacing:0.06em;
+    border-bottom:1px solid var(--line);
+    background:#FBFAF7;
+  }
+  td{padding:12px 10px;border-bottom:1px solid #EFEAE2;vertical-align:top;}
+  tr:hover td{background:#FCFBF8;}
+  .status-badge{
+    display:inline-block;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:700;
+  }
+  .status-대기{background:#FFF1D6;color:#9B6414;}
+  .status-승인{background:#DDEDEA;color:#14624B;}
+  .status-거절{background:#F7DEDE;color:#A33C3C;}
+  .status-취소{background:#EDEDED;color:#888;}
+  select.status-select{
+    border-radius:var(--radius);border:1px solid var(--line);padding:7px 8px;font-family:inherit;font-size:12.5px;background:#fff;
+  }
+  textarea.memo-input{
+    width:100%;min-width:190px;border-radius:var(--radius);border:1px solid var(--line);
+    padding:9px 10px;font-family:inherit;font-size:12.5px;resize:vertical;min-height:40px;outline:none;background:var(--surface-soft);
+  }
+  textarea.memo-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(31,111,104,0.1);background:#fff;}
+  .save-btn{
+    border:none;background:var(--ink);color:#fff;padding:7px 12px;border-radius:var(--radius);
+    font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;margin-top:6px;
+  }
+  .save-btn.saved{background:var(--green);}
+  .empty-row{text-align:center;padding:40px;color:var(--ink-soft);font-size:13px;}
+  @media (max-width:720px){
+    #dashboard{padding:20px 14px 64px;}
+    .panel{padding:16px;}
+    .topbar h1{font-size:20px;}
+    th,td{white-space:nowrap;}
+    textarea.memo-input{min-width:150px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>관리자 로그인</h1>
+    <div class="sub">재직자 교육 신청 관리</div>
+    <label>이메일</label>
+    <input type="email" id="loginEmail" placeholder="you@jmbc.co.kr">
+    <label>비밀번호</label>
+    <input type="password" id="loginPassword" placeholder="••••••••">
+    <button id="loginBtn">로그인</button>
+    <div class="login-toggle" id="toggleMode">처음이신가요? 계정 만들기</div>
+    <div class="login-msg" id="loginMsg"></div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <div class="topbar">
+    <h1>재직자 교육 신청 관리</h1>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="who" id="whoAmI"></span>
+      <button class="logout-btn" id="logoutBtn">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>과정 추가</h2>
+    <div class="add-course-form">
+      <div><label>과정명</label><input type="text" id="newCourseName" placeholder="예: 생성형 AI 기초"></div>
+      <div><label>시작일</label><input type="date" id="newCourseDate"></div>
+      <div><label>정원</label><input type="number" id="newCourseCapacity" placeholder="30"></div>
+      <button id="addCourseBtn">추가</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>신청 현황</h2>
+    <div class="filters">
+      <select id="filterStatus">
+        <option value="">전체 상태</option>
+        <option value="대기">대기</option>
+        <option value="승인">승인</option>
+        <option value="거절">거절</option>
+        <option value="취소">취소</option>
+      </select>
+      <select id="filterCourse"><option value="">전체 과정</option></select>
+      <input type="text" id="filterSearch" placeholder="이름/연락처 검색">
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>이름</th><th>연락처</th><th>과정</th><th>상태</th><th>메모</th><th>신청일시</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="appRows"><tr><td colspan="7" class="empty-row">불러오는 중...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://siwatwgncoiknnkglvok.supabase.co";
+const SUPABASE_KEY = "sb_publishable_EcpVk6L5gekNjlvJLLcFRw_H7OWeExQ";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let isSignupMode = false;
+let allApps = [];
+let allCourses = [];
+
+// ---------- auth ----------
+document.getElementById('toggleMode').addEventListener('click', () => {
+  isSignupMode = !isSignupMode;
+  document.getElementById('loginBtn').textContent = isSignupMode ? '계정 만들기' : '로그인';
+  document.getElementById('toggleMode').textContent = isSignupMode ? '이미 계정이 있어요' : '처음이신가요? 계정 만들기';
+});
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const msgEl = document.getElementById('loginMsg');
+  msgEl.textContent = '';
+  if (!email || !password){ msgEl.textContent = '이메일과 비밀번호를 입력해주세요.'; return; }
+
+  const { data, error } = isSignupMode
+    ? await sb.auth.signUp({ email, password })
+    : await sb.auth.signInWithPassword({ email, password });
+
+  if (error){ msgEl.textContent = error.message; return; }
+  if (isSignupMode && data.user && !data.session){
+    msgEl.style.color = 'var(--green)';
+    msgEl.textContent = '이메일 인증 후 로그인해주세요.';
+    return;
+  }
+  showDashboard(data.session?.user);
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  location.reload();
+});
+
+async function checkExistingSession(){
+  const { data } = await sb.auth.getSession();
+  if (data.session) showDashboard(data.session.user);
+}
+checkExistingSession();
+
+function showDashboard(user){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('whoAmI').textContent = user?.email || '';
+  loadCourses();
+  loadApplications();
+}
+
+// ---------- courses ----------
+async function loadCourses(){
+  const { data, error } = await sb.from('courses').select('*').order('start_date', { ascending: true });
+  if (error) return;
+  allCourses = data || [];
+  const sel = document.getElementById('filterCourse');
+  sel.innerHTML = '<option value="">전체 과정</option>' +
+    allCourses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+document.getElementById('addCourseBtn').addEventListener('click', async () => {
+  const name = document.getElementById('newCourseName').value.trim();
+  const start_date = document.getElementById('newCourseDate').value || null;
+  const capacity = document.getElementById('newCourseCapacity').value || null;
+  if (!name) return;
+  const { error } = await sb.from('courses').insert({ name, start_date, capacity });
+  if (!error){
+    document.getElementById('newCourseName').value = '';
+    document.getElementById('newCourseDate').value = '';
+    document.getElementById('newCourseCapacity').value = '';
+    loadCourses();
+  }
+});
+
+// ---------- applications ----------
+async function loadApplications(){
+  const { data, error } = await sb
+    .from('applications')
+    .select('id, status, memo, applied_at, trainees(name, phone, email), courses(id, name)')
+    .order('applied_at', { ascending: false });
+  if (error){
+    document.getElementById('appRows').innerHTML = `<tr><td colspan="7" class="empty-row">불러오기 실패: ${error.message}</td></tr>`;
+    return;
+  }
+  allApps = data || [];
+  renderApps();
+}
+
+function renderApps(){
+  const statusFilter = document.getElementById('filterStatus').value;
+  const courseFilter = document.getElementById('filterCourse').value;
+  const search = document.getElementById('filterSearch').value.trim().toLowerCase();
+
+  let rows = allApps.filter(a => {
+    if (statusFilter && a.status !== statusFilter) return false;
+    if (courseFilter && a.courses?.id !== courseFilter) return false;
+    if (search){
+      const hay = `${a.trainees?.name || ''} ${a.trainees?.phone || ''}`.toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const tbody = document.getElementById('appRows');
+  if (rows.length === 0){
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">해당하는 신청 내역이 없습니다</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(a => `
+    <tr data-id="${a.id}">
+      <td>${a.trainees?.name || '-'}</td>
+      <td>${a.trainees?.phone || '-'}</td>
+      <td>${a.courses?.name || '-'}</td>
+      <td>
+        <select class="status-select" data-id="${a.id}">
+          ${['대기','승인','거절','취소'].map(s => `<option value="${s}" ${s===a.status?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <textarea class="memo-input" data-id="${a.id}" placeholder="메모 입력...">${a.memo || ''}</textarea><br>
+        <button class="save-btn" data-id="${a.id}">저장</button>
+      </td>
+      <td>${new Date(a.applied_at).toLocaleString('ko-KR')}</td>
+      <td></td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('.save-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const status = tbody.querySelector(`.status-select[data-id="${id}"]`).value;
+      const memo = tbody.querySelector(`.memo-input[data-id="${id}"]`).value;
+      btn.textContent = '저장 중...';
+      const { error } = await sb.from('applications').update({ status, memo }).eq('id', id);
+      if (!error){
+        btn.textContent = '저장됨 ✓';
+        btn.classList.add('saved');
+        const app = allApps.find(a => a.id === id);
+        if (app){ app.status = status; app.memo = memo; }
+        setTimeout(() => { btn.textContent = '저장'; btn.classList.remove('saved'); }, 1500);
+      } else {
+        btn.textContent = '실패';
+      }
+    });
+  });
+}
+
+document.getElementById('filterStatus').addEventListener('change', renderApps);
+document.getElementById('filterCourse').addEventListener('change', renderApps);
+document.getElementById('filterSearch').addEventListener('input', renderApps);
+</script>
+</body>
+</html>
