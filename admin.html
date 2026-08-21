@@ -128,14 +128,25 @@
   .add-course-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
   .add-course-form div{flex:1;min-width:140px;}
   .add-course-form label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:800;}
-  .add-course-form input{
+  .add-course-form input, .add-course-form select{
     width:100%;padding:11px 12px;border-radius:var(--radius);border:1px solid var(--line);
     background:var(--surface-soft);font-family:inherit;font-size:13.5px;outline:none;color:var(--ink);
   }
+  .add-course-form input:focus, .add-course-form select:focus{border-color:var(--accent);background:#fff;}
   .add-course-form button{
     padding:11px 18px;border:none;border-radius:var(--radius);background:var(--accent);
     color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;
   }
+  .add-course-form button:hover{background:var(--accent-dark);}
+  .new-type-row{
+    margin-top:14px;
+  }
+  .new-type-row label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:800;}
+  .new-type-row input{
+    width:100%;padding:11px 12px;border-radius:var(--radius);border:1px solid var(--line);
+    font-family:inherit;font-size:13.5px;outline:none;background:var(--surface-soft);color:var(--ink);
+  }
+  .new-type-row input:focus{border-color:var(--accent);background:#fff;}
   .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
   .filters select, .filters input{
     padding:10px 12px;border-radius:var(--radius);border:1px solid var(--line);
@@ -208,10 +219,19 @@
   <div class="panel">
     <h2>과정 추가</h2>
     <div class="add-course-form">
-      <div><label>과정명</label><input type="text" id="newCourseName" placeholder="예: 생성형 AI 기초"></div>
+      <div>
+        <label>과정명</label>
+        <select id="newCourseType"><option value="">과정명 선택</option></select>
+      </div>
+      <div><label>회차</label><input type="number" id="newCourseRound" placeholder="3" min="1"></div>
       <div><label>시작일</label><input type="date" id="newCourseDate"></div>
+      <div><label>종료일</label><input type="date" id="newCourseEndDate"></div>
       <div><label>정원</label><input type="number" id="newCourseCapacity" placeholder="30"></div>
       <button id="addCourseBtn">추가</button>
+    </div>
+    <div id="newTypeRow" class="new-type-row" style="display:none;">
+      <label>새 과정명</label>
+      <input type="text" id="newCourseTypeName" placeholder="예: 버추얼스튜디오 실무">
     </div>
   </div>
 
@@ -249,6 +269,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let isSignupMode = false;
 let allApps = [];
 let allCourses = [];
+let allCourseTypes = [];
 
 // ---------- auth ----------
 document.getElementById('toggleMode').addEventListener('click', () => {
@@ -292,11 +313,29 @@ function showDashboard(user){
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
   document.getElementById('whoAmI').textContent = user?.email || '';
+  loadCourseTypes();
   loadCourses();
   loadApplications();
 }
 
-// ---------- courses ----------
+// ---------- course types (고정 과정명) ----------
+async function loadCourseTypes(){
+  const { data, error } = await sb.from('course_types').select('*').order('name');
+  if (error) return;
+  allCourseTypes = data || [];
+  const sel = document.getElementById('newCourseType');
+  const prevValue = sel.value;
+  sel.innerHTML = '<option value="">과정명 선택</option>' +
+    allCourseTypes.map(t => `<option value="${t.id}">${t.name}</option>`).join('') +
+    '<option value="__new__">+ 새 과정명 추가</option>';
+  sel.value = prevValue;
+}
+
+document.getElementById('newCourseType').addEventListener('change', (e) => {
+  document.getElementById('newTypeRow').style.display = e.target.value === '__new__' ? 'block' : 'none';
+});
+
+// ---------- courses (회차별 개설) ----------
 async function loadCourses(){
   const { data, error } = await sb.from('courses').select('*').order('start_date', { ascending: true });
   if (error) return;
@@ -307,15 +346,42 @@ async function loadCourses(){
 }
 
 document.getElementById('addCourseBtn').addEventListener('click', async () => {
-  const name = document.getElementById('newCourseName').value.trim();
+  const typeSel = document.getElementById('newCourseType').value;
+  const round = document.getElementById('newCourseRound').value || null;
   const start_date = document.getElementById('newCourseDate').value || null;
+  const end_date = document.getElementById('newCourseEndDate').value || null;
   const capacity = document.getElementById('newCourseCapacity').value || null;
-  if (!name) return;
-  const { error } = await sb.from('courses').insert({ name, start_date, capacity });
-  if (!error){
-    document.getElementById('newCourseName').value = '';
+  if (!typeSel) return;
+
+  let course_type_id = typeSel;
+  let typeName = allCourseTypes.find(t => t.id === typeSel)?.name;
+
+  if (typeSel === '__new__'){
+    const newName = document.getElementById('newCourseTypeName').value.trim();
+    if (!newName) return;
+    const { data, error } = await sb.from('course_types').insert({ name: newName }).select().single();
+    if (error) return;
+    course_type_id = data.id;
+    typeName = data.name;
+  }
+
+  const displayName = round ? `${typeName} ${round}차` : typeName;
+  const { error: courseError } = await sb.from('courses').insert({
+    name: displayName,
+    course_type_id,
+    round: round ? Number(round) : null,
+    start_date, end_date, capacity
+  });
+
+  if (!courseError){
+    document.getElementById('newCourseRound').value = '';
     document.getElementById('newCourseDate').value = '';
+    document.getElementById('newCourseEndDate').value = '';
     document.getElementById('newCourseCapacity').value = '';
+    document.getElementById('newCourseTypeName').value = '';
+    document.getElementById('newTypeRow').style.display = 'none';
+    document.getElementById('newCourseType').value = '';
+    loadCourseTypes();
     loadCourses();
   }
 });
