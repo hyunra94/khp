@@ -170,6 +170,29 @@
   .success-card .icon::before{content:"";width:18px;height:10px;border-left:3px solid currentColor;border-bottom:3px solid currentColor;transform:rotate(-45deg);margin-top:-4px;}
   .success-card h2{font-size:22px;margin:0 0 10px;letter-spacing:-0.02em;}
   .success-card p{font-size:14px;color:var(--ink-soft);margin:0;line-height:1.6;}
+  .notice-card{
+    background:var(--surface-soft);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px 22px;
+    margin-bottom:20px;
+    font-size:13px;
+    line-height:1.85;
+    color:var(--ink);
+  }
+  .notice-card .warn{color:var(--coral);font-weight:800;}
+  .notice-card ul{margin:10px 0 0;padding-left:18px;color:var(--ink-soft);}
+  .notice-card a{color:var(--accent-dark);font-weight:700;}
+  .consent-row{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    margin-top:18px;
+    font-size:13px;
+    line-height:1.6;
+    color:var(--ink);
+  }
+  .consent-row input{width:17px;height:17px;margin-top:2px;accent-color:var(--accent-dark);flex:0 0 auto;}
   @media (max-width:520px){
     body{padding:28px 14px 64px;}
     h1{font-size:27px;}
@@ -183,6 +206,20 @@
   <div class="eyebrow">전주MBC · K-디지털팀</div>
   <h1>2026 재직자 교육 신청</h1>
   <p class="sub">원하는 과정을 선택하고 기본 정보를 남겨주세요</p>
+
+  <div class="notice-card">
+    ✅ 교육방식: 오프라인 집체교육(실습 중심)<br>
+    ✅ 필요서류: 재직자 대상 과정(협약서)<br>
+    ✅ 모집방법: 선착순 모집<br>
+    ✅ 모집기준: 교육 일정의 80% 이상 참여 가능자<br>
+    ✅ 교육비용: 전액 지원 (<span class="warn">단, 대기업 종사자는 20% 자비 부담 발생</span>)
+    <ul>
+      <li>교육 일정은 상황에 따라 변경될 수 있음</li>
+      <li>모집인원이 저조할 시 통합 운영 될 수 있음</li>
+      <li>노트북이 필요할 경우 대여 가능</li>
+    </ul>
+    👉 상세 커리큘럼은 <a href="https://jmbc.oopy.io/edu" target="_blank" rel="noopener">K-하이테크 플랫폼 홈페이지</a>에서 확인하세요
+  </div>
 
   <div class="card" id="formCard">
     <label for="name">이름</label>
@@ -198,6 +235,15 @@
     <div class="course-list" id="courseList">
       <div class="empty-courses">과정 목록을 불러오는 중...</div>
     </div>
+
+    <label class="consent-row">
+      <input type="checkbox" id="employedCheck">
+      <span>현재 고용보험에 가입된 <b>재직자</b>입니다. (재직자 대상 과정입니다)</span>
+    </label>
+    <label class="consent-row">
+      <input type="checkbox" id="privacyCheck">
+      <span>개인정보 수집·이용에 동의합니다. (성명, 연락처, 이메일 등 교육 운영에 필요한 최소한의 정보를 수집하며, 사업 종료 후 2년간 보관 후 파기됩니다)</span>
+    </label>
 
     <button class="submit" id="submitBtn">신청하기</button>
     <div class="msg error" id="msg"></div>
@@ -222,7 +268,7 @@ let courses = [];
 const selected = new Set();
 
 async function loadCourses(){
-  const { data, error } = await sb.from('courses').select('id,name,start_date').order('start_date', { ascending: true });
+  const { data, error } = await sb.from('courses').select('id,name,start_date,course_types(description)').order('start_date', { ascending: true });
   if (error || !data || data.length === 0){
     courseListEl.innerHTML = '<div class="empty-courses">현재 신청 가능한 과정이 없습니다</div>';
     return;
@@ -237,6 +283,7 @@ async function loadCourses(){
       <div>
         <div class="course-name">${c.name}</div>
         ${c.start_date ? `<div class="course-date">${c.start_date} 시작</div>` : ''}
+        ${c.course_types?.description ? `<div class="course-date">${c.course_types.description}</div>` : ''}
       </div>
     `;
     const checkbox = item.querySelector('input');
@@ -255,16 +302,22 @@ submitBtn.addEventListener('click', async () => {
   const phone = document.getElementById('phone').value.trim();
   const email = document.getElementById('email').value.trim();
 
+  const employedConfirmed = document.getElementById('employedCheck').checked;
+  const privacyConsent = document.getElementById('privacyCheck').checked;
+
   if (!name){ msgEl.textContent = '이름을 입력해주세요.'; return; }
   if (!phone){ msgEl.textContent = '연락처를 입력해주세요.'; return; }
   if (selected.size === 0){ msgEl.textContent = '신청할 과정을 1개 이상 선택해주세요.'; return; }
+  if (!employedConfirmed){ msgEl.textContent = '재직자 대상 과정임을 확인해주세요.'; return; }
+  if (!privacyConsent){ msgEl.textContent = '개인정보 수집·이용에 동의해주세요.'; return; }
 
   submitBtn.disabled = true;
   submitBtn.textContent = '처리 중...';
 
   const traineeId = crypto.randomUUID();
   const { error: traineeError } = await sb.from('trainees').insert({
-    id: traineeId, name, phone, email: email || null
+    id: traineeId, name, phone, email: email || null,
+    employed_confirmed: employedConfirmed, privacy_consent: privacyConsent
   });
 
   if (traineeError){
