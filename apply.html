@@ -145,9 +145,9 @@
   }
   .round-row input{width:16px;height:16px;accent-color:var(--line);flex:0 0 auto;margin-top:2px;}
   .round-row.checked .round-name{color:var(--accent-dark);}
-  .round-main{min-width:0;flex:1;display:block;}
-  .round-name{display:block;font-size:14px;font-weight:900;color:var(--ink);line-height:1.35;}
-  .round-date{display:block;font-size:12.5px;color:var(--ink);font-weight:800;letter-spacing:0.04em;line-height:1.45;}
+  .round-main{min-width:0;flex:1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .round-name{display:inline;font-size:14px;font-weight:900;color:var(--ink);line-height:1.35;}
+  .round-date{display:inline;font-size:13px;color:var(--ink);font-weight:800;letter-spacing:0.02em;line-height:1.35;}
   .choice-grid{
     display:grid;
     grid-template-columns:repeat(4,minmax(0,1fr));
@@ -244,19 +244,24 @@
   .msg.error{color:var(--error);}
   .success-card{
     text-align:center;
-    padding:46px 28px;
+    padding:50px 0 0;
+    margin-top:28px;
+    border-top:3px solid var(--line);
   }
   .success-card .icon{
-    width:48px;height:48px;border-radius:50%;
+    width:auto;height:auto;border-radius:0;
     margin:0 auto 16px;
-    display:grid;place-items:center;
-    background:var(--accent-soft);
-    color:var(--accent-dark);
-    font-size:0;
+    display:block;
+    background:transparent;
+    color:#1D2530;
+    font-size:22px;
+    line-height:1;
+    letter-spacing:10px;
+    text-indent:10px;
   }
-  .success-card .icon::before{content:"";width:18px;height:10px;border-left:3px solid currentColor;border-bottom:3px solid currentColor;transform:rotate(-45deg);margin-top:-4px;}
-  .success-card h2{font-size:22px;margin:0 0 10px;letter-spacing:0;}
-  .success-card p{font-size:14px;color:var(--ink-soft);margin:0;line-height:1.6;}
+  .success-card .icon::before{content:none;}
+  .success-card h2{font-size:27px;margin:0 0 14px;letter-spacing:0;color:#000;font-weight:900;line-height:1.25;}
+  .success-card p{font-size:13.5px;color:var(--ink);margin:0;line-height:1.7;}
   .notice-card{
     background:transparent;
     border:none;
@@ -450,21 +455,6 @@
       <span>현재 고용보험에 가입된 <b>재직자</b>입니다.</span>
     </label>
 
-    <label for="sourceChannel">본 교육을 알게된 경로</label>
-    <select id="sourceChannel">
-      <option value="">선택해주세요</option>
-      <option value="방송매체홍보(TV)">방송매체홍보(TV)</option>
-      <option value="방송매체홍보(라디오)">방송매체홍보(라디오)</option>
-      <option value="SNS(인스타그램)">SNS(인스타그램)</option>
-      <option value="SNS(당근)">SNS(당근)</option>
-      <option value="SNS(페이스북)">SNS(페이스북)</option>
-      <option value="지자체 홈페이지">지자체 홈페이지</option>
-      <option value="지인 소개">지인 소개</option>
-      <option value="문자 안내">문자 안내</option>
-      <option value="현수막/포스터">현수막/포스터</option>
-      <option value="기타">기타</option>
-    </select>
-
     <div class="label-row">
       <label for="rrn1">주민등록번호</label>
       <button class="info-tip" type="button" aria-label="주민등록번호 수집 안내">?
@@ -498,6 +488,21 @@
       <div class="empty-courses">과정 목록을 불러오는 중...</div>
     </div>
 
+    <label for="sourceChannel">본 교육을 알게된 경로</label>
+    <select id="sourceChannel">
+      <option value="">선택해주세요</option>
+      <option value="방송매체홍보(TV)">방송매체홍보(TV)</option>
+      <option value="방송매체홍보(라디오)">방송매체홍보(라디오)</option>
+      <option value="SNS(인스타그램)">SNS(인스타그램)</option>
+      <option value="SNS(당근)">SNS(당근)</option>
+      <option value="SNS(페이스북)">SNS(페이스북)</option>
+      <option value="지자체 홈페이지">지자체 홈페이지</option>
+      <option value="지인 소개">지인 소개</option>
+      <option value="문자 안내">문자 안내</option>
+      <option value="현수막/포스터">현수막/포스터</option>
+      <option value="기타">기타</option>
+    </select>
+
     <label for="note">기타사항 (선택)</label>
     <input type="text" id="note" placeholder="문의사항 또는 참고사항">
 
@@ -506,8 +511,8 @@
   </div>
 
   <div class="card success-card" id="successCard" style="display:none;">
-    <div class="icon">🌸</div>
-    <h2>신청이 접수됐어요</h2>
+    <div class="icon">◆◆◆</div>
+    <h2>신청 접수 완료</h2>
     <p>담당자 확인 후 안내드릴게요. 감사합니다!</p>
   </div>
 </div>
@@ -637,10 +642,11 @@ async function loadCourses(){
       const item = document.createElement('label');
       item.className = 'round-row';
       const period = c.end_date && c.end_date !== c.start_date ? `${c.start_date} - ${c.end_date}` : c.start_date;
+      const roundLabel = getRoundLabel(c.name, typeName);
       item.innerHTML = `
         <input type="checkbox" value="${c.id}">
         <div class="round-main">
-          <span class="round-name">${escapeHtml(c.name)}</span>
+          <span class="round-name">${escapeHtml(roundLabel)}</span>
           ${period ? `<span class="round-date">${escapeHtml(period)}</span>` : '<span class="round-date">일정 미정</span>'}
         </div>
       `;
@@ -655,6 +661,15 @@ async function loadCourses(){
   });
 }
 loadCourses();
+
+function getRoundLabel(courseName, typeName){
+  const name = String(courseName || '').trim();
+  const type = String(typeName || '').trim();
+  const withoutType = type && name.startsWith(type) ? name.slice(type.length).trim() : name;
+  const match = withoutType.match(/(\d+\s*회차)/);
+  if (match) return match[1].replace(/\s+/g, '');
+  return withoutType || name;
+}
 
 submitBtn.addEventListener('click', () => {
   msgEl.textContent = '';
