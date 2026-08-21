@@ -339,7 +339,6 @@ const SUPABASE_URL = "https://siwatwgncoiknnkglvok.supabase.co";
 const SUPABASE_KEY = "sb_publishable_EcpVk6L5gekNjlvJLLcFRw_H7OWeExQ";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let isSignupMode = false;
 let allApps = [];
 let allCourses = [];
 let allCourseTypes = [];
@@ -356,16 +355,9 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   msgEl.textContent = '';
   if (!email || !password){ msgEl.textContent = '이메일과 비밀번호를 입력해주세요.'; return; }
 
-  const { data, error } = isSignupMode
-    ? await sb.auth.signUp({ email, password })
-    : await sb.auth.signInWithPassword({ email, password });
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
   if (error){ msgEl.textContent = error.message; return; }
-  if (isSignupMode && data.user && !data.session){
-    msgEl.style.color = 'var(--green)';
-    msgEl.textContent = '이메일 인증 후 로그인해주세요.';
-    return;
-  }
   showDashboard(data.session?.user);
 });
 

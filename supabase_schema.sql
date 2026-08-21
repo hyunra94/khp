@@ -74,12 +74,93 @@ before update of status on public.applications
 for each row
 execute function public.set_application_status_audit();
 
+create or replace function public.current_user_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select exists (
+    select 1
+    from public.admins
+    where lower(email) = lower(auth.jwt() ->> 'email')
+  );
+$function$;
+
+revoke all on function public.current_user_is_admin() from public;
+grant execute on function public.current_user_is_admin() to anon, authenticated;
+
 drop policy if exists course_types_public_select on public.course_types;
 create policy course_types_public_select
 on public.course_types
 for select
-to anon
-using (true);
+to anon, authenticated
+using (
+  exists (
+    select 1
+    from public.courses c
+    where c.course_type_id = course_types.id
+      and coalesce(c.is_open, true) = true
+  )
+  or public.current_user_is_admin()
+);
+
+drop policy if exists admins_authenticated_read on public.admins;
+drop policy if exists admins_admin_read on public.admins;
+create policy admins_admin_read
+on public.admins
+for select
+to authenticated
+using (public.current_user_is_admin());
+
+drop policy if exists applications_public_insert on public.applications;
+
+drop policy if exists courses_public_select on public.courses;
+create policy courses_public_select
+on public.courses
+for select
+to anon, authenticated
+using (coalesce(is_open, true) = true or public.current_user_is_admin());
+
+drop policy if exists applications_admin_all on public.applications;
+create policy applications_admin_all
+on public.applications
+for all
+to authenticated
+using (public.current_user_is_admin())
+with check (public.current_user_is_admin());
+
+drop policy if exists trainees_admin_all on public.trainees;
+create policy trainees_admin_all
+on public.trainees
+for all
+to authenticated
+using (public.current_user_is_admin())
+with check (public.current_user_is_admin());
+
+drop policy if exists courses_admin_all on public.courses;
+create policy courses_admin_all
+on public.courses
+for all
+to authenticated
+using (public.current_user_is_admin())
+with check (public.current_user_is_admin());
+
+drop policy if exists course_types_admin_all on public.course_types;
+create policy course_types_admin_all
+on public.course_types
+for all
+to authenticated
+using (public.current_user_is_admin())
+with check (public.current_user_is_admin());
+
+drop policy if exists rrn_log_admin_read on public.rrn_access_log;
+create policy rrn_log_admin_read
+on public.rrn_access_log
+for select
+to authenticated
+using (public.current_user_is_admin());
 
 create or replace function public.submit_application(
   p_name text,
