@@ -80,7 +80,7 @@ alter table public.applications
 
 alter table public.applications
   add constraint applications_status_check
-  check (status in ('대기', '승인', '신청확정', '수료', '거절', '취소'));
+  check (status in ('대기', '승인', '중복신청', '신청확정', '수료', '거절', '취소'));
 
 create or replace function public.set_application_status_audit()
 returns trigger

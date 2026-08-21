@@ -320,6 +320,7 @@
   }
   .status-대기{background:#FFF1D6;color:#9B6414;}
   .status-승인{background:#DDEDEA;color:#14624B;}
+  .status-중복신청{background:#FFF3E8;color:#A35A18;}
   .status-신청확정{background:#E7F4F7;color:#0F465A;}
   .status-수료{background:#E8E4F8;color:#4E3C8A;}
   .status-거절{background:#F7DEDE;color:#A33C3C;}
@@ -520,6 +521,7 @@
   .dup-badge{display:inline-flex;margin-left:6px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);font-size:10.5px;color:var(--accent-dark);background:#fff;font-weight:900;}
   .status-select.status-대기{border-color:#E4B75E;background:#FFF7E8;color:#7A5C1E;}
   .status-select.status-승인{border-color:#9DCEB7;background:#EEF8F3;color:#1F7A55;}
+  .status-select.status-중복신청{border-color:#E9B37D;background:#FFF3E8;color:#A35A18;}
   .status-select.status-신청확정{border-color:#BFDDE4;background:#E7F4F7;color:#0F465A;}
   .status-select.status-수료{border-color:#C9BDF0;background:#F1EEFB;color:#4E3C8A;}
   .status-select.status-거절{border-color:#E3A0A0;background:#FFF1F1;color:#A33C3C;}
@@ -669,6 +671,7 @@
             <option value="">전체 상태</option>
             <option value="대기">대기</option>
             <option value="승인">승인</option>
+            <option value="중복신청">중복신청</option>
             <option value="신청확정">신청 확정</option>
             <option value="수료">수료</option>
             <option value="거절">거절</option>
@@ -695,13 +698,13 @@
       </div>
       <section class="panel">
         <div class="lookup-toolbar">
-          <div class="compact-info" id="courseLookupSummary">신청 확정 또는 수료 상태의 수강자를 과정과 회차별로 조회합니다</div>
+          <div class="compact-info" id="courseLookupSummary">중복신청, 신청확정, 수료 상태의 신청자를 과정과 회차별로 조회합니다</div>
           <select id="courseLookupType" aria-label="조회할 과정 선택">
             <option value="">전체 과정</option>
           </select>
         </div>
         <div class="lookup-groups" id="courseLookupGroups">
-          <div class="empty-row">확정 수강자를 불러오는 중...</div>
+          <div class="empty-row">과정별 신청자를 불러오는 중...</div>
         </div>
       </section>
     </section>
@@ -799,8 +802,8 @@ let activeLookupCourseTypeId = '';
 let editingApplicationId = '';
 let memoTimers = {};
 let auditLoaded = false;
-const APPLICATION_STATUSES = ['대기','승인','신청확정','수료','거절','취소'];
-const COURSE_LOOKUP_STATUSES = ['신청확정','수료'];
+const APPLICATION_STATUSES = ['대기','승인','중복신청','신청확정','수료','거절','취소'];
+const COURSE_LOOKUP_STATUSES = ['중복신청','신청확정','수료'];
 const EMPLOYMENT_CATEGORIES = ['대규모','우선지원기업','고용보험미가입'];
 const MASKED_RRN = '●●●●●●-●●●●●●●';
 const visibleColumns = { phone: true, rrn: true, referral: true, memo: true };
@@ -1102,9 +1105,9 @@ function renderCourseLookup(){
     COURSE_LOOKUP_STATUSES.includes(app.status) &&
     (!activeLookupCourseTypeId || app.courses?.course_type_id === activeLookupCourseTypeId)
   );
-  setText('courseLookupSummary', `${rows.length.toLocaleString('ko-KR')}명 표시 중 · 신청확정/수료 상태만 포함`);
+  setText('courseLookupSummary', `${rows.length.toLocaleString('ko-KR')}명 표시 중 · 중복신청/신청확정/수료 상태만 포함`);
   if (rows.length === 0){
-    target.innerHTML = '<div class="empty-row">조회할 확정 수강자가 없습니다</div>';
+    target.innerHTML = '<div class="empty-row">조회할 과정별 신청자가 없습니다</div>';
     return;
   }
 
