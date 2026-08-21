@@ -147,7 +147,7 @@
   .ops-panel h3{font-size:14px;margin:0 0 5px;}
   .ops-panel>p{margin:0 0 14px;color:var(--ink-soft);font-size:12.5px;line-height:1.45;}
   .admin-grid{display:grid;grid-template-columns:1fr;gap:12px;align-items:start;}
-  .add-course-form{display:grid;grid-template-columns:1.1fr 76px minmax(160px,1.5fr) 132px 132px 86px;gap:10px;align-items:end;}
+  .add-course-form{display:grid;grid-template-columns:minmax(180px,1.4fr) 76px 132px 132px 86px;gap:10px;align-items:end;}
   .add-course-form div{min-width:0;}
   .add-course-form label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:800;}
   .add-course-form input, .add-course-form select{
@@ -189,7 +189,7 @@
   }
   .management-row textarea{min-height:38px;resize:vertical;line-height:1.4;}
   .course-row{
-    display:grid;grid-template-columns:minmax(0,1.3fr) 96px 180px 72px auto;gap:10px;align-items:center;
+    display:grid;grid-template-columns:minmax(220px,1fr) 96px minmax(300px,360px) 76px auto;gap:10px;align-items:center;
     padding:12px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
   }
   .course-row-title{font-size:13px;font-weight:900;color:var(--ink);line-height:1.35;}
@@ -204,9 +204,9 @@
     padding:6px 10px;font-family:inherit;font-size:11.5px;font-weight:900;cursor:pointer;
   }
   .course-open-toggle.open{border-color:#BFDDE4;background:#E7F4F7;color:#0F465A;}
-  .course-date-quick{display:flex;align-items:center;gap:6px;}
+  .course-date-quick{display:grid;grid-template-columns:minmax(128px,1fr) auto minmax(128px,1fr);align-items:center;gap:6px;min-width:0;}
   .course-date-quick input{
-    width:124px;border:1px solid #D7E0EA;border-radius:7px;background:#fff;padding:7px 8px;
+    width:100%;min-width:0;border:1px solid #D7E0EA;border-radius:7px;background:#fff;padding:7px 8px;
     font-family:inherit;font-size:12px;color:#1D2530;outline:none;
   }
   .course-date-quick input:focus{border-color:#176B87;box-shadow:0 0 0 3px rgba(23,107,135,0.1);}
@@ -324,8 +324,9 @@
     .dashboard-hero,.ops-grid{grid-template-columns:1fr;}
     .add-course-form{grid-template-columns:repeat(3,minmax(0,1fr));}
     .compact-add{grid-template-columns:minmax(0,1fr) auto;}
-    .course-row{grid-template-columns:minmax(0,1fr) 92px 160px auto;}
-    .course-row .pill:last-of-type{display:none;}
+    .course-row{grid-template-columns:minmax(0,1fr) 92px auto;}
+    .course-date-quick{grid-column:1 / -1;max-width:420px;}
+    .course-row .pill{justify-self:start;}
     .course-edit-row{grid-template-columns:repeat(2,minmax(0,1fr));}
   }
   @media (max-width:720px){
@@ -667,7 +668,6 @@
             <select id="newCourseType"><option value="">과정 선택</option></select>
           </div>
           <div><label>회차</label><input type="number" id="newCourseRound" placeholder="3" min="1"></div>
-          <div><label>회차명</label><input type="text" id="newCourseName" placeholder="비우면 자동 생성"></div>
           <div><label>시작일</label><input type="date" id="newCourseDate"></div>
           <div><label>종료일</label><input type="date" id="newCourseEndDate"></div>
           <div><label>정원</label><input type="number" id="newCourseCapacity" placeholder="30"></div>
@@ -921,14 +921,13 @@ function renderApplicationCourseTags(){
 document.getElementById('addCourseBtn').addEventListener('click', async () => {
   const typeSel = document.getElementById('newCourseType').value;
   const round = document.getElementById('newCourseRound').value || null;
-  const customName = document.getElementById('newCourseName').value.trim();
   const start_date = document.getElementById('newCourseDate').value || null;
   const end_date = document.getElementById('newCourseEndDate').value || null;
   const capacity = document.getElementById('newCourseCapacity').value || null;
   if (!typeSel) return;
 
   const typeName = allCourseTypes.find(t => t.id === typeSel)?.name || '과정';
-  const displayName = customName || (round ? `${typeName} ${round}회차` : typeName);
+  const displayName = round ? `${typeName} ${round}회차` : typeName;
   const { error: courseError } = await sb.from('courses').insert({
     name: displayName,
     course_type_id: typeSel,
@@ -941,7 +940,6 @@ document.getElementById('addCourseBtn').addEventListener('click', async () => {
 
   if (!courseError){
     document.getElementById('newCourseRound').value = '';
-    document.getElementById('newCourseName').value = '';
     document.getElementById('newCourseDate').value = '';
     document.getElementById('newCourseEndDate').value = '';
     document.getElementById('newCourseCapacity').value = '';
