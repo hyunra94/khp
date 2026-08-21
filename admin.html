@@ -10,6 +10,17 @@
 <meta property="og:image" content="https://hyunra94.github.io/assets/og-default.png">
 <meta property="og:url" content="https://hyunra94.github.io/[레포명]">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>재직자 교육 관리자</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="favicon.png">
+<meta property="og:title" content="재직자 교육 관리자">
+<meta property="og:image" content="https://hyunra94.github.io/assets/og-default.png">
+<meta property="og:url" content="https://hyunra94.github.io/[레포명]">
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -152,6 +163,12 @@
     padding:10px 12px;border-radius:var(--radius);border:1px solid var(--line);
     font-family:inherit;font-size:13px;background:#fff;outline:none;color:var(--ink);
   }
+  .course-edit-input{
+    width:100%;min-width:100px;padding:8px 10px;border-radius:var(--radius);
+    border:1px solid var(--line);font-family:inherit;font-size:12.5px;
+    background:var(--surface-soft);outline:none;color:var(--ink);
+  }
+  .course-edit-input:focus{border-color:var(--accent);background:#fff;}
   table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
   th{
     text-align:left;padding:12px 10px;color:var(--muted);
@@ -240,6 +257,20 @@
     <div id="newTypeRow" class="new-type-row" style="display:none;">
       <label>새 과정명</label>
       <input type="text" id="newCourseTypeName" placeholder="예: 버추얼스튜디오 실무">
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>등록된 과정</h2>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>과정명</th><th>회차</th><th>시작일</th><th>종료일</th><th>정원</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="courseRows"><tr><td colspan="6" class="empty-row">불러오는 중...</td></tr></tbody>
+      </table>
     </div>
   </div>
 
@@ -351,6 +382,54 @@ async function loadCourses(){
   const sel = document.getElementById('filterCourse');
   sel.innerHTML = '<option value="">전체 과정</option>' +
     allCourses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  renderCourseRows();
+}
+
+function renderCourseRows(){
+  const tbody = document.getElementById('courseRows');
+  if (allCourses.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-row">등록된 과정이 없습니다</td></tr>';
+    return;
+  }
+  tbody.innerHTML = allCourses.map(c => `
+    <tr data-course-id="${c.id}">
+      <td><input type="text" class="course-edit-input" data-field="name" data-id="${c.id}" value="${(c.name || '').replace(/"/g,'&quot;')}"></td>
+      <td><input type="number" class="course-edit-input" data-field="round" data-id="${c.id}" value="${c.round ?? ''}" style="width:70px;"></td>
+      <td><input type="date" class="course-edit-input" data-field="start_date" data-id="${c.id}" value="${c.start_date || ''}"></td>
+      <td><input type="date" class="course-edit-input" data-field="end_date" data-id="${c.id}" value="${c.end_date || ''}"></td>
+      <td><input type="number" class="course-edit-input" data-field="capacity" data-id="${c.id}" value="${c.capacity ?? ''}" style="width:70px;"></td>
+      <td><button class="save-btn course-save-btn" data-id="${c.id}">저장</button></td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('.course-save-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const row = tbody.querySelector(`tr[data-course-id="${id}"]`);
+      const name = row.querySelector('[data-field="name"]').value.trim();
+      const round = row.querySelector('[data-field="round"]').value || null;
+      const start_date = row.querySelector('[data-field="start_date"]').value || null;
+      const end_date = row.querySelector('[data-field="end_date"]').value || null;
+      const capacity = row.querySelector('[data-field="capacity"]').value || null;
+      if (!name){ btn.textContent = '과정명 필요'; setTimeout(()=>{btn.textContent='저장';},1500); return; }
+
+      btn.textContent = '저장 중...';
+      const { error } = await sb.from('courses').update({
+        name, round: round ? Number(round) : null, start_date, end_date,
+        capacity: capacity ? Number(capacity) : null
+      }).eq('id', id);
+      if (!error){
+        btn.textContent = '저장됨 ✓';
+        btn.classList.add('saved');
+        const idx = allCourses.findIndex(c => c.id === id);
+        if (idx > -1) allCourses[idx] = { ...allCourses[idx], name, round, start_date, end_date, capacity };
+        setTimeout(() => { btn.textContent = '저장'; btn.classList.remove('saved'); }, 1500);
+        loadApplications();
+      } else {
+        btn.textContent = '실패';
+      }
+    });
+  });
 }
 
 document.getElementById('addCourseBtn').addEventListener('click', async () => {
