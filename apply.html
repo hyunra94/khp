@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 재직자 교육 신청</title>
+<link rel="icon" href="favicon.png">
+<meta property="og:title" content="2026 재직자 교육 신청">
+<meta property="og:image" content="https://hyunra94.github.io/assets/og-default.png">
+<meta property="og:url" content="https://hyunra94.github.io/[레포명]">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy-900:#00234A;
+    --navy-800:#003877;
+    --navy-600:#0F4C92;
+    --navy-400:#7B96C2;
+    --navy-100:#E8EEF7;
+    --navy-50:#F5F8FC;
+    --white:#FFFFFF;
+    --ink:#1C2B3A;
+    --ink-soft:#6D7A8C;
+    --line:#DFE6F0;
+    --shadow: 0 10px 30px rgba(0,35,74,0.09);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Noto Sans KR', sans-serif;
+    background:var(--navy-50);
+    min-height:100vh;
+    color:var(--ink);
+  }
+  .top-bar{height:6px;background:linear-gradient(90deg, var(--navy-800), var(--navy-600));}
+  .wrap{max-width:520px;margin:0 auto;padding:40px 16px 80px;}
+  .brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:22px;}
+  .brand img{width:34px;height:34px;}
+  .brand span{
+    font-size:12.5px;font-weight:700;letter-spacing:0.1em;
+    color:var(--navy-800);text-transform:uppercase;
+  }
+  h1{
+    text-align:center;
+    font-size:25px;
+    font-weight:900;
+    margin:0 0 8px;
+    color:var(--navy-900);
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    text-align:center;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    margin-bottom:32px;
+  }
+  .card{
+    background:var(--white);
+    border-radius:18px;
+    padding:30px 26px;
+    box-shadow:var(--shadow);
+    border:1px solid var(--line);
+  }
+  label{
+    display:block;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--navy-900);
+    margin:22px 0 8px;
+    letter-spacing:0.01em;
+  }
+  label:first-of-type{margin-top:0;}
+  input[type=text], input[type=tel], input[type=email]{
+    width:100%;
+    padding:12px 14px;
+    border-radius:10px;
+    border:1.5px solid var(--line);
+    background:var(--navy-50);
+    font-family:inherit;
+    font-size:14.5px;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .15s, background .15s;
+  }
+  input:focus{border-color:var(--navy-600);background:var(--white);}
+  .course-list{display:flex;flex-direction:column;gap:9px;}
+  .course-item{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:13px 15px;
+    border-radius:10px;
+    border:1.5px solid var(--line);
+    background:var(--navy-50);
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .course-item.checked{
+    border-color:var(--navy-800);
+    background:var(--navy-100);
+  }
+  .course-item input{width:17px;height:17px;accent-color:var(--navy-800);}
+  .course-name{font-weight:700;font-size:14px;color:var(--navy-900);}
+  .course-date{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .empty-courses{
+    font-size:13px;
+    color:var(--ink-soft);
+    padding:16px;
+    text-align:center;
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+  }
+  button.submit{
+    width:100%;
+    margin-top:28px;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:var(--navy-800);
+    color:#fff;
+    font-family:inherit;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    letter-spacing:0.01em;
+    transition:background .15s, transform .12s;
+  }
+  button.submit:hover{background:var(--navy-900);}
+  button.submit:active{transform:scale(0.99);}
+  button.submit:disabled{opacity:0.5;cursor:not-allowed;}
+  .msg{
+    margin-top:14px;
+    font-size:12.5px;
+    text-align:center;
+    min-height:16px;
+  }
+  .msg.error{color:#B3475B;}
+  .success-card{
+    text-align:center;
+    padding:48px 24px;
+  }
+  .success-card .icon{width:52px;height:52px;margin:0 auto 16px;}
+  .success-card h2{font-size:19px;margin:0 0 8px;color:var(--navy-900);}
+  .success-card p{font-size:13.5px;color:var(--ink-soft);margin:0;}
+</style>
+</head>
+<body>
+<div class="top-bar"></div>
+<div class="wrap">
+  <div class="brand">
+    <img src="favicon.png" alt="">
+    <span>전주MBC · K-디지털팀</span>
+  </div>
+  <h1>2026 재직자 교육 신청</h1>
+  <p class="sub">신청할 과정을 선택하고 정보를 입력해주세요</p>
+
+  <div class="card" id="formCard">
+    <label for="name">이름</label>
+    <input type="text" id="name" placeholder="홍길동">
+
+    <label for="phone">연락처</label>
+    <input type="tel" id="phone" placeholder="010-0000-0000">
+
+    <label for="email">이메일 (선택)</label>
+    <input type="email" id="email" placeholder="example@email.com">
+
+    <label>신청 과정 (복수 선택 가능)</label>
+    <div class="course-list" id="courseList">
+      <div class="empty-courses">과정 목록을 불러오는 중...</div>
+    </div>
+
+    <button class="submit" id="submitBtn">신청하기</button>
+    <div class="msg error" id="msg"></div>
+  </div>
+
+  <div class="card success-card" id="successCard" style="display:none;">
+    <img class="icon" src="favicon.png" alt="">
+    <h2>신청이 접수됐어요</h2>
+    <p>담당자 확인 후 안내드릴게요. 감사합니다!</p>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://siwatwgncoiknnkglvok.supabase.co";
+const SUPABASE_KEY = "sb_publishable_EcpVk6L5gekNjlvJLLcFRw_H7OWeExQ";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const courseListEl = document.getElementById('courseList');
+const msgEl = document.getElementById('msg');
+const submitBtn = document.getElementById('submitBtn');
+let courses = [];
+const selected = new Set();
+
+async function loadCourses(){
+  const { data, error } = await sb.from('courses').select('id,name,start_date').order('start_date', { ascending: true });
+  if (error || !data || data.length === 0){
+    courseListEl.innerHTML = '<div class="empty-courses">현재 신청 가능한 과정이 없습니다</div>';
+    return;
+  }
+  courses = data;
+  courseListEl.innerHTML = '';
+  data.forEach(c => {
+    const item = document.createElement('label');
+    item.className = 'course-item';
+    item.innerHTML = `
+      <input type="checkbox" value="${c.id}">
+      <div>
+        <div class="course-name">${c.name}</div>
+        ${c.start_date ? `<div class="course-date">${c.start_date} 시작</div>` : ''}
+      </div>
+    `;
+    const checkbox = item.querySelector('input');
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked){ selected.add(c.id); item.classList.add('checked'); }
+      else { selected.delete(c.id); item.classList.remove('checked'); }
+    });
+    courseListEl.appendChild(item);
+  });
+}
+loadCourses();
+
+submitBtn.addEventListener('click', async () => {
+  msgEl.textContent = '';
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const email = document.getElementById('email').value.trim();
+
+  if (!name){ msgEl.textContent = '이름을 입력해주세요.'; return; }
+  if (!phone){ msgEl.textContent = '연락처를 입력해주세요.'; return; }
+  if (selected.size === 0){ msgEl.textContent = '신청할 과정을 1개 이상 선택해주세요.'; return; }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = '처리 중...';
+
+  const traineeId = crypto.randomUUID();
+  const { error: traineeError } = await sb.from('trainees').insert({
+    id: traineeId, name, phone, email: email || null
+  });
+
+  if (traineeError){
+    msgEl.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
+    submitBtn.disabled = false;
+    submitBtn.textContent = '신청하기';
+    return;
+  }
+
+  const rows = Array.from(selected).map(courseId => ({
+    trainee_id: traineeId, course_id: courseId
+  }));
+  const { error: appError } = await sb.from('applications').insert(rows);
+
+  if (appError){
+    msgEl.textContent = '신청 처리 중 오류가 발생했습니다.';
+    submitBtn.disabled = false;
+    submitBtn.textContent = '신청하기';
+    return;
+  }
+
+  document.getElementById('formCard').style.display = 'none';
+  document.getElementById('successCard').style.display = 'block';
+});
+</script>
+</body>
+</html>
