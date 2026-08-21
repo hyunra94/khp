@@ -424,6 +424,27 @@
     display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;
     padding:12px;border:1px solid #E0E6EE;border-radius:8px;background:#fff;box-shadow:0 8px 22px rgba(21,35,52,0.05);
   }
+  .course-tags{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;}
+  .course-tag{
+    border:1px solid #D8DEE6;background:#fff;color:#4F5D6D;border-radius:999px;
+    padding:8px 12px;font-family:inherit;font-size:12.5px;font-weight:900;cursor:pointer;
+  }
+  .course-tag:hover,.course-tag.active{border-color:#176B87;background:#E7F4F7;color:#0F465A;}
+  .column-order-menu{position:relative;}
+  .column-order-menu summary{
+    list-style:none;display:inline-flex;align-items:center;padding:10px 13px;border:1px solid #D8DEE6;
+    border-radius:8px;background:#fff;color:#0F465A;font-size:12.5px;font-weight:900;cursor:pointer;
+  }
+  .column-order-menu summary::-webkit-details-marker{display:none;}
+  .column-order-panel{
+    position:absolute;right:0;top:44px;z-index:35;width:250px;padding:10px;border:1px solid #D8DEE6;
+    border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(21,35,52,0.16);display:grid;gap:6px;
+  }
+  .column-order-item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:5px;align-items:center;font-size:12.5px;font-weight:800;color:#1D2530;}
+  .column-order-item button{
+    width:28px;height:28px;border:1px solid #D8DEE6;border-radius:7px;background:#F8FAFC;color:#0F465A;
+    font-family:inherit;font-weight:900;cursor:pointer;
+  }
   .inline-filters{
     position:static;display:flex;grid-template-columns:none;width:auto;padding:0;border:none;box-shadow:none;background:transparent;
   }
@@ -466,6 +487,14 @@
   .simple-table{margin-top:12px;}
   .simple-table th{background:#FBFCFE;color:#7A8796;}
   .simple-table td{background:#fff;}
+  .application-table th,.application-table td{white-space:nowrap;vertical-align:middle;}
+  .application-table .row-input{min-width:120px;background:#fff;}
+  .application-table textarea.row-memo{
+    min-width:180px;height:38px;resize:vertical;border:1px solid #D7E0EA;border-radius:7px;
+    padding:8px 9px;font-family:inherit;font-size:12.5px;background:#fff;color:#1D2530;
+  }
+  .rrn-cell{display:flex;align-items:center;gap:6px;}
+  .rrn-cell .inline-btn{padding:6px 8px;font-size:11px;}
   .type-row-table td{vertical-align:middle;}
   .course-row,.course-edit-row{
     border-color:#DDE4EC;background:#fff;box-shadow:0 8px 20px rgba(21,35,52,0.05);
@@ -483,6 +512,7 @@
     .overview-grid{grid-template-columns:1fr;}
     .console-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
     .console-toolbar{display:grid;}
+    .column-order-panel{right:0;width:min(250px,calc(100vw - 36px));}
     .inline-filters{display:grid;grid-template-columns:1fr;}
     .inline-filters input{min-width:0;}
     .trainee-head,.trainee-body,.field-grid,.app-line{grid-template-columns:1fr;}
@@ -551,8 +581,9 @@
       <div class="view-header">
         <h2>신청 현황</h2>
       </div>
+      <div class="course-tags" id="applicationCourseTags"></div>
       <div class="console-toolbar">
-        <div class="compact-info" id="activeFilterText">전체 신청자 표시 중</div>
+        <div class="compact-info" id="activeFilterText">전체 신청 표시 중</div>
         <div class="filters inline-filters">
           <select id="filterStatus">
             <option value="">전체 상태</option>
@@ -561,12 +592,19 @@
             <option value="거절">거절</option>
             <option value="취소">취소</option>
           </select>
-          <select id="filterCourse"><option value="">전체 과정</option></select>
           <input type="text" id="filterSearch" placeholder="이름/연락처/이메일/회사 검색">
+          <details class="column-order-menu" id="columnOrderMenu">
+            <summary>컬럼 순서</summary>
+            <div class="column-order-panel" id="columnOrderPanel"></div>
+          </details>
         </div>
       </div>
-      <div id="traineeGroups"><div class="empty-row">불러오는 중...</div></div>
-      <table hidden><tbody id="appRows"></tbody></table>
+      <div class="table-shell simple-table application-table">
+        <table>
+          <thead id="appHead"><tr><th>불러오는 중...</th></tr></thead>
+          <tbody id="appRows"><tr><td class="empty-row">불러오는 중...</td></tr></tbody>
+        </table>
+      </div>
     </section>
 
     <section class="view" id="view-courses">
@@ -654,9 +692,11 @@ let allApps = [];
 let allCourses = [];
 let allCourseTypes = [];
 let activeCourseTypeId = '';
+let activeApplicationCourseTypeId = '';
 let memoTimers = {};
 let auditLoaded = false;
 const visibleColumns = { phone: true, rrn: true, referral: true, memo: true };
+let appColumnOrder = ['name', 'phone', 'company', 'email', 'rrn', 'referral', 'memo', 'course', 'status', 'actions'];
 
 // ---------- auth ----------
 document.getElementById('toggleMode').addEventListener('click', () => {
@@ -722,6 +762,7 @@ async function loadCourseTypes(){
   sel.value = prevValue;
   renderCourseTypes();
   renderCourseTypeTabs();
+  renderApplicationCourseTags();
 }
 
 function renderCourseTypes(){
@@ -830,10 +871,29 @@ async function loadCourses(){
   }
   allCourses = data || [];
   const sel = document.getElementById('filterCourse');
-  sel.innerHTML = '<option value="">전체 과정</option>' +
-    allCourses.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
+  if (sel){
+    sel.innerHTML = '<option value="">전체 과정</option>' +
+      allCourses.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
+  }
+  renderApplicationCourseTags();
   renderCourses();
   renderMetrics();
+}
+
+function renderApplicationCourseTags(){
+  const wrap = document.getElementById('applicationCourseTags');
+  if (!wrap) return;
+  wrap.innerHTML = [
+    `<button class="course-tag ${activeApplicationCourseTypeId === '' ? 'active' : ''}" type="button" data-id="">전체</button>`,
+    ...allCourseTypes.map(type => `<button class="course-tag ${activeApplicationCourseTypeId === type.id ? 'active' : ''}" type="button" data-id="${escapeHtml(type.id)}">${escapeHtml(type.name)}</button>`)
+  ].join('');
+  wrap.querySelectorAll('.course-tag').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeApplicationCourseTypeId = btn.dataset.id || '';
+      renderApplicationCourseTags();
+      renderApps();
+    });
+  });
 }
 
 document.getElementById('addCourseBtn').addEventListener('click', async () => {
@@ -1006,7 +1066,7 @@ async function loadApplications(){
     .select('id, status, attempt_no, applied_at, cancelled_at, status_updated_at, trainee_id, trainees(id, name, phone, email, company, referral_sources, note, admin_memo), courses(id, name, course_type_id, course_types(name))')
     .order('applied_at', { ascending: false });
   if (error){
-    document.getElementById('traineeGroups').innerHTML = `<div class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</div>`;
+    document.getElementById('appRows').innerHTML = `<tr><td class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</td></tr>`;
     return;
   }
   allApps = data || [];
@@ -1016,132 +1076,41 @@ async function loadApplications(){
 
 function renderApps(){
   const statusFilter = document.getElementById('filterStatus').value;
-  const courseFilter = document.getElementById('filterCourse').value;
   const search = document.getElementById('filterSearch').value.trim().toLowerCase();
   renderMetrics();
 
-  const groups = new Map();
-  allApps.forEach(app => {
-    const key = app.trainee_id || app.trainees?.id || app.id;
-    if (!groups.has(key)) groups.set(key, { trainee: app.trainees || {}, apps: [] });
-    groups.get(key).apps.push(app);
-  });
-
-  const entries = Array.from(groups.values()).map(group => {
-    const visibleApps = group.apps.filter(app => {
-      if (statusFilter && app.status !== statusFilter) return false;
-      if (courseFilter && app.courses?.id !== courseFilter) return false;
-      return true;
-    });
-    return { ...group, apps: visibleApps };
-  }).filter(group => {
-    if (group.apps.length === 0) return false;
+  const rows = allApps.filter(app => {
+    if (statusFilter && app.status !== statusFilter) return false;
+    if (activeApplicationCourseTypeId && app.courses?.course_type_id !== activeApplicationCourseTypeId) return false;
     if (search){
-      const hay = `${group.trainee?.name || ''} ${group.trainee?.phone || ''} ${group.trainee?.company || ''} ${group.trainee?.email || ''}`.toLowerCase();
+      const hay = `${app.trainees?.name || ''} ${app.trainees?.phone || ''} ${app.trainees?.company || ''} ${app.trainees?.email || ''}`.toLowerCase();
       if (!hay.includes(search)) return false;
     }
     return true;
   });
 
-  const container = document.getElementById('traineeGroups');
-  const appCount = entries.reduce((sum, group) => sum + group.apps.length, 0);
-  setText('activeFilterText', `${entries.length.toLocaleString('ko-KR')}명 · ${appCount.toLocaleString('ko-KR')}건 표시 중`);
-  if (entries.length === 0){
-    container.innerHTML = '<div class="empty-row">해당하는 신청 내역이 없습니다</div>';
+  const head = document.getElementById('appHead');
+  const tbody = document.getElementById('appRows');
+  const courseName = allCourseTypes.find(type => type.id === activeApplicationCourseTypeId)?.name || '';
+  setText('activeFilterText', `${courseName ? `${courseName} · ` : ''}${rows.length.toLocaleString('ko-KR')}건 표시 중`);
+  renderColumnOrderPanel();
+
+  const columns = appColumnOrder.map(id => appColumns[id]).filter(Boolean);
+  head.innerHTML = `<tr>${columns.map(col => `<th>${escapeHtml(col.label)}</th>`).join('')}</tr>`;
+
+  if (rows.length === 0){
+    tbody.innerHTML = `<tr><td colspan="${columns.length}" class="empty-row">해당하는 신청 내역이 없습니다</td></tr>`;
     return;
   }
 
-  container.innerHTML = `<div class="trainee-list">${entries.map(group => {
-    const traineeId = group.trainee?.id || group.apps[0]?.trainee_id || '';
-    const sortedApps = [...group.apps].sort((a, b) => new Date(a.applied_at) - new Date(b.applied_at));
-    const courseTotals = sortedApps.reduce((acc, app) => {
-      const key = app.courses?.id || 'unknown';
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {});
-    const courseSeen = {};
-    return `
-      <article class="trainee-card" data-trainee-id="${escapeHtml(traineeId)}">
-        <div class="trainee-head">
-          <div class="person-fields">
-            <div class="field">
-              <label>이름</label>
-              <input class="trainee-input trainee-name" data-field="name" value="${escapeHtml(group.trainee?.name || '')}" placeholder="이름">
-            </div>
-            <div class="field-grid">
-              <div class="field">
-                <label>연락처</label>
-                <input class="trainee-input" data-field="phone" value="${escapeHtml(group.trainee?.phone || '')}" placeholder="010-0000-0000">
-              </div>
-              <div class="field">
-                <label>이메일</label>
-                <input class="trainee-input" data-field="email" value="${escapeHtml(group.trainee?.email || '')}" placeholder="name@example.com">
-              </div>
-              <div class="field">
-                <label>회사명</label>
-                <input class="trainee-input" data-field="company" value="${escapeHtml(group.trainee?.company || '')}" placeholder="회사명">
-              </div>
-            </div>
-          </div>
-          <div class="compact-info">
-            <b>유입 경로</b>
-            ${escapeHtml(formatList(group.trainee?.referral_sources))}
-            ${group.trainee?.note ? `<br>기타: ${escapeHtml(group.trainee.note)}` : ''}
-          </div>
-          <div class="rrn-panel">
-            <span class="rrn-value" data-trainee-id="${escapeHtml(traineeId)}">●●●●●●-●●●●●●●</span>
-            <button class="inline-btn rrn-btn" type="button" data-trainee-id="${escapeHtml(traineeId)}" data-mode="masked">확인</button>
-            <button class="inline-btn light rrn-btn" type="button" data-trainee-id="${escapeHtml(traineeId)}" data-mode="full">전체</button>
-          </div>
-        </div>
-        <div class="trainee-body">
-          <div>
-            <label class="field-label">내부 메모</label>
-            <textarea class="memo-input" data-field="admin_memo" placeholder="이 신청자에 대한 공통 메모">${escapeHtml(group.trainee?.admin_memo || '')}</textarea>
-          </div>
-          <div>
-            <label class="field-label">신청 과정 (${group.apps.length}건)</label>
-            <div class="apps-list">
-              ${sortedApps.map(app => {
-                const courseKey = app.courses?.id || 'unknown';
-                courseSeen[courseKey] = (courseSeen[courseKey] || 0) + 1;
-                const isDuplicate = courseTotals[courseKey] > 1;
-                return `
-                  <div class="app-line" data-app-id="${escapeHtml(app.id)}">
-                    <div>
-                      <div class="app-title">
-                        ${escapeHtml(app.courses?.name || '-')}
-                        ${isDuplicate ? `<span class="dup-badge">${courseSeen[courseKey]}번째 신청</span>` : ''}
-                      </div>
-                      <div class="app-meta">
-                        ${escapeHtml(app.courses?.course_types?.name || '과정 미지정')} · 신청 ${new Date(app.applied_at).toLocaleDateString('ko-KR')}
-                        ${app.cancelled_at ? ` · 취소 ${new Date(app.cancelled_at).toLocaleDateString('ko-KR')}` : ''}
-                      </div>
-                    </div>
-                    <select class="status-select status-${escapeHtml(app.status)}" data-id="${escapeHtml(app.id)}">
-                      ${['대기','승인','거절','취소'].map(s => `<option value="${s}" ${s===app.status?'selected':''}>${s}</option>`).join('')}
-                    </select>
-                    <div class="menu-wrap">
-                      <button class="menu-btn" type="button" aria-label="신청 메뉴" data-menu-toggle>⋯</button>
-                      <div class="menu-pop">
-                        <button type="button" class="delete-app-btn danger" data-id="${escapeHtml(app.id)}">삭제</button>
-                      </div>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        </div>
-        <div class="trainee-actions">
-          <button class="inline-btn trainee-save-btn" type="button" data-trainee-id="${escapeHtml(traineeId)}">신청자 정보 저장</button>
-        </div>
-      </article>
-    `;
-  }).join('')}</div>`;
-  bindMenus(container);
+  tbody.innerHTML = rows.map(app => `
+    <tr data-app-id="${escapeHtml(app.id)}" data-trainee-id="${escapeHtml(app.trainee_id)}">
+      ${columns.map(col => `<td data-label="${escapeHtml(col.label)}">${col.render(app)}</td>`).join('')}
+    </tr>
+  `).join('');
+  bindMenus(tbody);
 
-  container.querySelectorAll('.status-select').forEach(select => {
+  tbody.querySelectorAll('.status-select').forEach(select => {
     select.addEventListener('change', async () => {
       const id = select.dataset.id;
       const status = select.value;
@@ -1169,20 +1138,20 @@ function renderApps(){
     });
   });
 
-  container.querySelectorAll('.trainee-save-btn').forEach(btn => {
+  tbody.querySelectorAll('.save-applicant-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const traineeId = btn.dataset.traineeId;
-      const card = btn.closest('.trainee-card');
+      const row = btn.closest('tr');
+      const traineeId = row.dataset.traineeId;
       const payload = {
-        name: card.querySelector('[data-field="name"]').value.trim(),
-        phone: card.querySelector('[data-field="phone"]').value.trim(),
-        email: card.querySelector('[data-field="email"]').value.trim(),
-        company: card.querySelector('[data-field="company"]').value.trim(),
-        admin_memo: card.querySelector('[data-field="admin_memo"]').value.trim() || null
+        name: row.querySelector('[data-field="name"]').value.trim(),
+        phone: row.querySelector('[data-field="phone"]').value.trim(),
+        email: row.querySelector('[data-field="email"]').value.trim(),
+        company: row.querySelector('[data-field="company"]').value.trim(),
+        admin_memo: row.querySelector('[data-field="admin_memo"]').value.trim() || null
       };
       if (!payload.name || !payload.phone || !payload.email){
         btn.textContent = '필수값 확인';
-        setTimeout(() => { btn.textContent = '신청자 정보 저장'; }, 1400);
+        setTimeout(() => { btn.textContent = '저장'; }, 1400);
         return;
       }
       btn.textContent = '저장 중...';
@@ -1198,13 +1167,13 @@ function renderApps(){
       btn.textContent = '저장됨';
       btn.classList.add('saved');
       setTimeout(() => {
-        btn.textContent = '신청자 정보 저장';
+        btn.textContent = '저장';
         btn.classList.remove('saved');
       }, 1400);
     });
   });
 
-  container.querySelectorAll('.delete-app-btn').forEach(btn => {
+  tbody.querySelectorAll('.delete-app-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       closeMenus();
       const id = btn.dataset.id;
@@ -1221,12 +1190,13 @@ function renderApps(){
     });
   });
 
-  container.querySelectorAll('.rrn-btn').forEach(btn => {
+  tbody.querySelectorAll('.rrn-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       closeMenus();
       const traineeId = btn.dataset.traineeId;
       const mode = btn.dataset.mode;
-      const valueEl = container.querySelector(`.rrn-value[data-trainee-id="${traineeId}"]`);
+      const row = btn.closest('tr');
+      const valueEl = row.querySelector(`.rrn-value[data-trainee-id="${traineeId}"]`);
       if (mode === 'full'){
         if (!confirm('주민등록번호 전체를 조회합니다. 이 열람 기록은 감사 로그에 남습니다. 계속할까요?')) return;
       }
@@ -1237,6 +1207,99 @@ function renderApps(){
       } else {
         valueEl.textContent = '조회 실패';
       }
+    });
+  });
+}
+
+const appColumns = {
+  name: {
+    label: '이름',
+    render: app => `<input class="row-input" data-field="name" value="${escapeHtml(app.trainees?.name || '')}">`
+  },
+  phone: {
+    label: '연락처',
+    render: app => `<input class="row-input" data-field="phone" value="${escapeHtml(app.trainees?.phone || '')}">`
+  },
+  company: {
+    label: '소속(회사명)',
+    render: app => `<input class="row-input" data-field="company" value="${escapeHtml(app.trainees?.company || '')}">`
+  },
+  email: {
+    label: '이메일',
+    render: app => `<input class="row-input" data-field="email" value="${escapeHtml(app.trainees?.email || '')}">`
+  },
+  rrn: {
+    label: '주민등록번호',
+    render: app => `
+      <div class="rrn-cell">
+        <span class="rrn-value" data-trainee-id="${escapeHtml(app.trainee_id)}">●●●●●●-●●●●●●●</span>
+        <button class="inline-btn rrn-btn" type="button" data-trainee-id="${escapeHtml(app.trainee_id)}" data-mode="masked">확인</button>
+        <button class="inline-btn light rrn-btn" type="button" data-trainee-id="${escapeHtml(app.trainee_id)}" data-mode="full">전체</button>
+      </div>
+    `
+  },
+  referral: {
+    label: '유입경로',
+    render: app => `${escapeHtml(formatList(app.trainees?.referral_sources))}${app.trainees?.note ? `<div class="compact-info">기타: ${escapeHtml(app.trainees.note)}</div>` : ''}`
+  },
+  memo: {
+    label: '메모',
+    render: app => `<textarea class="row-memo" data-field="admin_memo" placeholder="메모">${escapeHtml(app.trainees?.admin_memo || '')}</textarea>`
+  },
+  course: {
+    label: '신청과정',
+    render: app => `
+      <div>
+        <b>${escapeHtml(app.courses?.name || '-')}</b>
+        <div class="compact-info">${escapeHtml(app.courses?.course_types?.name || '과정 미지정')} · ${escapeHtml(app.attempt_no || 1)}번째 신청</div>
+      </div>
+    `
+  },
+  status: {
+    label: '상태',
+    render: app => `
+      <select class="status-select status-${escapeHtml(app.status)}" data-id="${escapeHtml(app.id)}">
+        ${['대기','승인','거절','취소'].map(s => `<option value="${s}" ${s===app.status?'selected':''}>${s}</option>`).join('')}
+      </select>
+    `
+  },
+  actions: {
+    label: '관리',
+    render: app => `
+      <div class="course-row-actions">
+        <button class="inline-btn save-applicant-btn" type="button">저장</button>
+        <div class="menu-wrap">
+          <button class="menu-btn" type="button" aria-label="신청 메뉴" data-menu-toggle>⋯</button>
+          <div class="menu-pop">
+            <button type="button" class="delete-app-btn danger" data-id="${escapeHtml(app.id)}">삭제</button>
+          </div>
+        </div>
+      </div>
+    `
+  }
+};
+
+function renderColumnOrderPanel(){
+  const panel = document.getElementById('columnOrderPanel');
+  if (!panel) return;
+  panel.innerHTML = appColumnOrder.map((id, index) => `
+    <div class="column-order-item">
+      <span>${escapeHtml(appColumns[id]?.label || id)}</span>
+      <button type="button" class="column-move-btn" data-index="${index}" data-dir="-1" ${index === 0 ? 'disabled' : ''}>‹</button>
+      <button type="button" class="column-move-btn" data-index="${index}" data-dir="1" ${index === appColumnOrder.length - 1 ? 'disabled' : ''}>›</button>
+    </div>
+  `).join('');
+  panel.querySelectorAll('.column-move-btn').forEach(btn => {
+    btn.addEventListener('click', event => {
+      event.preventDefault();
+      const index = Number(btn.dataset.index);
+      const next = index + Number(btn.dataset.dir);
+      if (next < 0 || next >= appColumnOrder.length) return;
+      const updated = [...appColumnOrder];
+      [updated[index], updated[next]] = [updated[next], updated[index]];
+      appColumnOrder = updated;
+      renderApps();
+      document.getElementById('columnOrderMenu')?.setAttribute('open', '');
     });
   });
 }
@@ -1264,7 +1327,6 @@ function closeMenus(){
 }
 
 document.getElementById('filterStatus').addEventListener('change', renderApps);
-document.getElementById('filterCourse').addEventListener('change', renderApps);
 document.getElementById('filterSearch').addEventListener('input', renderApps);
 document.querySelectorAll('.column-toggle').forEach(toggle => {
   toggle.addEventListener('change', () => {
@@ -1410,14 +1472,13 @@ function setMemoIndicator(indicator, text, state){
 
 function updateActiveFilterText(){
   const status = document.getElementById('filterStatus')?.value || '';
-  const courseId = document.getElementById('filterCourse')?.value || '';
   const keyword = document.getElementById('filterSearch')?.value.trim() || '';
-  const courseName = allCourses.find(course => course.id === courseId)?.name || '';
+  const courseName = allCourseTypes.find(type => type.id === activeApplicationCourseTypeId)?.name || '';
   const parts = [];
   if (status) parts.push(status);
   if (courseName) parts.push(courseName);
   if (keyword) parts.push(`"${keyword}"`);
-  setText('activeFilterText', parts.length ? `${parts.join(' · ')} 표시 중` : '전체 신청 표시 중');
+  setText('activeFilterText', parts.length ? `${parts.join(' · ')} 표시 중` : `${allApps.length.toLocaleString('ko-KR')}건 표시 중`);
 }
 
 function updateStatusSelectClass(select, status){
