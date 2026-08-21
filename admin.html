@@ -572,6 +572,8 @@
   .lookup-table th,.lookup-table td{padding:10px 12px;border-bottom:1px solid #EEF2F6;text-align:left;vertical-align:middle;white-space:nowrap;}
   .lookup-table th{color:#7A8796;background:#FBFCFE;font-size:11.5px;}
   .lookup-table tr:last-child td{border-bottom:none;}
+  .lookup-interest{margin-top:10px;border-top:1px solid #EEF2F6;padding-top:10px;}
+  .lookup-interest-title{font-size:12.5px;font-weight:900;color:#176B87;margin:0 0 8px;}
   .type-row-table td{vertical-align:middle;}
   .course-row,.course-edit-row{
     border-color:#DDE4EC;background:#fff;box-shadow:0 8px 20px rgba(21,35,52,0.05);
@@ -796,6 +798,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allApps = [];
 let allCourses = [];
 let allCourseTypes = [];
+let allInterestLeads = [];
 let activeCourseTypeId = '';
 let activeApplicationCourseTypeId = '';
 let activeLookupCourseTypeId = '';
@@ -847,6 +850,7 @@ async function showDashboard(user){
   await loadCourseTypes();
   await loadCourses();
   await loadApplications();
+  await loadInterestLeads();
   await loadRecentActivity();
 }
 
@@ -1105,9 +1109,10 @@ function renderCourseLookup(){
     COURSE_LOOKUP_STATUSES.includes(app.status) &&
     (!activeLookupCourseTypeId || app.courses?.course_type_id === activeLookupCourseTypeId)
   );
-  setText('courseLookupSummary', `${rows.length.toLocaleString('ko-KR')}명 표시 중 · 중복신청/신청확정/수료 상태만 포함`);
-  if (rows.length === 0){
-    target.innerHTML = '<div class="empty-row">조회할 과정별 신청자가 없습니다</div>';
+  const leads = allInterestLeads.filter(lead => !activeLookupCourseTypeId || lead.course_type_id === activeLookupCourseTypeId);
+  setText('courseLookupSummary', `${rows.length.toLocaleString('ko-KR')}명 표시 중 · 개설 알림 ${leads.length.toLocaleString('ko-KR')}명`);
+  if (rows.length === 0 && leads.length === 0){
+    target.innerHTML = '<div class="empty-row">조회할 과정별 신청자 또는 개설 알림 관심자가 없습니다</div>';
     return;
   }
 
@@ -1121,22 +1126,54 @@ function renderCourseLookup(){
     acc[typeId].rounds[courseId].apps.push(app);
     return acc;
   }, {});
+  leads.forEach(lead => {
+    const typeId = lead.course_type_id || 'none';
+    const typeName = allCourseTypes.find(type => type.id === lead.course_type_id)?.name || '과정 미지정';
+    if (!grouped[typeId]) grouped[typeId] = { name: typeName, rounds: {}, leads: [] };
+    if (!grouped[typeId].leads) grouped[typeId].leads = [];
+    grouped[typeId].leads.push(lead);
+  });
 
   target.innerHTML = Object.values(grouped).map(group => {
     const total = Object.values(group.rounds).reduce((sum, round) => sum + round.apps.length, 0);
     const rounds = Object.values(group.rounds).map(round => renderLookupRound(group.name, round)).join('');
+    const interest = renderLookupInterest(group.leads || []);
     return `
       <section class="lookup-course-group">
         <div class="lookup-course-head">
           <h3>${escapeHtml(group.name)}</h3>
-          <span class="pill">${total.toLocaleString('ko-KR')}명</span>
+          <span class="pill">${total.toLocaleString('ko-KR')}명 · 알림 ${(group.leads || []).length.toLocaleString('ko-KR')}명</span>
         </div>
-        <div class="lookup-rounds">${rounds}</div>
+        <div class="lookup-rounds">${rounds || '<div class="empty-row">확정/수료 대상 신청자가 없습니다</div>'}${interest}</div>
       </section>
     `;
   }).join('');
 
   bindCourseLookupStatus(target);
+}
+
+function renderLookupInterest(leads){
+  if (!leads.length) return '';
+  return `
+    <section class="lookup-interest">
+      <p class="lookup-interest-title">개설 알림 관심자</p>
+      <table class="lookup-table">
+        <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>이메일</th><th>메모</th><th>상태</th></tr></thead>
+        <tbody>
+          ${leads.map(lead => `
+            <tr>
+              <td>${escapeHtml(lead.name || '-')}</td>
+              <td>${escapeHtml(lead.phone || '-')}</td>
+              <td>${escapeHtml(lead.company || '-')}</td>
+              <td>${escapeHtml(lead.email || '-')}</td>
+              <td>${escapeHtml(lead.note || '-')}</td>
+              <td>${escapeHtml(lead.status || '대기')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </section>
+  `;
 }
 
 function renderLookupRound(typeName, round){
@@ -1489,6 +1526,20 @@ async function loadApplications(){
   allApps = data || [];
   renderMetrics();
   renderApps();
+  renderCourseLookup();
+}
+
+async function loadInterestLeads(){
+  const { data, error } = await sb
+    .from('course_interest_leads')
+    .select('id, course_type_id, name, phone, email, company, note, status, created_at')
+    .order('created_at', { ascending: false });
+  if (error){
+    allInterestLeads = [];
+    renderCourseLookup();
+    return;
+  }
+  allInterestLeads = data || [];
   renderCourseLookup();
 }
 
@@ -1913,7 +1964,7 @@ async function loadAuditLog(){
 }
 
 function auditTargetLabel(value){
-  const labels = { trainees: '신청자 정보', applications: '신청 현황', courses: '회차', course_types: '과정명' };
+  const labels = { trainees: '신청자 정보', applications: '신청 현황', courses: '회차', course_types: '과정명', course_interest_leads: '개설 알림' };
   return labels[value] || value || '-';
 }
 

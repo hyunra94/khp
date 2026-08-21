@@ -148,6 +148,21 @@
   .round-main{min-width:0;flex:1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .round-name{display:inline;font-size:14px;font-weight:900;color:var(--ink);line-height:1.35;}
   .round-date{display:inline;font-size:13px;color:var(--ink);font-weight:800;letter-spacing:0.02em;line-height:1.35;}
+  .interest-row{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    margin:2px 0 0;
+    padding:13px 0;
+    border-top:1px solid var(--line-soft);
+    border-bottom:1px solid var(--line-soft);
+    cursor:pointer;
+  }
+  .interest-row input{width:16px;height:16px;accent-color:var(--line);flex:0 0 auto;margin-top:2px;}
+  .interest-row.checked .interest-title{color:var(--accent-dark);}
+  .interest-main{min-width:0;display:grid;gap:3px;}
+  .interest-title{font-size:14px;font-weight:900;color:var(--ink);}
+  .interest-help{font-size:12.5px;color:var(--ink-soft);line-height:1.45;}
   .choice-grid{
     display:grid;
     grid-template-columns:repeat(4,minmax(0,1fr));
@@ -529,7 +544,7 @@
       <dt>유입 경로</dt><dd id="summaryReferral"></dd>
     </dl>
 
-    <div class="terms-block">
+    <div class="terms-block" id="agreementTermBlock">
       <h3>협약서 제출 안내</h3>
       <ul>
         <li>본 과정은 재직자 대상 지원 과정으로, 소속 기업의 협약서 제출이 필요할 수 있습니다.</li>
@@ -542,7 +557,7 @@
       </label>
     </div>
 
-    <div class="terms-block">
+    <div class="terms-block" id="noshowTermBlock">
       <h3>취소 및 노쇼 안내</h3>
       <ul>
         <li>선착순 모집 과정이므로 무단 불참은 다른 신청자의 수강 기회를 제한할 수 있습니다.</li>
@@ -574,7 +589,9 @@ const submitBtn = document.getElementById('submitBtn');
 const confirmOverlay = document.getElementById('confirmOverlay');
 const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
 let courses = [];
+let courseTypes = [];
 const selected = new Set();
+const selectedInterests = new Set();
 let pendingApplication = null;
 
 document.querySelectorAll('.info-tip').forEach(button => {
@@ -621,35 +638,81 @@ wireConsentCollapse('privacyConsentBlock', 'privacyCheck');
 wireConsentCollapse('rrnConsentBlock', 'rrnConsentCheck');
 
 async function loadCourses(){
-  const { data, error } = await sb
+  const today = todayDateString();
+  const [{ data: typeData, error: typeError }, { data: courseData, error: courseError }] = await Promise.all([
+    sb
+      .from('course_types')
+      .select('id,name,description,sort_order')
+      .order('sort_order', { ascending: true, nullsFirst: false })
+      .order('name'),
+    sb
     .from('courses')
-    .select('id,name,start_date,end_date,course_types(name,description,sort_order)')
+      .select('id,name,start_date,end_date,course_type_id,course_types(name,description,sort_order)')
     .eq('is_open', true)
-    .order('start_date', { ascending: true });
-  if (error || !data || data.length === 0){
-    courseListEl.innerHTML = '<div class="empty-courses">현재 신청 가능한 과정이 없습니다</div>';
+      .or(`start_date.is.null,start_date.gte.${today}`)
+      .order('start_date', { ascending: true })
+  ]);
+  if (typeError || courseError){
+    courseListEl.innerHTML = `<div class="empty-courses">과정 목록을 불러오지 못했습니다: ${escapeHtml(typeError?.message || courseError?.message)}</div>`;
     return;
   }
-  courses = data;
+  courseTypes = typeData || [];
+  courses = courseData || [];
+  if (courseTypes.length === 0){
+    courseListEl.innerHTML = '<div class="empty-courses">현재 등록된 과정이 없습니다</div>';
+    return;
+  }
   courseListEl.innerHTML = '';
-  const groups = data.reduce((acc, course) => {
-    const key = course.course_types?.name || '기타 과정';
-    if (!acc[key]) acc[key] = { sortOrder: course.course_types?.sort_order ?? 9999, courses: [] };
-    acc[key].courses.push(course);
+  const groups = courseTypes.reduce((acc, type) => {
+    acc[type.id] = { type, courses: [] };
     return acc;
   }, {});
-  Object.entries(groups)
-    .sort((a, b) => (a[1].sortOrder - b[1].sortOrder) || a[0].localeCompare(b[0], 'ko'))
-    .forEach(([typeName, group]) => {
+  courses.forEach(course => {
+    const typeId = course.course_type_id || `none-${course.course_types?.name || '기타 과정'}`;
+    if (!groups[typeId]){
+      groups[typeId] = {
+        type: {
+          id: typeId,
+          name: course.course_types?.name || '기타 과정',
+          description: course.course_types?.description || '',
+          sort_order: course.course_types?.sort_order ?? 9999
+        },
+        courses: []
+      };
+    }
+    groups[typeId].courses.push(course);
+  });
+  Object.values(groups)
+    .sort((a, b) => ((a.type.sort_order ?? 9999) - (b.type.sort_order ?? 9999)) || a.type.name.localeCompare(b.type.name, 'ko'))
+    .forEach(group => {
+    const typeName = group.type.name;
     const groupCourses = group.courses;
     const groupEl = document.createElement('div');
     groupEl.className = 'course-type-group';
-    const description = groupCourses.find(c => c.course_types?.description)?.course_types?.description || '';
+    const description = group.type.description || groupCourses.find(c => c.course_types?.description)?.course_types?.description || '';
     groupEl.innerHTML = `
       <p class="course-type-title">${escapeHtml(typeName)}</p>
       ${description ? `<div class="course-type-desc">${escapeHtml(description)}</div>` : ''}
     `;
-    groupCourses.forEach(c => {
+    if (groupCourses.length === 0){
+      const item = document.createElement('label');
+      item.className = 'interest-row';
+      item.innerHTML = `
+        <input type="checkbox" value="${escapeHtml(group.type.id)}">
+        <div class="interest-main">
+          <span class="interest-title">개설 알림 받기</span>
+          <span class="interest-help">현재 모집 중인 회차가 없습니다. 회차가 열리면 입력하신 연락처로 안내드릴게요.</span>
+        </div>
+      `;
+      const checkbox = item.querySelector('input');
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked){ selectedInterests.add(group.type.id); item.classList.add('checked'); }
+        else { selectedInterests.delete(group.type.id); item.classList.remove('checked'); }
+        syncSubmitLabel();
+      });
+      groupEl.appendChild(item);
+    } else {
+      groupCourses.forEach(c => {
       const item = document.createElement('label');
       item.className = 'round-row';
       const period = c.end_date && c.end_date !== c.start_date ? `${c.start_date} - ${c.end_date}` : c.start_date;
@@ -665,13 +728,29 @@ async function loadCourses(){
       checkbox.addEventListener('change', () => {
         if (checkbox.checked){ selected.add(c.id); item.classList.add('checked'); }
         else { selected.delete(c.id); item.classList.remove('checked'); }
+        syncSubmitLabel();
       });
       groupEl.appendChild(item);
     });
+    }
     courseListEl.appendChild(groupEl);
   });
+  syncSubmitLabel();
 }
 loadCourses();
+
+function todayDateString(){
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function syncSubmitLabel(){
+  const hasCourses = selected.size > 0;
+  const hasInterests = selectedInterests.size > 0;
+  if (hasCourses) submitBtn.textContent = hasInterests ? '신청 및 알림 등록하기' : '신청하기';
+  else submitBtn.textContent = hasInterests ? '개설 알림 신청하기' : '신청하기';
+}
 
 function getRoundLabel(courseName, typeName){
   const name = String(courseName || '').trim();
@@ -731,6 +810,10 @@ function collectApplication(){
   const note = document.getElementById('note').value.trim();
   const selectedCourseIds = Array.from(selected);
   const selectedCourses = selectedCourseIds.map(id => courses.find(course => course.id === id)?.name || id);
+  const selectedInterestTypeIds = Array.from(selectedInterests);
+  const selectedInterestTypes = selectedInterestTypeIds.map(id => courseTypes.find(type => type.id === id)?.name || id);
+  const hasApplication = selectedCourseIds.length > 0;
+  const hasInterest = selectedInterestTypeIds.length > 0;
   const privacyConsent = document.getElementById('privacyCheck').checked;
   const rrnConsent = document.getElementById('rrnConsentCheck').checked;
 
@@ -740,11 +823,13 @@ function collectApplication(){
   if (phone.length !== 11){ msgEl.textContent = '연락처 11자리를 입력해주세요.'; return null; }
   if (!email){ msgEl.textContent = '이메일을 입력해주세요.'; return null; }
   if (!emailInput.validity.valid){ msgEl.textContent = '이메일 형식을 확인해주세요.'; return null; }
-  if (!company){ msgEl.textContent = '회사명을 입력해주세요.'; return null; }
-  if (!employedConfirmed){ msgEl.textContent = '재직자 대상 과정임을 확인해주세요.'; return null; }
-  if (rrn.length !== 13){ msgEl.textContent = '주민등록번호 13자리를 정확히 입력해주세요.'; return null; }
-  if (!rrnConsent){ msgEl.textContent = '고유식별정보 처리 안내 확인 및 동의가 필요합니다.'; return null; }
-  if (selectedCourseIds.length === 0){ msgEl.textContent = '신청할 과정을 1개 이상 선택해주세요.'; return null; }
+  if (!hasApplication && !hasInterest){ msgEl.textContent = '신청할 회차 또는 개설 알림을 1개 이상 선택해주세요.'; return null; }
+  if (hasApplication){
+    if (!company){ msgEl.textContent = '회사명을 입력해주세요.'; return null; }
+    if (!employedConfirmed){ msgEl.textContent = '재직자 대상 과정임을 확인해주세요.'; return null; }
+    if (rrn.length !== 13){ msgEl.textContent = '주민등록번호 13자리를 정확히 입력해주세요.'; return null; }
+    if (!rrnConsent){ msgEl.textContent = '고유식별정보 처리 안내 확인 및 동의가 필요합니다.'; return null; }
+  }
 
   return {
     name,
@@ -757,8 +842,12 @@ function collectApplication(){
     privacyConsent,
     referralSources,
     note,
+    hasApplication,
+    hasInterest,
     selectedCourseIds,
-    selectedCourses
+    selectedCourses,
+    selectedInterestTypeIds,
+    selectedInterestTypes
   };
 }
 
@@ -766,9 +855,15 @@ function renderSummary(application){
   document.getElementById('summaryName').textContent = application.name;
   document.getElementById('summaryPhone').textContent = application.phone;
   document.getElementById('summaryEmail').textContent = application.email;
-  document.getElementById('summaryCompany').textContent = application.company;
-  document.getElementById('summaryCourses').textContent = application.selectedCourses.join(', ');
+  document.getElementById('summaryCompany').textContent = application.company || '-';
+  const summaryItems = [];
+  if (application.selectedCourses.length) summaryItems.push(`수강 신청: ${application.selectedCourses.join(', ')}`);
+  if (application.selectedInterestTypes.length) summaryItems.push(`개설 알림: ${application.selectedInterestTypes.join(', ')}`);
+  document.getElementById('summaryCourses').textContent = summaryItems.join(' / ');
   document.getElementById('summaryReferral').textContent = application.referralSources.length ? application.referralSources.join(', ') : '-';
+  document.getElementById('agreementTermBlock').style.display = application.hasApplication ? 'block' : 'none';
+  document.getElementById('noshowTermBlock').style.display = application.hasApplication ? 'block' : 'none';
+  document.getElementById('confirmSubmitBtn').textContent = application.hasApplication ? '확인하고 신청하기' : '알림 신청하기';
 }
 
 async function submitApplication(){
@@ -777,36 +872,54 @@ async function submitApplication(){
 
   const agreementConfirmed = document.getElementById('agreementCheck').checked;
   const noshowConfirmed = document.getElementById('noshowCheck').checked;
-  if (!agreementConfirmed){ confirmMsgEl.textContent = '협약서 제출 안내를 확인해주세요.'; return; }
-  if (!noshowConfirmed){ confirmMsgEl.textContent = '취소 및 노쇼 안내를 확인해주세요.'; return; }
+  if (pendingApplication.hasApplication && !agreementConfirmed){ confirmMsgEl.textContent = '협약서 제출 안내를 확인해주세요.'; return; }
+  if (pendingApplication.hasApplication && !noshowConfirmed){ confirmMsgEl.textContent = '취소 및 노쇼 안내를 확인해주세요.'; return; }
 
   submitBtn.disabled = true;
   submitBtn.textContent = '처리 중...';
   confirmSubmitBtn.disabled = true;
   confirmSubmitBtn.textContent = '처리 중...';
 
-  const { error } = await sb.rpc('submit_application', {
-    p_name: pendingApplication.name,
-    p_phone: pendingApplication.phone,
-    p_email: pendingApplication.email,
-    p_company: pendingApplication.company,
-    p_birth6: pendingApplication.birth6,
-    p_resident_number: pendingApplication.rrn,
-    p_employed: pendingApplication.employedConfirmed,
-    p_privacy: pendingApplication.privacyConsent,
-    p_agreement_confirmed: agreementConfirmed,
-    p_noshow_confirmed: noshowConfirmed,
-    p_referral_sources: pendingApplication.referralSources,
-    p_note: pendingApplication.note || null,
-    p_course_ids: pendingApplication.selectedCourseIds
-  });
+  let error = null;
+  if (pendingApplication.hasApplication){
+    const result = await sb.rpc('submit_application', {
+      p_name: pendingApplication.name,
+      p_phone: pendingApplication.phone,
+      p_email: pendingApplication.email,
+      p_company: pendingApplication.company,
+      p_birth6: pendingApplication.birth6,
+      p_resident_number: pendingApplication.rrn,
+      p_employed: pendingApplication.employedConfirmed,
+      p_privacy: pendingApplication.privacyConsent,
+      p_agreement_confirmed: agreementConfirmed,
+      p_noshow_confirmed: noshowConfirmed,
+      p_referral_sources: pendingApplication.referralSources,
+      p_note: pendingApplication.note || null,
+      p_course_ids: pendingApplication.selectedCourseIds
+    });
+    error = result.error;
+  }
+
+  if (!error && pendingApplication.hasInterest){
+    const result = await sb.rpc('submit_course_interest_lead', {
+      p_name: pendingApplication.name,
+      p_phone: pendingApplication.phone,
+      p_email: pendingApplication.email,
+      p_company: pendingApplication.company || null,
+      p_privacy: pendingApplication.privacyConsent,
+      p_referral_sources: pendingApplication.referralSources,
+      p_note: pendingApplication.note || null,
+      p_course_type_ids: pendingApplication.selectedInterestTypeIds
+    });
+    error = result.error;
+  }
 
   if (error){
     confirmMsgEl.textContent = error.message || '오류가 발생했습니다. 다시 시도해주세요.';
     submitBtn.disabled = false;
-    submitBtn.textContent = '신청하기';
+    syncSubmitLabel();
     confirmSubmitBtn.disabled = false;
-    confirmSubmitBtn.textContent = '확인하고 신청하기';
+    confirmSubmitBtn.textContent = pendingApplication.hasApplication ? '확인하고 신청하기' : '알림 신청하기';
     return;
   }
 

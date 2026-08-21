@@ -130,15 +130,7 @@ create policy course_types_public_select
 on public.course_types
 for select
 to anon, authenticated
-using (
-  exists (
-    select 1
-    from public.courses c
-    where c.course_type_id = course_types.id
-      and coalesce(c.is_open, true) = true
-  )
-  or public.current_user_is_admin()
-);
+using (true);
 
 drop policy if exists admins_authenticated_read on public.admins;
 drop policy if exists admins_admin_read on public.admins;
@@ -155,7 +147,13 @@ create policy courses_public_select
 on public.courses
 for select
 to anon, authenticated
-using (coalesce(is_open, true) = true or public.current_user_is_admin());
+using (
+  (
+    coalesce(is_open, true) = true
+    and (start_date is null or start_date >= current_date)
+  )
+  or public.current_user_is_admin()
+);
 
 drop policy if exists applications_admin_all on public.applications;
 create policy applications_admin_all
@@ -272,6 +270,120 @@ create trigger trg_audit_course_types
 after insert or update or delete on public.course_types
 for each row
 execute function public.write_admin_audit_log();
+
+create table if not exists public.course_interest_leads (
+  id uuid primary key default gen_random_uuid(),
+  course_type_id uuid references public.course_types(id) on delete set null,
+  name text not null,
+  phone text not null,
+  email text not null,
+  company text,
+  privacy_consent boolean not null default true,
+  referral_sources text[] not null default '{}',
+  note text,
+  status text not null default '대기',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.course_interest_leads
+  drop constraint if exists course_interest_leads_status_check;
+
+alter table public.course_interest_leads
+  add constraint course_interest_leads_status_check
+  check (status in ('대기', '연락완료', '신청전환', '보류'));
+
+create index if not exists course_interest_leads_course_type_id_idx
+on public.course_interest_leads (course_type_id, created_at desc);
+
+alter table public.course_interest_leads enable row level security;
+
+grant select, update, delete on public.course_interest_leads to authenticated;
+
+drop policy if exists course_interest_leads_admin_all on public.course_interest_leads;
+create policy course_interest_leads_admin_all
+on public.course_interest_leads
+for all
+to authenticated
+using (public.current_user_is_admin())
+with check (public.current_user_is_admin());
+
+drop trigger if exists trg_audit_course_interest_leads on public.course_interest_leads;
+create trigger trg_audit_course_interest_leads
+after insert or update or delete on public.course_interest_leads
+for each row
+execute function public.write_admin_audit_log();
+
+create or replace function public.submit_course_interest_lead(
+  p_name text,
+  p_phone text,
+  p_email text,
+  p_company text,
+  p_privacy boolean,
+  p_referral_sources text[],
+  p_note text,
+  p_course_type_ids uuid[]
+)
+returns integer
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_course_type_id uuid;
+  v_inserted_count integer := 0;
+begin
+  if p_name is null or length(trim(p_name)) = 0 then
+    raise exception '이름을 입력해주세요';
+  end if;
+  if p_phone is null or length(trim(p_phone)) = 0 then
+    raise exception '연락처를 입력해주세요';
+  end if;
+  if p_email is null or length(trim(p_email)) = 0 then
+    raise exception '이메일을 입력해주세요';
+  end if;
+  if not coalesce(p_privacy, false) then
+    raise exception '개인정보 수집·이용에 동의가 필요합니다';
+  end if;
+  if coalesce(array_length(p_course_type_ids, 1), 0) = 0 then
+    raise exception '개설 알림을 받을 과정을 1개 이상 선택해주세요';
+  end if;
+
+  foreach v_course_type_id in array p_course_type_ids
+  loop
+    if not exists (select 1 from public.course_types where id = v_course_type_id) then
+      continue;
+    end if;
+
+    insert into public.course_interest_leads (
+      course_type_id, name, phone, email, company,
+      privacy_consent, referral_sources, note
+    )
+    values (
+      v_course_type_id,
+      trim(p_name),
+      trim(p_phone),
+      trim(p_email),
+      nullif(trim(coalesce(p_company, '')), ''),
+      true,
+      coalesce(p_referral_sources, '{}'),
+      nullif(trim(coalesce(p_note, '')), '')
+    );
+
+    v_inserted_count := v_inserted_count + 1;
+  end loop;
+
+  if v_inserted_count = 0 then
+    raise exception '개설 알림을 등록할 수 있는 과정이 없습니다';
+  end if;
+
+  return v_inserted_count;
+end;
+$function$;
+
+grant execute on function public.submit_course_interest_lead(
+  text,text,text,text,boolean,text[],text,uuid[]
+) to anon, authenticated;
 
 create or replace function public.submit_application(
   p_name text,
@@ -398,6 +510,7 @@ begin
     from public.courses c
     where c.id = any(p_course_ids)
       and coalesce(c.is_open, true) = true
+      and (c.start_date is null or c.start_date >= current_date)
     order by c.start_date nulls last, c.name
   loop
     select count(*) into v_existing_count
