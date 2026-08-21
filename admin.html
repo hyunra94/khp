@@ -177,7 +177,7 @@
   .inline-btn.secondary{background:var(--ink);color:#fff;border-color:var(--ink);}
   .inline-btn.light{background:#fff;color:var(--accent-dark);border:1px solid var(--line);}
   .management-list{display:grid;gap:8px;max-height:420px;overflow:auto;padding-right:2px;}
-  .course-management-list{margin-top:14px;}
+  .course-management-list{margin-top:14px;max-height:none;overflow:visible;}
   .management-row{
     display:grid;grid-template-columns:minmax(140px,1fr) minmax(180px,1.2fr) auto;
     gap:8px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
@@ -199,6 +199,18 @@
     border-radius:999px;background:var(--surface-soft);border:1px solid var(--line);font-size:11.5px;font-weight:800;color:var(--ink-soft);
   }
   .pill.open{background:var(--accent-soft);color:var(--accent-dark);border-color:#BFDDE4;}
+  .course-open-toggle{
+    min-height:32px;border-radius:999px;border:1px solid #D8DEE6;background:#F3F5F7;color:#697381;
+    padding:6px 10px;font-family:inherit;font-size:11.5px;font-weight:900;cursor:pointer;
+  }
+  .course-open-toggle.open{border-color:#BFDDE4;background:#E7F4F7;color:#0F465A;}
+  .course-date-quick{display:flex;align-items:center;gap:6px;}
+  .course-date-quick input{
+    width:124px;border:1px solid #D7E0EA;border-radius:7px;background:#fff;padding:7px 8px;
+    font-family:inherit;font-size:12px;color:#1D2530;outline:none;
+  }
+  .course-date-quick input:focus{border-color:#176B87;box-shadow:0 0 0 3px rgba(23,107,135,0.1);}
+  .course-date-quick span{color:#8A96A6;font-size:12px;}
   .course-row-actions{display:flex;gap:6px;justify-content:flex-end;}
   .menu-wrap{position:relative;display:inline-flex;justify-content:flex-end;}
   .menu-btn{
@@ -489,16 +501,25 @@
   .simple-table td{background:#fff;}
   .application-table th,.application-table td{white-space:nowrap;vertical-align:middle;}
   .application-table .row-input{min-width:120px;background:#fff;}
+  .read-text{font-size:12.5px;color:#1D2530;}
+  .read-text.muted{color:#7A8796;}
   .application-table textarea.row-memo{
     min-width:180px;height:38px;resize:vertical;border:1px solid #D7E0EA;border-radius:7px;
     padding:8px 9px;font-family:inherit;font-size:12.5px;background:#fff;color:#1D2530;
   }
-  .rrn-cell{display:flex;align-items:center;gap:6px;}
+  .rrn-cell{display:flex;align-items:center;gap:8px;}
   .rrn-cell .inline-btn{padding:6px 8px;font-size:11px;}
+  .rrn-toggle{
+    width:18px;height:18px;accent-color:#0F465A;cursor:pointer;
+  }
   .type-row-table td{vertical-align:middle;}
   .course-row,.course-edit-row{
     border-color:#DDE4EC;background:#fff;box-shadow:0 8px 20px rgba(21,35,52,0.05);
+    position:relative;
+    overflow:visible;
   }
+  .course-row .menu-pop{z-index:80;}
+  #courseRows .menu-pop{top:auto;bottom:36px;}
   .menu-btn{border-color:#D7E0EA;background:#fff;color:#697381;}
   .audit-action{font-weight:900;color:var(--accent-dark);}
   @media (max-width:980px){
@@ -693,6 +714,7 @@ let allCourses = [];
 let allCourseTypes = [];
 let activeCourseTypeId = '';
 let activeApplicationCourseTypeId = '';
+let editingApplicationId = '';
 let memoTimers = {};
 let auditLoaded = false;
 const visibleColumns = { phone: true, rrn: true, referral: true, memo: true };
@@ -947,15 +969,18 @@ function renderCourses(){
 
 function courseRowHtml(course){
   const typeName = allCourseTypes.find(type => type.id === course.course_type_id)?.name || course.course_types?.name || '과정 미지정';
-  const period = formatPeriod(course.start_date, course.end_date);
   return `
     <div class="course-row" data-course-id="${escapeHtml(course.id)}">
       <div>
         <div class="course-row-title">${escapeHtml(course.name)}</div>
         <div class="course-row-meta">${escapeHtml(typeName)}${course.round ? ` · ${escapeHtml(course.round)}회차` : ''}</div>
       </div>
-      <span class="pill ${course.is_open !== false ? 'open' : ''}">${course.is_open !== false ? '공개' : '비공개'}</span>
-      <span class="pill">${escapeHtml(period || '일정 미정')}</span>
+      <button class="course-open-toggle ${course.is_open !== false ? 'open' : ''}" type="button" data-id="${escapeHtml(course.id)}" aria-pressed="${course.is_open !== false ? 'true' : 'false'}">${course.is_open !== false ? '공개' : '비공개'}</button>
+      <div class="course-date-quick">
+        <input class="course-quick-start" type="date" value="${escapeHtml(course.start_date || '')}" aria-label="시작일" data-id="${escapeHtml(course.id)}">
+        <span>-</span>
+        <input class="course-quick-end" type="date" value="${escapeHtml(course.end_date || '')}" aria-label="종료일" data-id="${escapeHtml(course.id)}">
+      </div>
       <span class="pill">${course.capacity ?? '-'}명</span>
       <div class="course-row-actions">
         <div class="menu-wrap">
@@ -1000,6 +1025,55 @@ function bindCourseButtons(scope){
       const row = btn.closest('[data-course-id]');
       row.outerHTML = courseEditRowHtml(course);
       bindCourseButtons(document.getElementById('courseRows'));
+    });
+  });
+
+  scope.querySelectorAll('.course-open-toggle').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const course = allCourses.find(item => item.id === id);
+      if (!course) return;
+      const nextOpen = course.is_open === false;
+      btn.disabled = true;
+      const { error } = await sb.from('courses').update({ is_open: nextOpen }).eq('id', id);
+      btn.disabled = false;
+      if (error){
+        alert(`공개 상태 저장 실패: ${error.message}`);
+        return;
+      }
+      course.is_open = nextOpen;
+      btn.classList.toggle('open', nextOpen);
+      btn.textContent = nextOpen ? '공개' : '비공개';
+      btn.setAttribute('aria-pressed', nextOpen ? 'true' : 'false');
+      renderMetrics();
+      loadApplications();
+    });
+  });
+
+  scope.querySelectorAll('.course-quick-start, .course-quick-end').forEach(input => {
+    input.addEventListener('change', async () => {
+      const row = input.closest('[data-course-id]');
+      const id = input.dataset.id;
+      const course = allCourses.find(item => item.id === id);
+      if (!course || !row) return;
+      const startInput = row.querySelector('.course-quick-start');
+      const endInput = row.querySelector('.course-quick-end');
+      const payload = {
+        start_date: startInput.value || null,
+        end_date: endInput.value || null
+      };
+      input.disabled = true;
+      const { error } = await sb.from('courses').update(payload).eq('id', id);
+      input.disabled = false;
+      if (error){
+        alert(`일정 저장 실패: ${error.message}`);
+        startInput.value = course.start_date || '';
+        endInput.value = course.end_date || '';
+        return;
+      }
+      course.start_date = payload.start_date;
+      course.end_date = payload.end_date;
+      loadApplications();
     });
   });
 
@@ -1109,6 +1183,7 @@ function renderApps(){
     </tr>
   `).join('');
   bindMenus(tbody);
+  loadMaskedResidentNumbers(tbody);
 
   tbody.querySelectorAll('.status-select').forEach(select => {
     select.addEventListener('change', async () => {
@@ -1140,6 +1215,7 @@ function renderApps(){
 
   tbody.querySelectorAll('.save-applicant-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
+      closeMenus();
       const row = btn.closest('tr');
       const traineeId = row.dataset.traineeId;
       const payload = {
@@ -1164,12 +1240,26 @@ function renderApps(){
       allApps.forEach(app => {
         if (app.trainee_id === traineeId && app.trainees) Object.assign(app.trainees, payload);
       });
+      editingApplicationId = '';
       btn.textContent = '저장됨';
       btn.classList.add('saved');
-      setTimeout(() => {
-        btn.textContent = '저장';
-        btn.classList.remove('saved');
-      }, 1400);
+      renderApps();
+    });
+  });
+
+  tbody.querySelectorAll('.edit-applicant-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeMenus();
+      editingApplicationId = btn.dataset.id;
+      renderApps();
+    });
+  });
+
+  tbody.querySelectorAll('.cancel-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeMenus();
+      editingApplicationId = '';
+      renderApps();
     });
   });
 
@@ -1190,51 +1280,60 @@ function renderApps(){
     });
   });
 
-  tbody.querySelectorAll('.rrn-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      closeMenus();
-      const traineeId = btn.dataset.traineeId;
-      const mode = btn.dataset.mode;
-      const row = btn.closest('tr');
+  tbody.querySelectorAll('.rrn-toggle').forEach(toggle => {
+    toggle.addEventListener('change', async () => {
+      const traineeId = toggle.dataset.traineeId;
+      const row = toggle.closest('tr');
       const valueEl = row.querySelector(`.rrn-value[data-trainee-id="${traineeId}"]`);
-      if (mode === 'full'){
-        if (!confirm('주민등록번호 전체를 조회합니다. 이 열람 기록은 감사 로그에 남습니다. 계속할까요?')) return;
+      if (toggle.checked && !confirm('주민등록번호 전체를 조회합니다. 이 열람 기록은 감사 로그에 남습니다. 계속할까요?')){
+        toggle.checked = false;
+        return;
       }
-      const fn = mode === 'full' ? 'get_trainee_rrn_full' : 'get_trainee_rrn_masked';
+      const fn = toggle.checked ? 'get_trainee_rrn_full' : 'get_trainee_rrn_masked';
+      valueEl.textContent = '조회 중...';
       const { data, error } = await sb.rpc(fn, { p_trainee_id: traineeId });
       if (!error && data){
         valueEl.textContent = formatResidentNumber(data);
       } else {
         valueEl.textContent = '조회 실패';
+        toggle.checked = false;
       }
     });
+  });
+}
+
+function loadMaskedResidentNumbers(scope){
+  scope.querySelectorAll('.rrn-value').forEach(async valueEl => {
+    const traineeId = valueEl.dataset.traineeId;
+    if (!traineeId) return;
+    const { data, error } = await sb.rpc('get_trainee_rrn_masked', { p_trainee_id: traineeId });
+    if (!error && data) valueEl.textContent = formatResidentNumber(data);
   });
 }
 
 const appColumns = {
   name: {
     label: '이름',
-    render: app => `<input class="row-input" data-field="name" value="${escapeHtml(app.trainees?.name || '')}">`
+    render: app => renderEditableText(app, 'name', app.trainees?.name)
   },
   phone: {
     label: '연락처',
-    render: app => `<input class="row-input" data-field="phone" value="${escapeHtml(app.trainees?.phone || '')}">`
+    render: app => renderEditableText(app, 'phone', app.trainees?.phone)
   },
   company: {
     label: '소속(회사명)',
-    render: app => `<input class="row-input" data-field="company" value="${escapeHtml(app.trainees?.company || '')}">`
+    render: app => renderEditableText(app, 'company', app.trainees?.company)
   },
   email: {
     label: '이메일',
-    render: app => `<input class="row-input" data-field="email" value="${escapeHtml(app.trainees?.email || '')}">`
+    render: app => renderEditableText(app, 'email', app.trainees?.email)
   },
   rrn: {
     label: '주민등록번호',
     render: app => `
       <div class="rrn-cell">
         <span class="rrn-value" data-trainee-id="${escapeHtml(app.trainee_id)}">●●●●●●-●●●●●●●</span>
-        <button class="inline-btn rrn-btn" type="button" data-trainee-id="${escapeHtml(app.trainee_id)}" data-mode="masked">확인</button>
-        <button class="inline-btn light rrn-btn" type="button" data-trainee-id="${escapeHtml(app.trainee_id)}" data-mode="full">전체</button>
+        <label class="compact-info"><input class="rrn-toggle" type="checkbox" data-trainee-id="${escapeHtml(app.trainee_id)}">전체</label>
       </div>
     `
   },
@@ -1267,10 +1366,13 @@ const appColumns = {
     label: '관리',
     render: app => `
       <div class="course-row-actions">
-        <button class="inline-btn save-applicant-btn" type="button">저장</button>
         <div class="menu-wrap">
           <button class="menu-btn" type="button" aria-label="신청 메뉴" data-menu-toggle>⋯</button>
           <div class="menu-pop">
+            ${editingApplicationId === app.id ? `
+              <button type="button" class="save-applicant-btn" data-id="${escapeHtml(app.id)}">저장</button>
+              <button type="button" class="cancel-edit-btn" data-id="${escapeHtml(app.id)}">취소</button>
+            ` : `<button type="button" class="edit-applicant-btn" data-id="${escapeHtml(app.id)}">편집</button>`}
             <button type="button" class="delete-app-btn danger" data-id="${escapeHtml(app.id)}">삭제</button>
           </div>
         </div>
@@ -1278,6 +1380,17 @@ const appColumns = {
     `
   }
 };
+
+function isEditingApp(app){
+  return editingApplicationId === app.id;
+}
+
+function renderEditableText(app, field, value){
+  if (isEditingApp(app)){
+    return `<input class="row-input" data-field="${escapeHtml(field)}" value="${escapeHtml(value || '')}">`;
+  }
+  return `<span class="read-text ${value ? '' : 'muted'}">${escapeHtml(value || '-')}</span>`;
+}
 
 function renderColumnOrderPanel(){
   const panel = document.getElementById('columnOrderPanel');
