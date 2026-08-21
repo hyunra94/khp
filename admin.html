@@ -509,11 +509,20 @@
     min-width:180px;height:38px;resize:vertical;border:1px solid #D7E0EA;border-radius:7px;
     padding:8px 9px;font-family:inherit;font-size:12.5px;background:#fff;color:#1D2530;
   }
-  .rrn-cell{display:flex;align-items:center;gap:8px;}
+  .rrn-cell{display:inline-flex;align-items:center;gap:7px;position:relative;}
   .rrn-cell .inline-btn{padding:6px 8px;font-size:11px;}
+  .rrn-value{min-width:112px;}
+  .rrn-copy{
+    opacity:0;pointer-events:none;border:1px solid #D7E0EA;border-radius:7px;background:#fff;color:#0F465A;
+    padding:5px 7px;font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;
+    transition:opacity .14s, border-color .14s, background .14s;
+  }
+  .rrn-cell:hover .rrn-copy,.rrn-copy:focus{opacity:1;pointer-events:auto;}
+  .rrn-copy:hover{border-color:#176B87;background:#E7F4F7;}
   .rrn-toggle{
     width:18px;height:18px;accent-color:#0F465A;cursor:pointer;
   }
+  .rrn-toggle-label{display:inline-flex;align-items:center;margin:0;}
   .type-row-table td{vertical-align:middle;}
   .course-row,.course-edit-row{
     border-color:#DDE4EC;background:#fff;box-shadow:0 8px 20px rgba(21,35,52,0.05);
@@ -1329,6 +1338,22 @@ function renderApps(){
       }
     });
   });
+
+  tbody.querySelectorAll('.rrn-copy').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const cell = btn.closest('.rrn-cell');
+      const value = cell?.querySelector('.rrn-value')?.textContent.trim();
+      if (!value || value === '조회 중...' || value === '조회 실패') return;
+      try {
+        await navigator.clipboard.writeText(value);
+        const original = btn.textContent;
+        btn.textContent = '완료';
+        setTimeout(() => { btn.textContent = original; }, 1000);
+      } catch (error) {
+        alert('복사에 실패했습니다. 브라우저 권한을 확인해주세요.');
+      }
+    });
+  });
 }
 
 function loadMaskedResidentNumbers(scope){
@@ -1362,7 +1387,10 @@ const appColumns = {
     render: app => `
       <div class="rrn-cell">
         <span class="rrn-value" data-trainee-id="${escapeHtml(app.trainee_id)}">●●●●●●-●●●●●●●</span>
-        <label class="compact-info"><input class="rrn-toggle" type="checkbox" data-trainee-id="${escapeHtml(app.trainee_id)}">전체</label>
+        <button class="rrn-copy" type="button" aria-label="주민등록번호 복사">복사</button>
+        <label class="rrn-toggle-label" title="전체 주민등록번호 보기">
+          <input class="rrn-toggle" type="checkbox" data-trainee-id="${escapeHtml(app.trainee_id)}" aria-label="전체 주민등록번호 보기">
+        </label>
       </div>
     `
   },
