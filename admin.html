@@ -956,7 +956,7 @@ function renderApps(){
       const fn = mode === 'full' ? 'get_trainee_rrn_full' : 'get_trainee_rrn_masked';
       const { data, error } = await sb.rpc(fn, { p_trainee_id: traineeId });
       if (!error && data){
-        valueEl.textContent = data;
+        valueEl.textContent = formatResidentNumber(data);
       } else {
         valueEl.textContent = '조회 실패';
       }
@@ -1027,6 +1027,15 @@ function formatPeriod(startDate, endDate){
   if (!startDate && !endDate) return '';
   if (startDate && endDate && startDate !== endDate) return `${startDate} - ${endDate}`;
   return startDate || endDate || '';
+}
+
+function formatResidentNumber(value){
+  const raw = String(value ?? '').trim();
+  if (raw.includes('-')) return raw;
+  const digits = raw.replace(/\D/g, '');
+  if (digits.length === 13) return `${digits.slice(0, 6)}-${digits.slice(6)}`;
+  if (raw.length > 6) return `${raw.slice(0, 6)}-${raw.slice(6)}`;
+  return raw;
 }
 
 function setText(id, value){
