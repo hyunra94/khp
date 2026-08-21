@@ -211,6 +211,24 @@
   }
   .pill.open{background:var(--accent-soft);color:var(--accent-dark);border-color:#BFDDE4;}
   .course-row-actions{display:flex;gap:6px;justify-content:flex-end;}
+  .menu-wrap{position:relative;display:inline-flex;justify-content:flex-end;}
+  .menu-btn{
+    width:32px;height:32px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
+    color:var(--ink-soft);font-family:inherit;font-size:18px;font-weight:900;line-height:1;cursor:pointer;
+  }
+  .menu-btn:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-dark);}
+  .menu-pop{
+    display:none;position:absolute;right:0;top:36px;z-index:30;min-width:112px;
+    padding:6px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
+    box-shadow:0 14px 34px rgba(21,35,52,0.16);
+  }
+  .menu-wrap.open .menu-pop{display:grid;gap:4px;}
+  .menu-pop button{
+    border:none;background:#fff;border-radius:6px;padding:8px 9px;text-align:left;
+    font-family:inherit;font-size:12px;font-weight:800;color:var(--ink);cursor:pointer;
+  }
+  .menu-pop button:hover{background:var(--surface-soft);color:var(--accent-dark);}
+  .menu-pop button.danger{color:var(--danger);}
   .course-edit-row{
     display:grid;grid-template-columns:minmax(150px,0.9fr) minmax(220px,1.3fr) 80px 130px 130px 86px 72px auto;
     gap:8px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;
@@ -276,13 +294,6 @@
   }
   .save-btn.saved{background:var(--green);}
   .rrn-value{font-family:monospace;font-size:12px;color:var(--ink-soft);}
-  .rrn-btn{
-    border:1px solid var(--line);background:#fff;color:var(--ink-soft);
-    padding:3px 8px;border-radius:6px;font-family:inherit;font-size:10.5px;
-    cursor:pointer;margin-top:4px;margin-right:4px;
-  }
-  .rrn-btn:hover{border-color:var(--accent);color:var(--accent-dark);}
-  .rrn-btn[data-mode="full"]{color:var(--danger);border-color:#EAD0D0;}
   .compact-info{font-size:12px;line-height:1.55;color:var(--ink-soft);}
   .compact-info b{display:block;color:var(--ink);font-size:12.5px;}
   .check-list{font-size:12px;line-height:1.6;color:var(--ink-soft);}
@@ -727,7 +738,12 @@ function courseRowHtml(course){
       <span class="pill">${escapeHtml(period || '일정 미정')}</span>
       <span class="pill">${course.capacity ?? '-'}명</span>
       <div class="course-row-actions">
-        <button class="inline-btn light edit-course-btn" data-id="${escapeHtml(course.id)}">편집</button>
+        <div class="menu-wrap">
+          <button class="menu-btn" type="button" aria-label="회차 메뉴" data-menu-toggle>⋯</button>
+          <div class="menu-pop">
+            <button type="button" class="edit-course-btn" data-id="${escapeHtml(course.id)}">편집</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -754,8 +770,10 @@ function courseEditRowHtml(course){
 }
 
 function bindCourseButtons(scope){
+  bindMenus(scope);
   scope.querySelectorAll('.edit-course-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      closeMenus();
       const id = btn.dataset.id;
       const course = allCourses.find(item => item.id === id);
       const row = btn.closest('[data-course-id]');
@@ -857,8 +875,13 @@ function renderApps(){
       </td>
       <td data-label="주민번호">
         <span class="rrn-value" data-trainee-id="${escapeHtml(a.trainee_id)}">●●●●●●-●●●●●●●</span><br>
-        <button class="rrn-btn" data-trainee-id="${escapeHtml(a.trainee_id)}" data-mode="masked">확인</button>
-        <button class="rrn-btn" data-trainee-id="${escapeHtml(a.trainee_id)}" data-mode="full">전체보기</button>
+        <div class="menu-wrap">
+          <button class="menu-btn" type="button" aria-label="주민번호 조회 메뉴" data-menu-toggle>⋯</button>
+          <div class="menu-pop">
+            <button type="button" class="rrn-btn" data-trainee-id="${escapeHtml(a.trainee_id)}" data-mode="masked">마스킹 조회</button>
+            <button type="button" class="rrn-btn danger" data-trainee-id="${escapeHtml(a.trainee_id)}" data-mode="full">전체 조회</button>
+          </div>
+        </div>
       </td>
       <td data-label="과정">
         ${escapeHtml(a.courses?.name || '-')}
@@ -885,6 +908,7 @@ function renderApps(){
       </td>
     </tr>
   `).join('');
+  bindMenus(tbody);
 
   tbody.querySelectorAll('.save-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -913,6 +937,7 @@ function renderApps(){
 
   tbody.querySelectorAll('.rrn-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
+      closeMenus();
       const traineeId = btn.dataset.traineeId;
       const mode = btn.dataset.mode;
       const valueEl = tbody.querySelector(`.rrn-value[data-trainee-id="${traineeId}"]`);
@@ -928,6 +953,28 @@ function renderApps(){
       }
     });
   });
+}
+
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.menu-wrap')) closeMenus();
+});
+
+function bindMenus(scope){
+  scope.querySelectorAll('[data-menu-toggle]').forEach(btn => {
+    if (btn.dataset.bound) return;
+    btn.dataset.bound = 'true';
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const menu = btn.closest('.menu-wrap');
+      const wasOpen = menu.classList.contains('open');
+      closeMenus();
+      menu.classList.toggle('open', !wasOpen);
+    });
+  });
+}
+
+function closeMenus(){
+  document.querySelectorAll('.menu-wrap.open').forEach(menu => menu.classList.remove('open'));
 }
 
 document.getElementById('filterStatus').addEventListener('change', renderApps);
