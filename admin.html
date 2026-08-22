@@ -465,8 +465,9 @@
   }
   .course-tags{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;}
   .course-tag{
-    border:1px solid #D8DEE6;background:#fff;color:#4F5D6D;border-radius:999px;
+    border:1px solid #D8DEE6;background:#fff;color:#4F5D6D;border-radius:7px;
     padding:8px 12px;font-family:inherit;font-size:12.5px;font-weight:900;cursor:pointer;
+    box-shadow:0 1px 0 rgba(21,35,52,0.03);
   }
   .course-tag:hover,.course-tag.active{border-color:#176B87;background:#E7F4F7;color:#0F465A;}
   .column-order-menu{position:relative;}
@@ -518,10 +519,23 @@
   .app-line{display:grid;grid-template-columns:minmax(0,1fr) 116px auto;gap:10px;align-items:center;padding:11px;border:1px solid #E3E9F0;border-radius:7px;background:#FBFCFE;}
   .app-title{font-size:13px;font-weight:900;color:var(--ink);}
   .app-meta{margin-top:3px;font-size:11.5px;color:var(--ink-soft);}
-  .application-course-list{display:grid;gap:7px;min-width:230px;}
-  .application-course-item{display:grid;gap:4px;padding:9px 10px;border:1px solid #E3E9F0;border-radius:7px;background:#FBFCFE;}
+  .application-course-list{display:grid;gap:5px;min-width:230px;}
+  .application-course-item{
+    position:relative;display:grid;gap:3px;padding:7px 9px;border:1px solid #E3E9F0;border-radius:7px;background:#FBFCFE;
+    outline:none;
+  }
+  .application-course-item:hover,.application-course-item:focus{border-color:#BFDDE4;background:#fff;}
   .application-course-item b{font-size:12.5px;color:#1D2530;}
   .application-course-meta{font-size:11.5px;color:#7A8796;line-height:1.45;}
+  .application-course-detail{
+    position:absolute;left:8px;top:calc(100% + 6px);z-index:90;display:none;min-width:220px;
+    padding:8px 10px;border:1px solid #D7E0EA;border-radius:7px;background:#111418;color:#fff;
+    box-shadow:0 10px 24px rgba(21,35,52,0.2);font-size:11.5px;line-height:1.5;white-space:normal;
+  }
+  .application-course-item:hover .application-course-detail,.application-course-item:focus .application-course-detail{display:block;}
+  .application-course-detail::before{
+    content:"";position:absolute;left:14px;top:-5px;width:8px;height:8px;background:#111418;transform:rotate(45deg);
+  }
   .application-status-list{display:grid;gap:7px;min-width:136px;}
   .application-status-item{display:grid;gap:5px;}
   .application-status-item .compact-info{font-size:11px;}
@@ -1963,20 +1977,24 @@ const appColumns = {
 };
 
 function getApplicationItems(app){
-  return Array.isArray(app.apps) && app.apps.length ? app.apps : [app];
+  const items = Array.isArray(app.apps) && app.apps.length ? app.apps : [app];
+  return [...items].sort((a, b) => new Date(b.applied_at || 0) - new Date(a.applied_at || 0));
 }
 
 function renderApplicationCourseList(app){
   return `
     <div class="application-course-list">
       ${getApplicationItems(app).map(item => `
-        <div class="application-course-item">
+        <div class="application-course-item" tabindex="0" aria-label="${escapeHtml(item.courses?.name || '신청과정')} 접수 상세">
           <b>${escapeHtml(item.courses?.name || '-')}</b>
           <div class="application-course-meta">
             ${escapeHtml(item.courses?.course_types?.name || '과정 미지정')}
             ${item.attempt_no ? ` · ${escapeHtml(item.attempt_no)}번째 신청` : ''}
           </div>
-          <div class="application-course-meta">접수: ${escapeHtml(formatDateTime(item.applied_at))}</div>
+          <div class="application-course-detail">
+            <b>${escapeHtml(item.courses?.name || '-')}</b><br>
+            접수 시간: ${escapeHtml(formatDateTime(item.applied_at))}
+          </div>
         </div>
       `).join('')}
     </div>
