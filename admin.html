@@ -568,9 +568,15 @@
   .lookup-round-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 13px;border-bottom:1px solid #EEF2F6;}
   .lookup-round-title{font-size:13.5px;font-weight:900;color:#1D2530;}
   .lookup-round-date{font-size:11.5px;color:#7A8796;font-weight:800;}
-  .lookup-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .lookup-table{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed;}
   .lookup-table th,.lookup-table td{padding:10px 12px;border-bottom:1px solid #EEF2F6;text-align:left;vertical-align:middle;white-space:nowrap;}
   .lookup-table th{color:#7A8796;background:#FBFCFE;font-size:11.5px;}
+  .lookup-round .lookup-table th:nth-child(1),.lookup-round .lookup-table td:nth-child(1){width:72px;}
+  .lookup-round .lookup-table th:nth-child(2),.lookup-round .lookup-table td:nth-child(2){width:104px;}
+  .lookup-round .lookup-table th:nth-child(3),.lookup-round .lookup-table td:nth-child(3){width:110px;}
+  .lookup-round .lookup-table th:nth-child(4),.lookup-round .lookup-table td:nth-child(4){width:118px;}
+  .lookup-round .lookup-table th:nth-child(5),.lookup-round .lookup-table td:nth-child(5){width:158px;}
+  .lookup-round .lookup-table th:nth-child(6),.lookup-round .lookup-table td:nth-child(6){width:98px;}
   .lookup-table tr:last-child td{border-bottom:none;}
   .lookup-interest{margin-top:10px;border-top:1px solid #EEF2F6;padding-top:10px;}
   .lookup-interest-title{font-size:12.5px;font-weight:900;color:#176B87;margin:0 0 8px;}
@@ -622,6 +628,7 @@
     .lookup-rounds{padding:10px;gap:9px;}
     .lookup-round-head{align-items:flex-start;padding:11px;}
     .lookup-table,.lookup-table tbody,.lookup-table tr,.lookup-table td{display:block;width:100%;}
+    .lookup-table th,.lookup-table td{width:100% !important;}
     .lookup-table thead{display:none;}
     .lookup-table tr{
       padding:10px 0;
@@ -1197,6 +1204,7 @@ function renderCourseLookup(){
   }).join('');
 
   bindCourseLookupStatus(target);
+  bindCourseLookupEmployment(target);
   loadMaskedResidentNumbers(target);
   bindResidentNumberControls(target);
 }
@@ -1238,16 +1246,15 @@ function renderLookupRound(typeName, round){
         <span class="pill">${round.apps.length.toLocaleString('ko-KR')}명</span>
       </div>
       <table class="lookup-table">
-        <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>이메일</th><th>주민등록번호</th><th>재직 구분</th><th>운영 상태</th></tr></thead>
+        <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>재직 구분</th><th>주민등록번호</th><th>운영 상태</th></tr></thead>
         <tbody>
           ${round.apps.map(app => `
             <tr>
               <td data-label="이름">${escapeHtml(app.trainees?.name || '-')}</td>
               <td data-label="연락처">${escapeHtml(app.trainees?.phone || '-')}</td>
               <td data-label="소속">${escapeHtml(app.trainees?.company || '-')}</td>
-              <td data-label="이메일">${escapeHtml(app.trainees?.email || '-')}</td>
+              <td data-label="재직 구분">${renderEmploymentCategorySelect(app)}</td>
               <td data-label="주민등록번호">${renderResidentNumberCell(app.trainee_id)}</td>
-              <td data-label="재직 구분">${escapeHtml(app.employment_category || '미확인')}</td>
               <td data-label="운영 상태">${renderStatusSelect(app, COURSE_LOOKUP_STATUSES)}</td>
             </tr>
           `).join('')}
@@ -1258,13 +1265,21 @@ function renderLookupRound(typeName, round){
 }
 
 function bindCourseLookupStatus(scope){
-  scope.querySelectorAll('.status-select').forEach(select => {
+  scope.querySelectorAll('.status-select:not(.employment-category-select)').forEach(select => {
     select.addEventListener('change', async () => {
       const id = select.dataset.id;
       const status = normalizeApplicationStatus(select.value);
       select.value = status;
       updateStatusSelectClass(select, status);
       await updateApplicationStatus(id, status, select);
+    });
+  });
+}
+
+function bindCourseLookupEmployment(scope){
+  scope.querySelectorAll('.employment-category-select').forEach(select => {
+    select.addEventListener('change', async () => {
+      await updateEmploymentCategory(select.dataset.id, select.value, select);
     });
   });
 }
@@ -1634,7 +1649,7 @@ function renderApps(){
   loadMaskedResidentNumbers(tbody);
   bindResidentNumberControls(tbody);
 
-  tbody.querySelectorAll('.status-select').forEach(select => {
+  tbody.querySelectorAll('.status-select:not(.employment-category-select)').forEach(select => {
     select.addEventListener('change', async () => {
       const id = select.dataset.id;
       const status = normalizeApplicationStatus(select.value);
