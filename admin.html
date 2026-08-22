@@ -480,13 +480,13 @@
     position:absolute;right:0;top:44px;z-index:35;width:292px;padding:10px;border:1px solid #D8DEE6;
     border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(21,35,52,0.16);display:grid;gap:6px;
   }
-  .column-order-item{display:grid;grid-template-columns:18px minmax(0,1fr) auto auto;gap:6px;align-items:center;font-size:12.5px;font-weight:800;color:#1D2530;}
+  .column-order-item{display:grid;grid-template-columns:16px 18px minmax(0,1fr);gap:6px;align-items:center;font-size:12.5px;font-weight:800;color:#1D2530;padding:4px 2px;border-radius:6px;transition:background .1s;}
   .column-order-item input{width:15px;height:15px;accent-color:#0F465A;}
   .column-order-item span.disabled{color:#A1ABB7;}
-  .column-order-item button{
-    width:28px;height:28px;border:1px solid #D8DEE6;border-radius:7px;background:#F8FAFC;color:#0F465A;
-    font-family:inherit;font-weight:900;cursor:pointer;
-  }
+  /* [Claude 추가] 컬럼 순서를 버튼 대신 드래그로 조절 */
+  .column-drag-handle{cursor:grab;color:#A1ABB7;font-size:13px;line-height:1;text-align:center;user-select:none;}
+  .column-order-item.dragging{opacity:0.4;}
+  .column-order-item.drag-over{background:#E7F4F7;box-shadow:inset 0 0 0 1px #176B87;}
   .inline-filters{
     position:static;display:flex;grid-template-columns:none;width:auto;padding:0;border:none;box-shadow:none;background:transparent;
   }
@@ -539,6 +539,13 @@
   .application-status-list{display:grid;gap:7px;min-width:136px;}
   .application-status-item{display:grid;gap:5px;}
   .application-status-item .compact-info{font-size:11px;}
+  /* [Claude 추가] 신청 건별 삭제 버튼 (여러 건 묶인 신청자용) */
+  .delete-app-item-btn{
+    justify-self:start;border:none;background:transparent;color:var(--danger);
+    font-size:10.5px;font-weight:800;padding:0;cursor:pointer;text-decoration:underline;
+  }
+  .delete-app-item-btn:hover{color:#8f2c2c;}
+  .delete-app-item-btn:disabled{opacity:.5;cursor:default;}
   .dup-badge{display:inline-flex;margin-left:6px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);font-size:10.5px;color:var(--accent-dark);background:#fff;font-weight:900;}
   .status-select.status-대기{border-color:#E4B75E;background:#FFF7E8;color:#7A5C1E;}
   .status-select.status-승인{border-color:#9DCEB7;background:#EEF8F3;color:#1F7A55;}
@@ -561,20 +568,28 @@
     min-width:180px;height:38px;resize:vertical;border:1px solid #D7E0EA;border-radius:7px;
     padding:8px 9px;font-family:inherit;font-size:12.5px;background:#fff;color:#1D2530;
   }
-  .rrn-cell{display:inline-flex;align-items:center;gap:7px;position:relative;}
+  .rrn-cell{display:inline-flex;align-items:center;gap:7px;position:relative;max-width:100%;}
   .rrn-cell .inline-btn{padding:6px 8px;font-size:11px;}
-  .rrn-value{min-width:112px;}
-  .rrn-copy{
-    opacity:0;pointer-events:none;border:1px solid #D7E0EA;border-radius:7px;background:#fff;color:#0F465A;
-    padding:5px 7px;font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;
-    transition:opacity .14s, border-color .14s, background .14s;
-  }
-  .rrn-cell:hover .rrn-copy,.rrn-copy:focus{opacity:1;pointer-events:auto;}
-  .rrn-copy:hover{border-color:#176B87;background:#E7F4F7;}
+  .rrn-value{min-width:0;overflow:hidden;text-overflow:ellipsis;}
   .rrn-toggle{
-    width:18px;height:18px;accent-color:#0F465A;cursor:pointer;
+    width:18px;height:18px;accent-color:#0F465A;cursor:pointer;flex:0 0 auto;
   }
-  .rrn-toggle-label{display:inline-flex;align-items:center;margin:0;}
+  .rrn-toggle-label{display:inline-flex;align-items:center;margin:0;flex:0 0 auto;}
+  /* [Claude 추가] 복사 버튼: 아이콘만, 텍스트 위에 오버레이(별도 여백 차지 안 함) */
+  .copy-cell{position:relative;display:inline-flex;align-items:center;max-width:100%;}
+  .copy-cell .read-text{overflow:hidden;text-overflow:ellipsis;}
+  .copy-icon-btn{
+    opacity:0;pointer-events:none;position:absolute;top:50%;right:2px;transform:translateY(-50%);
+    display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+    border:1px solid #D7E0EA;border-radius:6px;background:rgba(255,255,255,0.96);color:#0F465A;
+    cursor:pointer;padding:0;transition:opacity .14s, border-color .14s, background .14s;
+    box-shadow:0 2px 6px rgba(21,35,52,0.12);
+  }
+  .rrn-cell:hover .copy-icon-btn,.copy-cell:hover .copy-icon-btn,.copy-icon-btn:focus{opacity:1;pointer-events:auto;}
+  .copy-icon-btn:hover{border-color:#176B87;background:#E7F4F7;}
+  .copy-icon-btn svg{width:12px;height:12px;}
+  .copy-icon-btn.copied svg{display:none;}
+  .copy-icon-btn.copied::after{content:'✓';font-size:12px;font-weight:900;color:#1F7A55;}
   .lookup-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
   .lookup-filter-tags{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
   .lookup-groups{display:grid;gap:14px;}
@@ -884,6 +899,8 @@ const COURSE_LOOKUP_STATUSES = ['승인','중복신청','신청확정','수료']
 const EMPLOYMENT_CATEGORIES = ['대규모','우선지원기업','고용보험미가입'];
 const MASKED_RRN = '●●●●●●-●●●●●●●';
 const RRN_READY_LABEL = '확인 전';
+/* [Claude 추가] 복사 아이콘(클립보드) - 이메일/주민등록번호 칸에서 공용으로 사용 */
+const COPY_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
 const visibleColumns = { phone: true, rrn: true, referral: true, memo: true };
 let appColumnOrder = ['name', 'phone', 'company', 'email', 'rrn', 'employment', 'referral', 'memo', 'course', 'status', 'actions'];
 let appColumnVisibility = appColumnOrder.reduce((acc, id) => ({ ...acc, [id]: true }), {});
@@ -1277,6 +1294,7 @@ function renderCourseLookup(){
   bindCourseLookupEmployment(target);
   loadMaskedResidentNumbers(target);
   bindResidentNumberControls(target);
+  bindCopyButtons(target);
 }
 
 function renderLookupInterest(leads){
@@ -1676,7 +1694,7 @@ function bindCourseButtons(scope){
 async function loadApplications(){
   const { data, error } = await sb
     .from('applications')
-    .select('id, status, employment_category, attempt_no, applied_at, cancelled_at, status_updated_at, trainee_id, trainees(id, name, phone, email, company, referral_sources, note, admin_memo), courses(id, name, course_type_id, start_date, end_date, course_types(name))')
+    .select('id, status, employment_category, attempt_no, applied_at, cancelled_at, status_updated_at, trainee_id, trainees(id, name, phone, email, company, referral_sources, note, admin_memo, birth6), courses(id, name, course_type_id, start_date, end_date, course_types(name))') /* [Claude 추가] birth6: 주민번호 마스킹 기본 표시용, 감사로그 없이 조회 가능 */
     .order('applied_at', { ascending: false });
   if (error){
     document.getElementById('appRows').innerHTML = `<tr><td class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</td></tr>`;
@@ -1743,6 +1761,7 @@ function renderApps(){
   bindMenus(tbody);
   loadMaskedResidentNumbers(tbody);
   bindResidentNumberControls(tbody);
+  bindCopyButtons(tbody);
 
   tbody.querySelectorAll('.status-select:not(.employment-category-select)').forEach(select => {
     select.addEventListener('change', async () => {
@@ -1828,6 +1847,27 @@ function renderApps(){
     });
   });
 
+  /* ===== [Claude 추가] 신청 건이 여러 개로 묶인 신청자의 건별 삭제 시작 ===== */
+  tbody.querySelectorAll('.delete-app-item-btn').forEach(btn => {
+    if (btn.dataset.claudeBound) return;
+    btn.dataset.claudeBound = 'true';
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      if (!confirm('이 신청 건만 삭제할까요? 같은 신청자의 다른 신청 건은 남습니다.')) return;
+      btn.disabled = true;
+      const { error } = await sb.from('applications').delete().eq('id', id);
+      if (error){
+        alert(`삭제 실패: ${error.message}`);
+        btn.disabled = false;
+        return;
+      }
+      await loadApplications();
+      renderMetrics();
+      loadRecentActivity();
+    });
+  });
+  /* ===== [Claude 추가] 끝 ===== */
+
 }
 
 function groupApplicationsByTrainee(apps){
@@ -1886,16 +1926,24 @@ function bindResidentNumberControls(scope){
     });
   });
 
-  scope.querySelectorAll('.rrn-copy').forEach(btn => {
+}
+
+/* [Claude 추가] 복사 아이콘 버튼 공용 핸들러 (이메일: data-copy-value 사용 / 주민등록번호: 현재 표시값 동적으로 읽음) */
+function bindCopyButtons(scope){
+  scope.querySelectorAll('.copy-icon-btn').forEach(btn => {
+    if (btn.dataset.copyBound) return;
+    btn.dataset.copyBound = 'true';
     btn.addEventListener('click', async () => {
-      const cell = btn.closest('.rrn-cell');
-      const value = cell?.querySelector('.rrn-value')?.textContent.trim();
+      let value = btn.dataset.copyValue;
+      if (value === undefined){
+        const cell = btn.closest('.copy-cell');
+        value = cell?.querySelector('.rrn-value')?.textContent.trim();
+      }
       if (!value || value === RRN_READY_LABEL || value === '조회 중...' || value === '조회 실패') return;
       try {
         await navigator.clipboard.writeText(value);
-        const original = btn.textContent;
-        btn.textContent = '완료';
-        setTimeout(() => { btn.textContent = original; }, 1000);
+        btn.classList.add('copied');
+        setTimeout(() => btn.classList.remove('copied'), 1000);
       } catch (error) {
         alert('복사에 실패했습니다. 브라우저 권한을 확인해주세요.');
       }
@@ -1903,34 +1951,24 @@ function bindResidentNumberControls(scope){
   });
 }
 
-/* [Claude 추가] 마스킹된 주민등록번호 캐시 - 같은 신청자를 다시 렌더링할 때 재조회/재로깅 방지 */
-const claudeRrnMaskCache = {};
-
-async function loadMaskedResidentNumbers(scope){
-  const cells = Array.from(scope.querySelectorAll('.rrn-value'));
-  cells.forEach(valueEl => {
+/* [Claude 추가] 생년월일(6자리)은 이미 평문으로 저장되어 있어 감사 로그 없이 바로 표시 가능.
+   성별 숫자를 포함한 뒤 7자리는 실제 열람(전체 보기 토글)해야 감사 로그에 남도록 그대로 마스킹 처리. */
+function loadMaskedResidentNumbers(scope){
+  scope.querySelectorAll('.rrn-value').forEach(valueEl => {
     const traineeId = valueEl.dataset.traineeId;
-    valueEl.textContent = claudeRrnMaskCache[traineeId] || RRN_READY_LABEL;
+    const app = allApps.find(item => item.trainee_id === traineeId);
+    const birth6 = app?.trainees?.birth6;
+    valueEl.textContent = birth6 ? `${birth6}-*******` : RRN_READY_LABEL;
   });
-
-  /* [Claude 추가] 생년월일-성별 앞 7자리는 표시, 뒤 6자리는 마스킹 처리 (get_trainee_rrn_masked 사용) */
-  const pending = cells.filter(el => !claudeRrnMaskCache[el.dataset.traineeId]);
-  await Promise.all(pending.map(async valueEl => {
-    const traineeId = valueEl.dataset.traineeId;
-    if (!traineeId) return;
-    valueEl.textContent = '조회 중...';
-    const { data, error } = await sb.rpc('get_trainee_rrn_masked', { p_trainee_id: traineeId });
-    const masked = (!error && data) ? formatResidentNumber(data) : RRN_READY_LABEL;
-    claudeRrnMaskCache[traineeId] = masked;
-    if (valueEl.isConnected) valueEl.textContent = masked;
-  }));
 }
 
 function renderResidentNumberCell(traineeId){
   return `
     <div class="rrn-cell">
-      <span class="rrn-value" data-trainee-id="${escapeHtml(traineeId)}">${RRN_READY_LABEL}</span>
-      <button class="rrn-copy" type="button" aria-label="주민등록번호 복사">복사</button>
+      <span class="copy-cell">
+        <span class="rrn-value" data-trainee-id="${escapeHtml(traineeId)}">${RRN_READY_LABEL}</span>
+        <button class="copy-icon-btn" type="button" aria-label="주민등록번호 복사">${COPY_ICON_SVG}</button>
+      </span>
       <label class="rrn-toggle-label" title="전체 주민등록번호 보기">
         <input class="rrn-toggle" type="checkbox" data-trainee-id="${escapeHtml(traineeId)}" aria-label="전체 주민등록번호 보기">
       </label>
@@ -1953,7 +1991,17 @@ const appColumns = {
   },
   email: {
     label: '이메일',
-    render: app => renderEditableText(app, 'email', app.trainees?.email)
+    /* [Claude 추가] 편집 중이 아닐 때만 복사 아이콘을 오버레이로 보여줌 (편집용 input 구조는 그대로 유지) */
+    render: app => {
+      const value = app.trainees?.email;
+      if (isEditingApp(app) || !value) return renderEditableText(app, 'email', value);
+      return `
+        <span class="copy-cell">
+          <span class="read-text">${escapeHtml(value)}</span>
+          <button class="copy-icon-btn" type="button" data-copy-value="${escapeHtml(value)}" aria-label="이메일 복사">${COPY_ICON_SVG}</button>
+        </span>
+      `;
+    }
   },
   rrn: {
     label: '주민등록번호',
@@ -2024,12 +2072,18 @@ function renderApplicationCourseList(app){
 }
 
 function renderApplicationStatusList(app){
+  const items = getApplicationItems(app);
   return `
     <div class="application-status-list">
-      ${getApplicationItems(app).map(item => `
+      ${items.map(item => `
         <div class="application-status-item">
           ${renderStatusSelect(item)}
           <div class="compact-info">${escapeHtml(formatDateTime(item.applied_at))}</div>
+          ${/* ===== [Claude 추가] 신청 건이 2개 이상인 경우, 건별 삭제 버튼 시작 =====
+             기존 ⋯메뉴의 삭제 버튼은 getApplicationItems(app).length === 1 일 때만 노출되어
+             여러 건이 묶인 신청자는 개별 신청 건을 삭제할 방법이 없었음. 이를 보완. */ ''}
+          ${items.length > 1 ? `<button type="button" class="delete-app-item-btn" data-id="${escapeHtml(item.id)}" title="이 신청 건만 삭제">이 건 삭제</button>` : ''}
+          ${/* ===== [Claude 추가] 끝 ===== */ ''}
         </div>
       `).join('')}
     </div>
@@ -2047,17 +2101,18 @@ function renderEditableText(app, field, value){
   return `<span class="read-text ${value ? '' : 'muted'}">${escapeHtml(value || '-')}</span>`;
 }
 
+/* [Claude 추가] 컬럼 순서 조절: 버튼(‹›) 대신 일반적인 드래그 앤 드롭 방식으로 변경 */
 function renderColumnOrderPanel(){
   const panel = document.getElementById('columnOrderPanel');
   if (!panel) return;
-  panel.innerHTML = appColumnOrder.map((id, index) => `
-    <div class="column-order-item">
+  panel.innerHTML = appColumnOrder.map((id) => `
+    <div class="column-order-item" draggable="true" data-id="${escapeHtml(id)}">
+      <span class="column-drag-handle" aria-hidden="true">⠿</span>
       <input type="checkbox" class="column-visible-toggle" data-id="${escapeHtml(id)}" ${appColumnVisibility[id] !== false || id === 'actions' ? 'checked' : ''} ${id === 'actions' ? 'disabled' : ''} aria-label="${escapeHtml(appColumns[id]?.label || id)} 표시">
       <span class="${appColumnVisibility[id] === false ? 'disabled' : ''}">${escapeHtml(appColumns[id]?.label || id)}</span>
-      <button type="button" class="column-move-btn" data-index="${index}" data-dir="-1" ${index === 0 ? 'disabled' : ''}>‹</button>
-      <button type="button" class="column-move-btn" data-index="${index}" data-dir="1" ${index === appColumnOrder.length - 1 ? 'disabled' : ''}>›</button>
     </div>
   `).join('');
+
   panel.querySelectorAll('.column-visible-toggle').forEach(toggle => {
     toggle.addEventListener('change', event => {
       event.preventDefault();
@@ -2068,14 +2123,37 @@ function renderColumnOrderPanel(){
       document.getElementById('columnOrderMenu')?.setAttribute('open', '');
     });
   });
-  panel.querySelectorAll('.column-move-btn').forEach(btn => {
-    btn.addEventListener('click', event => {
+
+  let dragSourceId = null;
+  panel.querySelectorAll('.column-order-item').forEach(item => {
+    item.addEventListener('dragstart', event => {
+      dragSourceId = item.dataset.id;
+      item.classList.add('dragging');
+      event.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      panel.querySelectorAll('.column-order-item').forEach(el => el.classList.remove('drag-over'));
+    });
+    item.addEventListener('dragover', event => {
       event.preventDefault();
-      const index = Number(btn.dataset.index);
-      const next = index + Number(btn.dataset.dir);
-      if (next < 0 || next >= appColumnOrder.length) return;
+      if (item.dataset.id === dragSourceId) return;
+      item.classList.add('drag-over');
+    });
+    item.addEventListener('dragleave', () => {
+      item.classList.remove('drag-over');
+    });
+    item.addEventListener('drop', event => {
+      event.preventDefault();
+      item.classList.remove('drag-over');
+      const targetId = item.dataset.id;
+      if (!dragSourceId || dragSourceId === targetId) return;
+      const fromIndex = appColumnOrder.indexOf(dragSourceId);
+      const toIndex = appColumnOrder.indexOf(targetId);
+      if (fromIndex === -1 || toIndex === -1) return;
       const updated = [...appColumnOrder];
-      [updated[index], updated[next]] = [updated[next], updated[index]];
+      updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, dragSourceId);
       appColumnOrder = updated;
       renderApps();
       document.getElementById('columnOrderMenu')?.setAttribute('open', '');
