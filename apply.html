@@ -277,6 +277,20 @@
   .success-card .icon::before{content:none;}
   .success-card h2{font-size:27px;margin:0 0 14px;letter-spacing:0;color:#000;font-weight:900;line-height:1.25;}
   .success-card p{font-size:13.5px;color:var(--ink);margin:0;line-height:1.7;}
+  .success-actions{margin-top:28px;}
+  .restart-apply{
+    width:100%;
+    padding:14px;
+    border:1.5px solid var(--line);
+    border-radius:0;
+    background:#fff;
+    color:#111;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:900;
+    cursor:pointer;
+  }
+  .restart-apply:active{background:#F4F2EC;}
   .notice-card{
     background:transparent;
     border:none;
@@ -528,6 +542,9 @@
     <div class="icon">◆◆◆</div>
     <h2>신청 접수 완료</h2>
     <p>담당자 확인 후 안내드릴게요. 감사합니다!</p>
+    <div class="success-actions">
+      <button class="restart-apply" type="button" id="restartApplyBtn">다시 신청하기</button>
+    </div>
   </div>
 </div>
 
@@ -586,6 +603,7 @@ const courseListEl = document.getElementById('courseList');
 const msgEl = document.getElementById('msg');
 const confirmMsgEl = document.getElementById('confirmMsg');
 const submitBtn = document.getElementById('submitBtn');
+const restartApplyBtn = document.getElementById('restartApplyBtn');
 const confirmOverlay = document.getElementById('confirmOverlay');
 const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
 let courses = [];
@@ -795,6 +813,7 @@ function closeConfirmModal(){
 }
 
 confirmSubmitBtn.addEventListener('click', submitApplication);
+restartApplyBtn.addEventListener('click', resetApplicationForm);
 
 function collectApplication(){
   const name = document.getElementById('name').value.trim();
@@ -926,6 +945,34 @@ async function submitApplication(){
   closeConfirmModal();
   document.getElementById('formCard').style.display = 'none';
   document.getElementById('successCard').style.display = 'block';
+}
+
+function resetApplicationForm(){
+  ['name', 'phone', 'email', 'company', 'rrn1', 'rrn2', 'sourceChannel', 'note'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['privacyCheck', 'employedCheck', 'rrnConsentCheck', 'agreementCheck', 'noshowCheck'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.checked = false;
+      el.dispatchEvent(new Event('change'));
+    }
+  });
+  selected.clear();
+  selectedInterests.clear();
+  pendingApplication = null;
+  msgEl.textContent = '';
+  confirmMsgEl.textContent = '';
+  submitBtn.disabled = false;
+  confirmSubmitBtn.disabled = false;
+  confirmSubmitBtn.textContent = '확인하고 신청하기';
+  courseListEl.querySelectorAll('input[type="checkbox"]').forEach(input => { input.checked = false; });
+  courseListEl.querySelectorAll('.checked').forEach(item => item.classList.remove('checked'));
+  syncSubmitLabel();
+  document.getElementById('successCard').style.display = 'none';
+  document.getElementById('formCard').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function escapeHtml(value){
