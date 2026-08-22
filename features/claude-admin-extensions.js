@@ -65,6 +65,41 @@
       .claude-log-badge.skipped{background:#EDEDED;color:#888;}
       .claude-resend-btn{font-size:11px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer;}
 
+      /* 발송 문구 편집 */
+      .claude-tpl-row{border:1px solid #EDF1F5;border-radius:7px;padding:10px 12px;background:#FBFCFE;margin-bottom:8px;}
+      .claude-tpl-row label{display:block;font-size:11px;font-weight:800;color:var(--ink-soft);margin:6px 0 4px;}
+      .claude-tpl-row input, .claude-tpl-row textarea{
+        width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:12.5px;box-sizing:border-box;background:#fff;
+      }
+      .claude-tpl-row-foot{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;}
+      .claude-tpl-save-btn{font-size:11px;padding:5px 12px;border:1px solid var(--accent-dark,#0F465A);border-radius:6px;background:var(--accent-dark,#0F465A);color:#fff;font-weight:800;cursor:pointer;}
+      .claude-tpl-save-btn:disabled{opacity:.6;cursor:default;}
+      .claude-tpl-msg{font-size:11.5px;font-weight:800;}
+      .claude-tpl-msg.success{color:var(--green,#1F7A55);}
+      .claude-tpl-msg.error{color:var(--danger,#C43D3D);}
+
+      /* 개별(수동) 발송 */
+      .claude-manual-box label{display:block;font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px;}
+      .claude-manual-box input[type=text], .claude-manual-box textarea{
+        width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:6px;font-family:inherit;font-size:13.5px;box-sizing:border-box;
+      }
+      .claude-manual-search-wrap{position:relative;}
+      .claude-manual-results{
+        position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;background:#fff;border:1px solid var(--line);
+        border-radius:8px;box-shadow:0 14px 34px rgba(21,35,52,0.16);max-height:220px;overflow-y:auto;
+      }
+      .claude-manual-result{padding:9px 12px;cursor:pointer;border-bottom:1px solid #F1F4F8;display:flex;flex-direction:column;gap:2px;}
+      .claude-manual-result:last-child{border-bottom:none;}
+      .claude-manual-result:hover{background:var(--accent-soft,#E7F4F7);}
+      .claude-manual-result b{font-size:13px;color:var(--ink);}
+      .claude-manual-result span{font-size:11.5px;color:var(--ink-soft);}
+      .claude-chip-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;min-height:20px;}
+      .claude-chip{
+        display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;border-radius:20px;
+        background:var(--accent-soft,#E7F4F7);color:var(--accent-dark,#0F465A);font-size:12px;font-weight:800;
+      }
+      .claude-chip button{border:none;background:transparent;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:2px;}
+
       /* 발송 문구 미리보기 */
       .claude-preview-group{border:1px solid var(--line);border-radius:8px;margin-bottom:12px;overflow:hidden;background:#fff;}
       .claude-preview-group summary{list-style:none;cursor:pointer;padding:12px 14px;font-size:13px;font-weight:800;color:var(--ink);background:#F8FAFC;display:flex;align-items:center;justify-content:space-between;}
@@ -205,83 +240,252 @@
   }
 
   /* ==================================================================
-   * [Claude 추가] 발송 문구 미리보기
-   * "알림관리에서 어떤 내용의 문자를 보내는지 직관적이지 않다"는 피드백에 따라,
-   * 실제 Edge Function(notify-application/notify-status-change/notify-course-reminder)에
-   * 적용된 문구를 그대로 화면에서 확인할 수 있도록 구성. 문구를 바꾸려면 Supabase의
-   * 해당 Edge Function 코드를 수정해야 하며, 이 화면은 "현재 발송되는 내용"을 보여주는
-   * 용도입니다.
+   * [Claude 추가] 발송 문구 "편집" (기존엔 읽기 전용 미리보기였으나,
+   * "왜 문구를 못 고치냐"는 피드백에 따라 실제로 수정/저장 가능하게 변경.
+   * DB 테이블 notification_templates에 저장된 값을 Edge Function이
+   * 우선 사용하도록 이미 재배포해둠 (테이블에 값이 없으면 예전 하드코딩 문구로 폴백).
+   * {{name}}(이름), {{course}}(과정명), {{start_date}}(교육 시작일) 플레이스홀더 사용 가능.
    * ================================================================== */
-  const STATUS_SMS_TEMPLATES = [
-    { status: '승인', subject: '교육 신청이 승인되었습니다', body: '신청이 승인되었습니다. 추후 수강 확정 안내를 기다려주세요.' },
-    { status: '신청확정', subject: '수강이 확정되었습니다', body: '수강이 확정되었습니다. 교육 일정에 맞춰 참석해주세요.' },
-    { status: '수료', subject: '교육을 수료하셨습니다', body: '교육을 수료하셨습니다. 수고하셨습니다.' },
-    { status: '거절', subject: '교육 신청 결과 안내', body: '안내드립니다. 이번 신청은 반영되지 못했습니다.' },
-    { status: '취소', subject: '교육 신청이 취소되었습니다', body: '신청이 취소 처리되었습니다.' },
-    { status: '중복신청', subject: '중복 신청 안내', body: '중복 신청으로 확인되어 처리되었습니다.' },
-  ];
+  const STATUS_LIST = ['승인', '신청확정', '수료', '거절', '취소', '중복신청'];
+  let templatesCache = [];
 
-  function buildPreviewMarkup() {
-    const applicationEmail = `
-      <div class="claude-preview-row">
-        <span class="ch">이메일</span>
-        <div class="subject">[교육 신청 접수] <span class="var">과정명</span> 신청이 접수되었습니다</div>
-        <div class="body"><span class="var">이름</span>님, 안녕하세요.
-<span class="var">과정명</span> 과정 신청이 정상적으로 접수되었습니다.
-교육 시작일: <span class="var">교육 시작일</span>
-담당자 확인 후 신청 결과를 다시 안내드립니다.</div>
-      </div>`;
-    const applicationSms = `
-      <div class="claude-preview-row">
-        <span class="ch sms">문자</span>
-        <div class="body">[교육신청접수] <span class="var">이름</span>님, <span class="var">과정명</span> 신청이 접수되었습니다. 결과는 별도 안내드립니다.</div>
-      </div>`;
+  function findTemplate(eventType, channel, detail) {
+    return templatesCache.find(t => t.event_type === eventType && t.channel === channel && (t.detail || '') === (detail || ''));
+  }
 
-    const statusRows = STATUS_SMS_TEMPLATES.map(t => `
-      <div class="claude-preview-row">
-        <span class="ch">이메일</span>
-        <div class="subject">[<span class="var">과정명</span>] ${escapeHtml(t.subject)}</div>
-        <div class="body"><span class="var">이름</span>님, 안녕하세요.
-<span class="var">과정명</span> 과정: ${escapeHtml(t.body)}</div>
+  async function loadTemplates() {
+    const { data, error } = await sb.from('notification_templates').select('*');
+    if (error) {
+      console.warn('[Claude] 알림 문구 로드 실패:', error);
+      return;
+    }
+    templatesCache = data || [];
+    renderTemplateEditor();
+  }
+
+  function templateRowMarkup(eventType, channel, detail, groupKey) {
+    const tpl = findTemplate(eventType, channel, detail) || { subject: '', body: '' };
+    const rowId = `${eventType}__${channel}__${detail || 'none'}`;
+    const isEmail = channel === 'email';
+    return `
+      <div class="claude-tpl-row" data-row-id="${escapeHtml(rowId)}">
+        <span class="ch ${isEmail ? '' : 'sms'}">${CHANNEL_LABELS[channel]}</span>
+        ${isEmail ? `<label>제목</label><input type="text" class="claude-tpl-subject" value="${escapeHtml(tpl.subject || '')}">` : ''}
+        <label>${isEmail ? '본문' : '내용'}</label>
+        <textarea class="claude-tpl-body" rows="${isEmail ? 4 : 2}">${escapeHtml(tpl.body || '')}</textarea>
+        <div class="claude-tpl-row-foot">
+          <span class="claude-hint" style="margin:0;">사용 가능: <span class="var">{{name}}</span> <span class="var">{{course}}</span>${eventType !== 'status_change' ? ' <span class="var">{{start_date}}</span>' : ''}</span>
+          <button type="button" class="claude-tpl-save-btn" data-event="${escapeHtml(eventType)}" data-channel="${escapeHtml(channel)}" data-detail="${escapeHtml(detail || '')}">저장</button>
+          <span class="claude-tpl-msg"></span>
+        </div>
       </div>
-      <div class="claude-preview-row">
-        <span class="ch sms">문자</span>
-        <div class="body">[<span class="var">과정명</span>] <span class="var">이름</span>님, ${escapeHtml(t.body)}</div>
-      </div>
-      <div style="font-size:11px;color:var(--ink-soft);font-weight:800;margin:2px 0 6px;">▲ 상태가 "${escapeHtml(t.status)}"(으)로 바뀔 때</div>
+    `;
+  }
+
+  function renderTemplateEditor() {
+    const el = document.getElementById('claudeTemplateEditor');
+    if (!el) return;
+
+    const statusGroups = STATUS_LIST.map(status => `
+      <div style="font-size:11px;color:var(--ink-soft);font-weight:800;margin:10px 0 4px;">▸ 상태가 "${escapeHtml(status)}"(으)로 바뀔 때</div>
+      ${templateRowMarkup('status_change', 'email', status)}
+      ${templateRowMarkup('status_change', 'sms', status)}
     `).join('');
 
-    const reminderEmail = `
-      <div class="claude-preview-row">
-        <span class="ch">이메일</span>
-        <div class="subject">[교육 일정 안내] <span class="var">과정명</span> 시작이 임박했습니다</div>
-        <div class="body"><span class="var">이름</span>님, 안녕하세요.
-<span class="var">과정명</span> 과정이 <span class="var">시작일</span>에 시작됩니다. 참석 부탁드립니다.</div>
-      </div>`;
-    const reminderSms = `
-      <div class="claude-preview-row">
-        <span class="ch sms">문자</span>
-        <div class="body">[교육일정안내] <span class="var">이름</span>님, <span class="var">과정명</span> 과정이 <span class="var">시작일</span>에 시작됩니다.</div>
-      </div>`;
-
-    return `
+    el.innerHTML = `
       <details class="claude-preview-group">
         <summary>① 신청 접수 시 발송되는 문구</summary>
-        <div class="claude-preview-body">${applicationEmail}${applicationSms}</div>
+        <div class="claude-preview-body">
+          ${templateRowMarkup('application_received', 'email', '')}
+          ${templateRowMarkup('application_received', 'sms', '')}
+        </div>
       </details>
       <details class="claude-preview-group">
         <summary>② 상태 변경 시 발송되는 문구 (상태별 6종)</summary>
-        <div class="claude-preview-body">${statusRows}
-          <div style="font-size:11px;color:var(--ink-soft);">※ "대기" 상태로 되돌아가는 경우 등, 위 6개 상태에 해당하지 않으면 알림은 발송되지 않습니다.</div>
+        <div class="claude-preview-body">
+          ${statusGroups}
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:8px;">※ 위 6개 상태 외(예: "대기")로 바뀔 때는 알림이 발송되지 않습니다.</div>
         </div>
       </details>
       <details class="claude-preview-group">
         <summary>③ 교육 일정 임박(전날) 시 발송되는 문구</summary>
-        <div class="claude-preview-body">${reminderEmail}${reminderSms}
-          <div style="font-size:11px;color:var(--ink-soft);">※ 상태가 "신청확정"인 신청자에게만, 교육 시작일 하루 전 오전 9시(KST)에 자동 발송됩니다.</div>
+        <div class="claude-preview-body">
+          ${templateRowMarkup('course_reminder', 'email', '')}
+          ${templateRowMarkup('course_reminder', 'sms', '')}
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:8px;">※ 상태가 "신청확정"인 신청자에게만, 교육 시작일 하루 전 오전 9시(KST)에 자동 발송됩니다.</div>
         </div>
       </details>
     `;
+
+    el.querySelectorAll('.claude-tpl-save-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const row = btn.closest('.claude-tpl-row');
+        const eventType = btn.dataset.event;
+        const channel = btn.dataset.channel;
+        const detail = btn.dataset.detail;
+        const subjectInput = row.querySelector('.claude-tpl-subject');
+        const bodyInput = row.querySelector('.claude-tpl-body');
+        const msgEl = row.querySelector('.claude-tpl-msg');
+        btn.disabled = true;
+        msgEl.textContent = '저장 중...';
+        msgEl.className = 'claude-tpl-msg';
+        const { error } = await sb
+          .from('notification_templates')
+          .update({
+            subject: subjectInput ? subjectInput.value : null,
+            body: bodyInput.value,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('event_type', eventType)
+          .eq('channel', channel)
+          .eq('detail', detail);
+        btn.disabled = false;
+        if (error) {
+          msgEl.textContent = `저장 실패: ${error.message}`;
+          msgEl.classList.add('error');
+          return;
+        }
+        const cached = findTemplate(eventType, channel, detail);
+        if (cached) {
+          if (subjectInput) cached.subject = subjectInput.value;
+          cached.body = bodyInput.value;
+        }
+        msgEl.textContent = '저장됨';
+        msgEl.classList.add('success');
+        setTimeout(() => { msgEl.textContent = ''; msgEl.className = 'claude-tpl-msg'; }, 1800);
+      });
+    });
+  }
+
+  /* ==================================================================
+   * [Claude 추가] 특정 신청자에게 개별로 문자/이메일 발송
+   * notify-manual Edge Function 호출 (관리자 로그인 세션으로 권한 확인).
+   * ================================================================== */
+  let claudeManualSelected = new Map(); // traineeId -> {id, name, phone, email}
+
+  function claudeGetTraineeList() {
+    const list = (typeof allApps !== 'undefined' && Array.isArray(allApps)) ? allApps : [];
+    const seen = new Map();
+    list.forEach(app => {
+      const t = app.trainees;
+      const id = app.trainee_id;
+      if (!id || !t || seen.has(id)) return;
+      seen.set(id, { id, name: t.name || '', phone: t.phone || '', email: t.email || '' });
+    });
+    return [...seen.values()];
+  }
+
+  function renderManualRecipientChips() {
+    const el = document.getElementById('claudeManualChips');
+    if (!el) return;
+    const items = [...claudeManualSelected.values()];
+    el.innerHTML = items.length
+      ? items.map(t => `<span class="claude-chip">${escapeHtml(t.name)}<button type="button" data-id="${escapeHtml(t.id)}" aria-label="선택 해제">×</button></span>`).join('')
+      : '<span style="font-size:12px;color:var(--ink-soft);">선택된 수신자 없음</span>';
+    el.querySelectorAll('button[data-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        claudeManualSelected.delete(btn.dataset.id);
+        renderManualRecipientChips();
+      });
+    });
+  }
+
+  function renderManualSearchResults(keyword) {
+    const el = document.getElementById('claudeManualResults');
+    if (!el) return;
+    if (!keyword || keyword.trim().length < 1) {
+      el.innerHTML = '';
+      el.style.display = 'none';
+      return;
+    }
+    const kw = keyword.trim().toLowerCase();
+    const matches = claudeGetTraineeList()
+      .filter(t => !claudeManualSelected.has(t.id))
+      .filter(t => t.name.toLowerCase().includes(kw) || t.phone.includes(kw) || t.email.toLowerCase().includes(kw))
+      .slice(0, 8);
+    el.style.display = matches.length ? 'block' : 'none';
+    el.innerHTML = matches.map(t => `
+      <div class="claude-manual-result" data-id="${escapeHtml(t.id)}">
+        <b>${escapeHtml(t.name)}</b>
+        <span>${escapeHtml(t.phone || '연락처 없음')}${t.email ? ' · ' + escapeHtml(t.email) : ''}</span>
+      </div>
+    `).join('');
+    el.querySelectorAll('.claude-manual-result').forEach(row => {
+      row.addEventListener('click', () => {
+        const t = claudeGetTraineeList().find(x => x.id === row.dataset.id);
+        if (t) claudeManualSelected.set(t.id, t);
+        renderManualRecipientChips();
+        const input = document.getElementById('claudeManualSearch');
+        if (input) input.value = '';
+        el.innerHTML = '';
+        el.style.display = 'none';
+      });
+    });
+  }
+
+  function claudeFillManualTemplate(eventType, channel, detail) {
+    const tpl = findTemplate(eventType, channel, detail);
+    if (!tpl) return;
+    const subjectInput = document.getElementById('claudeManualSubject');
+    const bodyInput = document.getElementById('claudeManualBody');
+    if (subjectInput && tpl.subject) subjectInput.value = tpl.subject;
+    if (bodyInput) bodyInput.value = tpl.body || '';
+  }
+
+  async function claudeSendManual() {
+    const msgEl = document.getElementById('claudeManualMsg');
+    msgEl.textContent = '';
+    msgEl.className = 'claude-msg';
+    const recipients = [...claudeManualSelected.values()];
+    const emailChecked = document.getElementById('claudeManualChEmail')?.checked;
+    const smsChecked = document.getElementById('claudeManualChSms')?.checked;
+    const channels = [emailChecked && 'email', smsChecked && 'sms'].filter(Boolean);
+    const subject = document.getElementById('claudeManualSubject')?.value || '';
+    const body = document.getElementById('claudeManualBody')?.value || '';
+
+    if (recipients.length === 0) { msgEl.textContent = '수신자를 먼저 선택해주세요.'; msgEl.classList.add('error'); return; }
+    if (channels.length === 0) { msgEl.textContent = '발송 채널(이메일/문자)을 선택해주세요.'; msgEl.classList.add('error'); return; }
+    if (!body.trim()) { msgEl.textContent = '내용을 입력해주세요.'; msgEl.classList.add('error'); return; }
+
+    const sendBtn = document.getElementById('claudeManualSendBtn');
+    sendBtn.disabled = true;
+    sendBtn.textContent = `발송 중... (0/${recipients.length})`;
+
+    let successCount = 0;
+    let failCount = 0;
+    for (let i = 0; i < recipients.length; i++) {
+      const t = recipients[i];
+      try {
+        const { data, error } = await sb.functions.invoke('notify-manual', {
+          body: { traineeId: t.id, channels, subject, body },
+        });
+        if (error) { failCount++; } else { successCount++; }
+      } catch (e) {
+        failCount++;
+      }
+      sendBtn.textContent = `발송 중... (${i + 1}/${recipients.length})`;
+    }
+    sendBtn.disabled = false;
+    sendBtn.textContent = '발송하기';
+
+    msgEl.textContent = `발송 완료: 성공 ${successCount}건, 실패 ${failCount}건. 아래 발송 이력에서 확인할 수 있습니다.`;
+    msgEl.classList.add(failCount ? 'error' : 'success');
+    claudeManualSelected = new Map();
+    renderManualRecipientChips();
+    loadNotificationLog();
+  }
+
+  function bindManualSendUI() {
+    const searchInput = document.getElementById('claudeManualSearch');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => renderManualSearchResults(searchInput.value));
+    }
+    document.querySelectorAll('.claude-manual-quickfill').forEach(btn => {
+      btn.addEventListener('click', () => claudeFillManualTemplate(btn.dataset.event, btn.dataset.channel, btn.dataset.detail || ''));
+    });
+    const sendBtn = document.getElementById('claudeManualSendBtn');
+    if (sendBtn) sendBtn.addEventListener('click', claudeSendManual);
+    renderManualRecipientChips();
   }
 
   function populateCourseSelect() {
@@ -365,9 +569,42 @@
       </div>
 
       <div class="claude-section">
-        <h3>발송 문구 미리보기</h3>
-        <p class="claude-hint">실제로 발송되는 이메일/문자 내용입니다. <span class="var" style="background:#FFF3E8;color:#A35A18;border-radius:3px;padding:0 3px;">색이 있는 부분</span>은 신청자별로 자동으로 채워지는 값입니다.</p>
-        ${buildPreviewMarkup()}
+        <h3>발송 문구 편집</h3>
+        <p class="claude-hint">실제로 발송되는 이메일/문자 내용입니다. 아래에서 직접 수정 후 "저장"을 누르면 다음 발송부터 바로 반영됩니다. <span class="var">{{name}}</span>(이름), <span class="var">{{course}}</span>(과정명), <span class="var">{{start_date}}</span>(교육 시작일)은 신청자별로 자동 대체됩니다.</p>
+        <div id="claudeTemplateEditor">불러오는 중...</div>
+      </div>
+
+      <div class="claude-section">
+        <h3>개별 발송</h3>
+        <p class="claude-hint">특정 신청자를 골라 문자/이메일을 바로 보낼 수 있습니다. 자동 발송 on/off 설정과 무관하게 항상 발송됩니다.</p>
+        <div class="claude-manual-box">
+          <label>수신자 검색 (이름/연락처/이메일)</label>
+          <div class="claude-manual-search-wrap">
+            <input type="text" id="claudeManualSearch" placeholder="이름, 연락처 일부 입력">
+            <div id="claudeManualResults" class="claude-manual-results" style="display:none;"></div>
+          </div>
+          <div id="claudeManualChips" class="claude-chip-list"></div>
+
+          <div class="claude-checks" style="margin-top:14px;">
+            <label><input type="checkbox" id="claudeManualChEmail" checked> 이메일</label>
+            <label><input type="checkbox" id="claudeManualChSms" checked> 문자</label>
+          </div>
+
+          <div style="margin-top:6px;">
+            <span class="claude-hint" style="margin:0 0 6px;display:block;">빠른 채우기:</span>
+            <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="application_received" data-channel="email">신청접수 문구</button>
+            <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="status_change" data-channel="email" data-detail="승인">승인 문구</button>
+            <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="course_reminder" data-channel="email">일정임박 문구</button>
+          </div>
+
+          <div style="margin-top:12px;"><label>제목 (이메일에만 적용)</label><input type="text" id="claudeManualSubject" placeholder="예: [교육 안내] 참석 확인 요청"></div>
+          <div style="margin-top:12px;"><label>내용</label><textarea id="claudeManualBody" rows="4" placeholder="{{name}}님, ... 처럼 이름을 자동으로 넣을 수 있습니다."></textarea></div>
+
+          <div style="margin-top:14px;">
+            <button type="button" id="claudeManualSendBtn" class="submit" style="width:auto;padding:10px 22px;">발송하기</button>
+          </div>
+          <div id="claudeManualMsg" class="claude-msg"></div>
+        </div>
       </div>
 
       <div class="claude-section">
@@ -467,6 +704,7 @@
     section.id = 'view-claude-notify';
     section.innerHTML = buildSectionMarkup();
     main.appendChild(section);
+    bindManualSendUI();
 
     navBtn.addEventListener('click', () => {
       document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -491,6 +729,7 @@
   function onShowNotifyPanel() {
     loadNotificationSettings();
     loadNotificationLog();
+    loadTemplates();
     notifyLoaded = true;
   }
 
