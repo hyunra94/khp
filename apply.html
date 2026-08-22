@@ -900,6 +900,7 @@ async function submitApplication(){
   confirmSubmitBtn.textContent = '처리 중...';
 
   let error = null;
+  let submittedTraineeId = null; /* [Claude 추가] 알림 발송용 */
   if (pendingApplication.hasApplication){
     const result = await sb.rpc('submit_application', {
       p_name: pendingApplication.name,
@@ -917,6 +918,7 @@ async function submitApplication(){
       p_course_ids: pendingApplication.selectedCourseIds
     });
     error = result.error;
+    submittedTraineeId = result.data; /* [Claude 추가] 알림 발송용 */
   }
 
   if (!error && pendingApplication.hasInterest){
@@ -941,6 +943,19 @@ async function submitApplication(){
     confirmSubmitBtn.textContent = pendingApplication.hasApplication ? '확인하고 신청하기' : '알림 신청하기';
     return;
   }
+
+  /* ===== [Claude 추가] 신청 접수 알림 시작 ===== */
+  if (pendingApplication.hasApplication && submittedTraineeId){
+    sb.rpc('claude_get_recent_application_ids', { p_trainee_id: submittedTraineeId })
+      .then(({ data: ids }) => {
+        (ids || []).forEach(appId => {
+          sb.functions.invoke('notify-application', { body: { applicationId: appId } })
+            .catch(err => console.warn('[Claude] 신청 접수 알림 발송 요청 실패:', err));
+        });
+      })
+      .catch(err => console.warn('[Claude] 알림 대상 조회 실패:', err));
+  }
+  /* ===== [Claude 추가] 신청 접수 알림 끝 ===== */
 
   closeConfirmModal();
   document.getElementById('formCard').style.display = 'none';

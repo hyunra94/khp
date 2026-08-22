@@ -1369,6 +1369,11 @@ async function updateApplicationStatus(id, status, select){
     }
     return false;
   }
+  /* ===== [Claude 추가] 상태 변경 알림 시작 ===== */
+  sb.functions.invoke('notify-status-change', { body: { applicationId: id } })
+    .catch(err => console.warn('[Claude] 상태 변경 알림 발송 요청 실패:', err));
+  /* ===== [Claude 추가] 상태 변경 알림 끝 ===== */
+
   if (app){
     app.status = status;
     app.cancelled_at = payload.cancelled_at;
@@ -2307,5 +2312,7 @@ function escapeHtml(value){
     .replaceAll("'", '&#039;');
 }
 </script>
+<!-- ===== [Claude 추가] 알림 관리 화면 + 신청자 수동 등록 (features/claude-admin-extensions.js) ===== -->
+<script src="features/claude-admin-extensions.js"></script>
 </body>
 </html>
