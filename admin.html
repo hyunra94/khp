@@ -1197,6 +1197,8 @@ function renderCourseLookup(){
   }).join('');
 
   bindCourseLookupStatus(target);
+  loadMaskedResidentNumbers(target);
+  bindResidentNumberControls(target);
 }
 
 function renderLookupInterest(leads){
@@ -1236,7 +1238,7 @@ function renderLookupRound(typeName, round){
         <span class="pill">${round.apps.length.toLocaleString('ko-KR')}명</span>
       </div>
       <table class="lookup-table">
-        <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>이메일</th><th>재직 구분</th><th>운영 상태</th></tr></thead>
+        <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>이메일</th><th>주민등록번호</th><th>재직 구분</th><th>운영 상태</th></tr></thead>
         <tbody>
           ${round.apps.map(app => `
             <tr>
@@ -1244,6 +1246,7 @@ function renderLookupRound(typeName, round){
               <td data-label="연락처">${escapeHtml(app.trainees?.phone || '-')}</td>
               <td data-label="소속">${escapeHtml(app.trainees?.company || '-')}</td>
               <td data-label="이메일">${escapeHtml(app.trainees?.email || '-')}</td>
+              <td data-label="주민등록번호">${renderResidentNumberCell(app.trainee_id)}</td>
               <td data-label="재직 구분">${escapeHtml(app.employment_category || '미확인')}</td>
               <td data-label="운영 상태">${renderStatusSelect(app, COURSE_LOOKUP_STATUSES)}</td>
             </tr>
@@ -1629,6 +1632,7 @@ function renderApps(){
   `).join('');
   bindMenus(tbody);
   loadMaskedResidentNumbers(tbody);
+  bindResidentNumberControls(tbody);
 
   tbody.querySelectorAll('.status-select').forEach(select => {
     select.addEventListener('change', async () => {
@@ -1713,7 +1717,10 @@ function renderApps(){
     });
   });
 
-  tbody.querySelectorAll('.rrn-toggle').forEach(toggle => {
+}
+
+function bindResidentNumberControls(scope){
+  scope.querySelectorAll('.rrn-toggle').forEach(toggle => {
     toggle.addEventListener('change', async () => {
       const traineeId = toggle.dataset.traineeId;
       const row = toggle.closest('tr');
@@ -1734,7 +1741,7 @@ function renderApps(){
     });
   });
 
-  tbody.querySelectorAll('.rrn-copy').forEach(btn => {
+  scope.querySelectorAll('.rrn-copy').forEach(btn => {
     btn.addEventListener('click', async () => {
       const cell = btn.closest('.rrn-cell');
       const value = cell?.querySelector('.rrn-value')?.textContent.trim();
@@ -1761,6 +1768,18 @@ function loadMaskedResidentNumbers(scope){
   });
 }
 
+function renderResidentNumberCell(traineeId){
+  return `
+    <div class="rrn-cell">
+      <span class="rrn-value" data-trainee-id="${escapeHtml(traineeId)}">${MASKED_RRN}</span>
+      <button class="rrn-copy" type="button" aria-label="주민등록번호 복사">복사</button>
+      <label class="rrn-toggle-label" title="전체 주민등록번호 보기">
+        <input class="rrn-toggle" type="checkbox" data-trainee-id="${escapeHtml(traineeId)}" aria-label="전체 주민등록번호 보기">
+      </label>
+    </div>
+  `;
+}
+
 const appColumns = {
   name: {
     label: '이름',
@@ -1780,15 +1799,7 @@ const appColumns = {
   },
   rrn: {
     label: '주민등록번호',
-    render: app => `
-      <div class="rrn-cell">
-        <span class="rrn-value" data-trainee-id="${escapeHtml(app.trainee_id)}">${MASKED_RRN}</span>
-        <button class="rrn-copy" type="button" aria-label="주민등록번호 복사">복사</button>
-        <label class="rrn-toggle-label" title="전체 주민등록번호 보기">
-          <input class="rrn-toggle" type="checkbox" data-trainee-id="${escapeHtml(app.trainee_id)}" aria-label="전체 주민등록번호 보기">
-        </label>
-      </div>
-    `
+    render: app => renderResidentNumberCell(app.trainee_id)
   },
   employment: {
     label: '재직 구분',
