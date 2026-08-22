@@ -1726,9 +1726,9 @@ function renderApps(){
 
   const columns = appColumnOrder
     .filter(id => appColumnVisibility[id] !== false || id === 'actions')
-    .map(id => appColumns[id])
+    .map(id => appColumns[id] && { id, ...appColumns[id] }) /* [Claude 추가] 컬럼 간격 조절 기능에서 컬럼 id 참조용 */
     .filter(Boolean);
-  head.innerHTML = `<tr>${columns.map(col => `<th>${escapeHtml(col.label)}</th>`).join('')}</tr>`;
+  head.innerHTML = `<tr>${columns.map(col => `<th data-col="${escapeHtml(col.id)}">${escapeHtml(col.label)}</th>`).join('')}</tr>`; /* [Claude 추가] data-col 속성 */
 
   if (groupedRows.length === 0){
     tbody.innerHTML = `<tr><td colspan="${columns.length}" class="empty-row">해당하는 신청 내역이 없습니다</td></tr>`;
@@ -1903,10 +1903,27 @@ function bindResidentNumberControls(scope){
   });
 }
 
-function loadMaskedResidentNumbers(scope){
-  scope.querySelectorAll('.rrn-value').forEach(valueEl => {
-    valueEl.textContent = RRN_READY_LABEL;
+/* [Claude 추가] 마스킹된 주민등록번호 캐시 - 같은 신청자를 다시 렌더링할 때 재조회/재로깅 방지 */
+const claudeRrnMaskCache = {};
+
+async function loadMaskedResidentNumbers(scope){
+  const cells = Array.from(scope.querySelectorAll('.rrn-value'));
+  cells.forEach(valueEl => {
+    const traineeId = valueEl.dataset.traineeId;
+    valueEl.textContent = claudeRrnMaskCache[traineeId] || RRN_READY_LABEL;
   });
+
+  /* [Claude 추가] 생년월일-성별 앞 7자리는 표시, 뒤 6자리는 마스킹 처리 (get_trainee_rrn_masked 사용) */
+  const pending = cells.filter(el => !claudeRrnMaskCache[el.dataset.traineeId]);
+  await Promise.all(pending.map(async valueEl => {
+    const traineeId = valueEl.dataset.traineeId;
+    if (!traineeId) return;
+    valueEl.textContent = '조회 중...';
+    const { data, error } = await sb.rpc('get_trainee_rrn_masked', { p_trainee_id: traineeId });
+    const masked = (!error && data) ? formatResidentNumber(data) : RRN_READY_LABEL;
+    claudeRrnMaskCache[traineeId] = masked;
+    if (valueEl.isConnected) valueEl.textContent = masked;
+  }));
 }
 
 function renderResidentNumberCell(traineeId){

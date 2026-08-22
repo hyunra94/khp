@@ -63,6 +63,10 @@
       .claude-log-badge.failed{background:#F7DEDE;color:#A33C3C;}
       .claude-log-badge.skipped{background:#EDEDED;color:#888;}
       .claude-resend-btn{font-size:11px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer;}
+      .application-table table{table-layout:fixed;}
+      .application-table th, .application-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative;}
+      .application-table th .claude-col-resizer{position:absolute;top:0;right:-3px;width:6px;height:100%;cursor:col-resize;user-select:none;z-index:5;}
+      .application-table th .claude-col-resizer:hover, .application-table th .claude-col-resizer.dragging{background:rgba(23,107,135,0.35);}
     `;
     document.head.appendChild(style);
   }
@@ -331,9 +335,105 @@
     notifyLoaded = true;
   }
 
+  /* ==================================================================
+   * [Claude 추가] 신청현황 테이블 컬럼 너비(간격) 조절
+   * admin.html의 renderApps()가 그리는 #appHead의 <th data-col="...">를
+   * 그대로 이용하며, 기존 렌더 함수는 건드리지 않고 MutationObserver로
+   * 다시 그려질 때마다 저장된 너비/드래그 핸들을 재적용합니다.
+   * ================================================================== */
+  const CLAUDE_COL_WIDTH_KEY = 'claudeAppColumnWidths';
+  let claudeColumnWidths = {};
+  let claudeResizeObserverBound = false;
+
+  function claudeLoadColumnWidths() {
+    try {
+      claudeColumnWidths = JSON.parse(localStorage.getItem(CLAUDE_COL_WIDTH_KEY) || '{}') || {};
+    } catch (e) {
+      claudeColumnWidths = {};
+    }
+  }
+
+  function claudeSaveColumnWidths() {
+    try {
+      localStorage.setItem(CLAUDE_COL_WIDTH_KEY, JSON.stringify(claudeColumnWidths));
+    } catch (e) {
+      // localStorage 사용 불가 시 조용히 무시 (너비 저장만 안 될 뿐 기능은 정상 동작)
+    }
+  }
+
+  function claudeApplyColumnWidths() {
+    document.querySelectorAll('#appHead th[data-col]').forEach(th => {
+      const colId = th.dataset.col;
+      const saved = claudeColumnWidths[colId];
+      if (saved) {
+        th.style.width = saved + 'px';
+      } else if (!th.style.width) {
+        const rect = th.getBoundingClientRect();
+        if (rect.width > 0) th.style.width = Math.round(rect.width) + 'px';
+      }
+    });
+  }
+
+  function claudeAttachColumnResizers() {
+    document.querySelectorAll('#appHead th[data-col]').forEach(th => {
+      if (th.querySelector('.claude-col-resizer')) return;
+      const handle = document.createElement('div');
+      handle.className = 'claude-col-resizer';
+      th.appendChild(handle);
+
+      let startX = 0;
+      let startWidth = 0;
+
+      const onMouseMove = (e) => {
+        const delta = e.clientX - startX;
+        const newWidth = Math.max(50, Math.round(startWidth + delta));
+        th.style.width = newWidth + 'px';
+      };
+      const onMouseUp = () => {
+        handle.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        const colId = th.dataset.col;
+        const width = parseInt(th.style.width, 10);
+        if (colId && width) {
+          claudeColumnWidths[colId] = width;
+          claudeSaveColumnWidths();
+        }
+      };
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        startX = e.clientX;
+        startWidth = th.getBoundingClientRect().width;
+        handle.classList.add('dragging');
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+    });
+  }
+
+  function claudeRefreshColumnResize() {
+    claudeApplyColumnWidths();
+    claudeAttachColumnResizers();
+  }
+
+  function claudeInitColumnResize() {
+    claudeLoadColumnWidths();
+    const head = document.getElementById('appHead');
+    if (!head) return;
+    claudeRefreshColumnResize();
+    if (!claudeResizeObserverBound) {
+      const observer = new MutationObserver(() => {
+        requestAnimationFrame(claudeRefreshColumnResize);
+      });
+      observer.observe(head, { childList: true, subtree: true });
+      claudeResizeObserverBound = true;
+    }
+  }
+
   function init() {
     injectStyle();
     buildNavAndSection();
+    claudeInitColumnResize();
   }
 
   if (document.readyState === 'loading') {
