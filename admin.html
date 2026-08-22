@@ -754,7 +754,7 @@
       </div>
       <section class="panel">
         <div class="lookup-toolbar">
-          <div class="compact-info" id="courseLookupSummary">중복신청, 신청확정, 수료 상태의 신청자를 과정과 회차별로 조회합니다</div>
+          <div class="compact-info" id="courseLookupSummary">승인, 중복신청, 신청확정, 수료 상태의 신청자를 과정과 회차별로 조회합니다</div>
           <select id="courseLookupType" aria-label="조회할 과정 선택">
             <option value="">전체 과정</option>
           </select>
@@ -860,7 +860,7 @@ let editingApplicationId = '';
 let memoTimers = {};
 let auditLoaded = false;
 const APPLICATION_STATUSES = ['대기','승인','중복신청','신청확정','수료','거절','취소'];
-const COURSE_LOOKUP_STATUSES = ['중복신청','신청확정','수료'];
+const COURSE_LOOKUP_STATUSES = ['승인','중복신청','신청확정','수료'];
 const EMPLOYMENT_CATEGORIES = ['대규모','우선지원기업','고용보험미가입'];
 const MASKED_RRN = '●●●●●●-●●●●●●●';
 const visibleColumns = { phone: true, rrn: true, referral: true, memo: true };
