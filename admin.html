@@ -901,6 +901,8 @@ const MASKED_RRN = '●●●●●●-●●●●●●●';
 const RRN_READY_LABEL = '확인 전';
 /* [Claude 추가] 복사 아이콘(클립보드) - 이메일/주민등록번호 칸에서 공용으로 사용 */
 const COPY_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+/* [Claude 추가] apply.html의 "본 교육을 알게된 경로" select 옵션과 동일하게 유지 (유입경로 편집용) */
+const REFERRAL_SOURCE_OPTIONS = ['', '방송매체홍보(TV)', '방송매체홍보(라디오)', 'SNS(인스타그램)', 'SNS(당근)', 'SNS(페이스북)', '지자체 홈페이지', '지인 소개', '문자 안내', '현수막/포스터', '기타'];
 const visibleColumns = { phone: true, rrn: true, referral: true, memo: true };
 let appColumnOrder = ['name', 'phone', 'company', 'email', 'rrn', 'employment', 'referral', 'memo', 'course', 'status', 'actions'];
 let appColumnVisibility = appColumnOrder.reduce((acc, id) => ({ ...acc, [id]: true }), {});
@@ -1792,6 +1794,14 @@ function renderApps(){
         company: row.querySelector('[data-field="company"]').value.trim(),
         admin_memo: row.querySelector('[data-field="admin_memo"]').value.trim() || null
       };
+      /* ===== [Claude 추가] 유입경로("진입 경로") 편집값도 같이 저장 시작 ===== */
+      const referralSourceEl = row.querySelector('[data-field="referral_source"]');
+      const referralNoteEl = row.querySelector('[data-field="referral_note"]');
+      if (referralSourceEl){
+        payload.referral_sources = referralSourceEl.value ? [referralSourceEl.value] : [];
+        payload.note = referralNoteEl ? (referralNoteEl.value.trim() || null) : null;
+      }
+      /* ===== [Claude 추가] 끝 ===== */
       if (!payload.name || !payload.phone || !payload.email){
         btn.textContent = '필수값 확인';
         setTimeout(() => { btn.textContent = '저장'; }, 1400);
@@ -2013,7 +2023,20 @@ const appColumns = {
   },
   referral: {
     label: '유입경로',
-    render: app => `${escapeHtml(formatList(app.trainees?.referral_sources))}${app.trainees?.note ? `<div class="compact-info">기타: ${escapeHtml(app.trainees.note)}</div>` : ''}`
+    /* ===== [Claude 추가] 유입경로("진입하게 된 경로")도 편집 모드에서 수정 가능하게 시작 ===== */
+    render: app => {
+      if (isEditingApp(app)){
+        const current = Array.isArray(app.trainees?.referral_sources) ? (app.trainees.referral_sources[0] || '') : '';
+        return `
+          <select class="row-input" data-field="referral_source">
+            ${REFERRAL_SOURCE_OPTIONS.map(opt => `<option value="${escapeHtml(opt)}" ${opt === current ? 'selected' : ''}>${escapeHtml(opt || '선택 안 함')}</option>`).join('')}
+          </select>
+          <input class="row-input" data-field="referral_note" placeholder="기타(직접 입력)" value="${escapeHtml(app.trainees?.note || '')}" style="margin-top:6px;">
+        `;
+      }
+      return `${escapeHtml(formatList(app.trainees?.referral_sources))}${app.trainees?.note ? `<div class="compact-info">기타: ${escapeHtml(app.trainees.note)}</div>` : ''}`;
+    }
+    /* ===== [Claude 추가] 끝 ===== */
   },
   memo: {
     label: '메모',
@@ -2079,10 +2102,11 @@ function renderApplicationStatusList(app){
         <div class="application-status-item">
           ${renderStatusSelect(item)}
           <div class="compact-info">${escapeHtml(formatDateTime(item.applied_at))}</div>
-          ${/* ===== [Claude 추가] 신청 건이 2개 이상인 경우, 건별 삭제 버튼 시작 =====
+          ${/* ===== [Claude 추가] 신청 건이 2개 이상인 경우, "편집" 모드에서만 건별 삭제 버튼 노출 시작 =====
              기존 ⋯메뉴의 삭제 버튼은 getApplicationItems(app).length === 1 일 때만 노출되어
-             여러 건이 묶인 신청자는 개별 신청 건을 삭제할 방법이 없었음. 이를 보완. */ ''}
-          ${items.length > 1 ? `<button type="button" class="delete-app-item-btn" data-id="${escapeHtml(item.id)}" title="이 신청 건만 삭제">이 건 삭제</button>` : ''}
+             여러 건이 묶인 신청자는 개별 신청 건을 삭제할 방법이 없었음. 이를 보완하되,
+             평소엔 안 보이다가 "편집"을 눌렀을 때만 뜨도록 함. */ ''}
+          ${items.length > 1 && isEditingApp(app) ? `<button type="button" class="delete-app-item-btn" data-id="${escapeHtml(item.id)}" title="이 신청 건만 삭제">이 건 삭제</button>` : ''}
           ${/* ===== [Claude 추가] 끝 ===== */ ''}
         </div>
       `).join('')}
