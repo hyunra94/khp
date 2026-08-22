@@ -518,6 +518,13 @@
   .app-line{display:grid;grid-template-columns:minmax(0,1fr) 116px auto;gap:10px;align-items:center;padding:11px;border:1px solid #E3E9F0;border-radius:7px;background:#FBFCFE;}
   .app-title{font-size:13px;font-weight:900;color:var(--ink);}
   .app-meta{margin-top:3px;font-size:11.5px;color:var(--ink-soft);}
+  .application-course-list{display:grid;gap:7px;min-width:230px;}
+  .application-course-item{display:grid;gap:4px;padding:9px 10px;border:1px solid #E3E9F0;border-radius:7px;background:#FBFCFE;}
+  .application-course-item b{font-size:12.5px;color:#1D2530;}
+  .application-course-meta{font-size:11.5px;color:#7A8796;line-height:1.45;}
+  .application-status-list{display:grid;gap:7px;min-width:136px;}
+  .application-status-item{display:grid;gap:5px;}
+  .application-status-item .compact-info{font-size:11px;}
   .dup-badge{display:inline-flex;margin-left:6px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);font-size:10.5px;color:var(--accent-dark);background:#fff;font-weight:900;}
   .status-select.status-대기{border-color:#E4B75E;background:#FFF7E8;color:#7A5C1E;}
   .status-select.status-승인{border-color:#9DCEB7;background:#EEF8F3;color:#1F7A55;}
@@ -1325,6 +1332,24 @@ async function updateEmploymentCategory(id, value, select){
   return true;
 }
 
+async function updateEmploymentCategoryForTrainee(traineeId, value, select){
+  const targetApps = allApps.filter(app => app.trainee_id === traineeId);
+  const previous = firstEmploymentCategory(targetApps);
+  const next = value || null;
+  select.disabled = true;
+  const { error } = await sb.from('applications').update({ employment_category: next }).eq('trainee_id', traineeId);
+  select.disabled = false;
+  if (error){
+    alert(`재직 구분 저장 실패: ${error.message}`);
+    select.value = previous || '';
+    return false;
+  }
+  targetApps.forEach(app => { app.employment_category = next; });
+  renderApps();
+  renderCourseLookup();
+  return true;
+}
+
 function renderStatusSelect(app, statuses = APPLICATION_STATUSES){
   return `
     <select class="status-select status-${escapeHtml(app.status)}" data-id="${escapeHtml(app.id)}">
@@ -1334,8 +1359,9 @@ function renderStatusSelect(app, statuses = APPLICATION_STATUSES){
 }
 
 function renderEmploymentCategorySelect(app){
+  const traineeId = app.trainee_id || '';
   return `
-    <select class="status-select employment-category-select" data-id="${escapeHtml(app.id)}" aria-label="재직 구분">
+    <select class="status-select employment-category-select" data-id="${escapeHtml(app.id)}" data-trainee-id="${escapeHtml(traineeId)}" aria-label="재직 구분">
       <option value="">미확인</option>
       ${EMPLOYMENT_CATEGORIES.map(item => `<option value="${item}" ${item===app.employment_category?'selected':''}>${escapeHtml(item)}</option>`).join('')}
     </select>
@@ -1623,10 +1649,11 @@ function renderApps(){
     return true;
   });
 
+  const groupedRows = groupApplicationsByTrainee(rows);
   const head = document.getElementById('appHead');
   const tbody = document.getElementById('appRows');
   const courseName = allCourseTypes.find(type => type.id === activeApplicationCourseTypeId)?.name || '';
-  setText('activeFilterText', `${courseName ? `${courseName} · ` : ''}${rows.length.toLocaleString('ko-KR')}건 표시 중`);
+  setText('activeFilterText', `${courseName ? `${courseName} · ` : ''}${groupedRows.length.toLocaleString('ko-KR')}명 · ${rows.length.toLocaleString('ko-KR')}건 표시 중`);
   renderColumnOrderPanel();
 
   const columns = appColumnOrder
@@ -1635,14 +1662,14 @@ function renderApps(){
     .filter(Boolean);
   head.innerHTML = `<tr>${columns.map(col => `<th>${escapeHtml(col.label)}</th>`).join('')}</tr>`;
 
-  if (rows.length === 0){
+  if (groupedRows.length === 0){
     tbody.innerHTML = `<tr><td colspan="${columns.length}" class="empty-row">해당하는 신청 내역이 없습니다</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = rows.map(app => `
-    <tr data-app-id="${escapeHtml(app.id)}" data-trainee-id="${escapeHtml(app.trainee_id)}">
-      ${columns.map(col => `<td data-label="${escapeHtml(col.label)}">${col.render(app)}</td>`).join('')}
+  tbody.innerHTML = groupedRows.map(row => `
+    <tr data-app-id="${escapeHtml(row.id)}" data-trainee-id="${escapeHtml(row.trainee_id)}">
+      ${columns.map(col => `<td data-label="${escapeHtml(col.label)}">${col.render(row)}</td>`).join('')}
     </tr>
   `).join('');
   bindMenus(tbody);
@@ -1661,7 +1688,8 @@ function renderApps(){
 
   tbody.querySelectorAll('.employment-category-select').forEach(select => {
     select.addEventListener('change', async () => {
-      await updateEmploymentCategory(select.dataset.id, select.value, select);
+      if (select.dataset.traineeId) await updateEmploymentCategoryForTrainee(select.dataset.traineeId, select.value, select);
+      else await updateEmploymentCategory(select.dataset.id, select.value, select);
     });
   });
 
@@ -1732,6 +1760,37 @@ function renderApps(){
     });
   });
 
+}
+
+function groupApplicationsByTrainee(apps){
+  const groups = new Map();
+  apps.forEach(app => {
+    const key = app.trainee_id || app.id;
+    if (!groups.has(key)){
+      groups.set(key, {
+        ...app,
+        apps: [],
+        id: app.id,
+        trainee_id: app.trainee_id
+      });
+    }
+    groups.get(key).apps.push(app);
+  });
+  return Array.from(groups.values()).map(group => {
+    group.apps.sort((a, b) => new Date(b.applied_at || 0) - new Date(a.applied_at || 0));
+    const latest = group.apps[0] || group;
+    return {
+      ...group,
+      id: latest.id,
+      status: latest.status,
+      employment_category: firstEmploymentCategory(group.apps),
+      courses: latest.courses
+    };
+  });
+}
+
+function firstEmploymentCategory(apps){
+  return apps.find(app => app.employment_category)?.employment_category || '';
 }
 
 function bindResidentNumberControls(scope){
@@ -1830,16 +1889,11 @@ const appColumns = {
   },
   course: {
     label: '신청과정',
-    render: app => `
-      <div>
-        <b>${escapeHtml(app.courses?.name || '-')}</b>
-        <div class="compact-info">${escapeHtml(app.courses?.course_types?.name || '과정 미지정')}</div>
-      </div>
-    `
+    render: app => renderApplicationCourseList(app)
   },
   status: {
     label: '상태',
-    render: app => renderStatusSelect(app)
+    render: app => renderApplicationStatusList(app)
   },
   actions: {
     label: '관리',
@@ -1852,13 +1906,47 @@ const appColumns = {
               <button type="button" class="save-applicant-btn" data-id="${escapeHtml(app.id)}">저장</button>
               <button type="button" class="cancel-edit-btn" data-id="${escapeHtml(app.id)}">취소</button>
             ` : `<button type="button" class="edit-applicant-btn" data-id="${escapeHtml(app.id)}">편집</button>`}
-            <button type="button" class="delete-app-btn danger" data-id="${escapeHtml(app.id)}">삭제</button>
+            ${getApplicationItems(app).length === 1 ? `<button type="button" class="delete-app-btn danger" data-id="${escapeHtml(app.id)}">삭제</button>` : ''}
           </div>
         </div>
       </div>
     `
   }
 };
+
+function getApplicationItems(app){
+  return Array.isArray(app.apps) && app.apps.length ? app.apps : [app];
+}
+
+function renderApplicationCourseList(app){
+  return `
+    <div class="application-course-list">
+      ${getApplicationItems(app).map(item => `
+        <div class="application-course-item">
+          <b>${escapeHtml(item.courses?.name || '-')}</b>
+          <div class="application-course-meta">
+            ${escapeHtml(item.courses?.course_types?.name || '과정 미지정')}
+            ${item.attempt_no ? ` · ${escapeHtml(item.attempt_no)}번째 신청` : ''}
+          </div>
+          <div class="application-course-meta">접수: ${escapeHtml(formatDateTime(item.applied_at))}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderApplicationStatusList(app){
+  return `
+    <div class="application-status-list">
+      ${getApplicationItems(app).map(item => `
+        <div class="application-status-item">
+          ${renderStatusSelect(item)}
+          <div class="compact-info">${escapeHtml(formatDateTime(item.applied_at))}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
 
 function isEditingApp(app){
   return editingApplicationId === app.id;
@@ -2124,6 +2212,19 @@ function formatResidentNumber(value){
   if (digits.length === 13) return `${digits.slice(0, 6)}-${digits.slice(6)}`;
   if (raw.length > 6) return `${raw.slice(0, 6)}-${raw.slice(6)}`;
   return raw || MASKED_RRN;
+}
+
+function formatDateTime(value){
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 function setText(id, value){
