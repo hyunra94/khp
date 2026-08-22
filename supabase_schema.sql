@@ -385,6 +385,56 @@ grant execute on function public.submit_course_interest_lead(
   text,text,text,text,boolean,text[],text,uuid[]
 ) to anon, authenticated;
 
+-- Keep the Data API surface intentionally small.
+-- Public users can only read public course metadata and call submission RPCs.
+-- Admin-only tables remain protected by RLS and authenticated grants.
+revoke all on table public.admin_audit_log from anon;
+revoke all on table public.admins from anon;
+revoke all on table public.applications from anon;
+revoke all on table public.course_interest_leads from anon;
+revoke all on table public.rrn_access_log from anon;
+revoke all on table public.trainees from anon;
+revoke all on table public.courses from anon;
+revoke all on table public.course_types from anon;
+
+grant select on table public.courses to anon;
+grant select on table public.course_types to anon;
+
+revoke all on table public.admin_audit_log from authenticated;
+revoke all on table public.admins from authenticated;
+revoke all on table public.applications from authenticated;
+revoke all on table public.course_interest_leads from authenticated;
+revoke all on table public.rrn_access_log from authenticated;
+revoke all on table public.trainees from authenticated;
+revoke all on table public.courses from authenticated;
+revoke all on table public.course_types from authenticated;
+
+grant select on table public.admin_audit_log to authenticated;
+grant select on table public.admins to authenticated;
+grant select, insert, update, delete on table public.applications to authenticated;
+grant select, insert, update, delete on table public.course_interest_leads to authenticated;
+grant select on table public.rrn_access_log to authenticated;
+grant select, insert, update, delete on table public.trainees to authenticated;
+grant select, insert, update, delete on table public.courses to authenticated;
+grant select, insert, update, delete on table public.course_types to authenticated;
+
+revoke all on function public.write_admin_audit_log() from public;
+revoke all on function public.write_admin_audit_log() from anon;
+revoke all on function public.write_admin_audit_log() from authenticated;
+
+revoke all on function public.submit_course_interest_lead(
+  text,text,text,text,boolean,text[],text,uuid[]
+) from public;
+grant execute on function public.submit_course_interest_lead(
+  text,text,text,text,boolean,text[],text,uuid[]
+) to anon, authenticated;
+
+revoke all on function public.current_user_is_admin() from public;
+grant execute on function public.current_user_is_admin() to anon, authenticated;
+
+alter default privileges for role postgres in schema public revoke all on tables from anon, authenticated;
+alter default privileges for role postgres in schema public revoke all on functions from anon, authenticated;
+
 create or replace function public.submit_application(
   p_name text,
   p_phone text,
