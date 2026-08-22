@@ -883,6 +883,7 @@ const APPLICATION_STATUSES = ['대기','승인','중복신청','신청확정','�
 const COURSE_LOOKUP_STATUSES = ['승인','중복신청','신청확정','수료'];
 const EMPLOYMENT_CATEGORIES = ['대규모','우선지원기업','고용보험미가입'];
 const MASKED_RRN = '●●●●●●-●●●●●●●';
+const RRN_READY_LABEL = '확인 전';
 const visibleColumns = { phone: true, rrn: true, referral: true, memo: true };
 let appColumnOrder = ['name', 'phone', 'company', 'email', 'rrn', 'employment', 'referral', 'memo', 'course', 'status', 'actions'];
 let appColumnVisibility = appColumnOrder.reduce((acc, id) => ({ ...acc, [id]: true }), {});
@@ -1865,9 +1866,12 @@ function bindResidentNumberControls(scope){
         toggle.checked = false;
         return;
       }
-      const fn = toggle.checked ? 'get_trainee_rrn_full' : 'get_trainee_rrn_masked';
+      if (!toggle.checked){
+        valueEl.textContent = RRN_READY_LABEL;
+        return;
+      }
       valueEl.textContent = '조회 중...';
-      const { data, error } = await sb.rpc(fn, { p_trainee_id: traineeId });
+      const { data, error } = await sb.rpc('get_trainee_rrn_full', { p_trainee_id: traineeId });
       if (!error && data){
         valueEl.textContent = formatResidentNumber(data);
       } else {
@@ -1881,7 +1885,7 @@ function bindResidentNumberControls(scope){
     btn.addEventListener('click', async () => {
       const cell = btn.closest('.rrn-cell');
       const value = cell?.querySelector('.rrn-value')?.textContent.trim();
-      if (!value || value === '조회 중...' || value === '조회 실패') return;
+      if (!value || value === RRN_READY_LABEL || value === '조회 중...' || value === '조회 실패') return;
       try {
         await navigator.clipboard.writeText(value);
         const original = btn.textContent;
@@ -1895,19 +1899,15 @@ function bindResidentNumberControls(scope){
 }
 
 function loadMaskedResidentNumbers(scope){
-  scope.querySelectorAll('.rrn-value').forEach(async valueEl => {
-    const traineeId = valueEl.dataset.traineeId;
-    if (!traineeId) return;
-    const { data, error } = await sb.rpc('get_trainee_rrn_masked', { p_trainee_id: traineeId });
-    if (!error && data) valueEl.textContent = formatResidentNumber(data);
-    else valueEl.textContent = MASKED_RRN;
+  scope.querySelectorAll('.rrn-value').forEach(valueEl => {
+    valueEl.textContent = RRN_READY_LABEL;
   });
 }
 
 function renderResidentNumberCell(traineeId){
   return `
     <div class="rrn-cell">
-      <span class="rrn-value" data-trainee-id="${escapeHtml(traineeId)}">${MASKED_RRN}</span>
+      <span class="rrn-value" data-trainee-id="${escapeHtml(traineeId)}">${RRN_READY_LABEL}</span>
       <button class="rrn-copy" type="button" aria-label="주민등록번호 복사">복사</button>
       <label class="rrn-toggle-label" title="전체 주민등록번호 보기">
         <input class="rrn-toggle" type="checkbox" data-trainee-id="${escapeHtml(traineeId)}" aria-label="전체 주민등록번호 보기">
