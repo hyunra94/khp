@@ -2063,6 +2063,9 @@ const appColumns = {
               <button type="button" class="save-applicant-btn" data-id="${escapeHtml(app.id)}">저장</button>
               <button type="button" class="cancel-edit-btn" data-id="${escapeHtml(app.id)}">취소</button>
             ` : `<button type="button" class="edit-applicant-btn" data-id="${escapeHtml(app.id)}">편집</button>`}
+            ${/* ===== [Claude 추가] 신청현황에서 바로 문자/메일 보내기 (알림 관리로 이동할 필요 없이 사이드 패널로 발송) 시작 ===== */ ''}
+            <button type="button" class="claude-quick-notify-btn" data-trainee-id="${escapeHtml(app.trainee_id || '')}" data-name="${escapeHtml(app.trainees?.name || '')}" data-phone="${escapeHtml(app.trainees?.phone || '')}" data-email="${escapeHtml(app.trainees?.email || '')}">문자/메일 보내기</button>
+            ${/* ===== [Claude 추가] 끝 ===== */ ''}
             ${getApplicationItems(app).length === 1 ? `<button type="button" class="delete-app-btn danger" data-id="${escapeHtml(app.id)}">삭제</button>` : ''}
           </div>
         </div>

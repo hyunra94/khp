@@ -570,6 +570,48 @@
     renderManualRecipientChips();
   }
 
+  /* ==================================================================
+   * [Claude 추가] 신청현황 각 행의 ⋯ 메뉴에 있는 "문자/메일 보내기" 버튼 →
+   * 알림 관리 탭 · 개별 발송 서브탭으로 바로 이동하면서 그 신청자를 수신자로
+   * 미리 넣어줌 (요청: "클릭하면 알림관리에 수신자 입력된 상태로 간다거나").
+   * 이벤트 위임으로 한 번만 바인딩 — renderApps()가 다시 그려져도 계속 동작함.
+   * ================================================================== */
+  function claudeQuickSendToTrainee(trainee) {
+    const navBtn = document.querySelector('.nav-item[data-view="claude-notify"]');
+    if (navBtn) navBtn.click();
+    const manualTabBtn = document.querySelector('#claudeSubtabs .claude-subtab-btn[data-tab="manual"]');
+    if (manualTabBtn) manualTabBtn.click();
+    if (trainee.id) {
+      claudeManualSelected.set(trainee.id, trainee);
+      renderManualRecipientChips();
+    }
+    setTimeout(() => {
+      document.getElementById('claudeManualBody')?.focus();
+      document.getElementById('view-claude-notify')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  }
+
+  function bindQuickNotifyDelegate() {
+    if (document.body.dataset.claudeQuickNotifyBound) return;
+    document.body.dataset.claudeQuickNotifyBound = 'true';
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.claude-quick-notify-btn');
+      if (!btn) return;
+      e.preventDefault();
+      const traineeId = btn.dataset.traineeId;
+      if (!traineeId) {
+        alert('이 신청자의 정보를 찾을 수 없습니다.');
+        return;
+      }
+      claudeQuickSendToTrainee({
+        id: traineeId,
+        name: btn.dataset.name || '',
+        phone: btn.dataset.phone || '',
+        email: btn.dataset.email || '',
+      });
+    });
+  }
+
   function populateCourseSelect() {
     const select = document.getElementById('claudeAddCourse');
     if (!select) return;
@@ -1178,6 +1220,7 @@
     injectStyle();
     buildNavAndSection();
     claudeInitColumnResize();
+    bindQuickNotifyDelegate();
   }
 
   if (document.readyState === 'loading') {
