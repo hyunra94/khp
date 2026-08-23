@@ -144,19 +144,51 @@
       }
       .application-table th .claude-col-resizer{position:absolute;top:0;right:0;width:6px;height:100%;cursor:col-resize;user-select:none;z-index:5;}
       .application-table th .claude-col-resizer:hover, .application-table th .claude-col-resizer.dragging{background:rgba(23,107,135,0.35);}
+
+      /* [Claude 추가] 신청현황 행 왼쪽 선택 체크박스 (호버 시 노출) + 일괄 삭제 바 */
+      .application-table th.claude-row-select-th, .application-table td.claude-row-select-cell{
+        width:32px;min-width:32px;max-width:32px;text-align:center;padding:0 !important;overflow:visible !important;
+      }
+      .claude-row-select{
+        opacity:0;width:16px;height:16px;cursor:pointer;accent-color:var(--accent-dark,#0F465A);
+        transition:opacity .12s;vertical-align:middle;
+      }
+      #appRows tr:hover .claude-row-select, .claude-row-select:checked{opacity:1;}
+      .claude-bulk-bar{
+        display:none;align-items:center;gap:12px;margin:0 0 10px;padding:9px 14px;
+        background:#FFF7E8;border:1px solid #E4B75E;border-radius:8px;font-size:12.5px;font-weight:800;color:#7A5C1E;
+      }
+      .claude-bulk-delete-btn{
+        background:var(--danger,#A33C3C);color:#fff;border:none;border-radius:6px;padding:6px 14px;
+        font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;
+      }
+      .claude-bulk-delete-btn:disabled{opacity:.6;cursor:default;}
+      .claude-bulk-clear-btn{
+        background:transparent;border:1px solid #E4B75E;border-radius:6px;padding:6px 14px;
+        font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;color:#7A5C1E;
+      }
     `;
     document.head.appendChild(style);
   }
 
+  /* ===== [Claude 추가] 발송 설정도 실패 시 화면에 사유 표시 (위 발송 문구와 동일한 이유) ===== */
   async function loadNotificationSettings() {
-    const { data, error } = await sb.from('notification_settings').select('*');
-    if (error) {
-      console.warn('[Claude] 알림 설정 로드 실패:', error);
-      return;
+    const el = document.getElementById('claudeSettingsGrid');
+    try {
+      const { data, error } = await sb.from('notification_settings').select('*');
+      if (error) {
+        console.warn('[Claude] 알림 설정 로드 실패:', error);
+        if (el) el.innerHTML = `<p class="claude-hint" style="color:var(--danger, #A33C3C);">설정을 불러오지 못했습니다: ${escapeHtml(error.message || String(error))}</p>`;
+        return;
+      }
+      settingsCache = data || [];
+      renderSettings();
+    } catch (e) {
+      console.warn('[Claude] 알림 설정 로드 중 예외:', e);
+      if (el) el.innerHTML = `<p class="claude-hint" style="color:var(--danger, #A33C3C);">설정을 불러오지 못했습니다: ${escapeHtml(String(e && e.message ? e.message : e))}</p>`;
     }
-    settingsCache = data || [];
-    renderSettings();
   }
+  /* ===== [Claude 추가] 끝 ===== */
 
   function renderSettings() {
     const el = document.getElementById('claudeSettingsGrid');
@@ -264,15 +296,26 @@
     return templatesCache.find(t => t.event_type === eventType && t.channel === channel && (t.detail || '') === (detail || ''));
   }
 
+  /* ===== [Claude 추가] 발송 문구가 "불러오는 중..."에서 멈춰 안 보이던 문제 대응 시작
+     기존엔 조회 실패 시 콘솔에만 경고를 남기고 화면은 그대로 방치되어, 사용자 입장에선
+     원인을 알 수 없이 계속 로딩 중인 것처럼 보였음. 이제 실패 사유를 화면에 직접 표시함. */
   async function loadTemplates() {
-    const { data, error } = await sb.from('notification_templates').select('*');
-    if (error) {
-      console.warn('[Claude] 알림 문구 로드 실패:', error);
-      return;
+    const el = document.getElementById('claudeTemplateEditor');
+    try {
+      const { data, error } = await sb.from('notification_templates').select('*');
+      if (error) {
+        console.warn('[Claude] 알림 문구 로드 실패:', error);
+        if (el) el.innerHTML = `<p class="claude-hint" style="color:var(--danger, #A33C3C);">문구를 불러오지 못했습니다: ${escapeHtml(error.message || String(error))}</p>`;
+        return;
+      }
+      templatesCache = data || [];
+      renderTemplateEditor();
+    } catch (e) {
+      console.warn('[Claude] 알림 문구 로드 중 예외:', e);
+      if (el) el.innerHTML = `<p class="claude-hint" style="color:var(--danger, #A33C3C);">문구를 불러오지 못했습니다: ${escapeHtml(String(e && e.message ? e.message : e))}</p>`;
     }
-    templatesCache = data || [];
-    renderTemplateEditor();
   }
+  /* ===== [Claude 추가] 끝 ===== */
 
   function templateRowMarkup(eventType, channel, detail, groupKey) {
     const tpl = findTemplate(eventType, channel, detail) || { subject: '', body: '' };
@@ -453,6 +496,8 @@
     const channels = [emailChecked && 'email', smsChecked && 'sms'].filter(Boolean);
     const subject = document.getElementById('claudeManualSubject')?.value || '';
     const body = document.getElementById('claudeManualBody')?.value || '';
+    /* ===== [Claude 추가] 협약서 PDF 첨부 체크박스 (이메일에만 적용됨) ===== */
+    const attachAgreement = document.getElementById('claudeManualAttachAgreement')?.checked || false;
 
     if (recipients.length === 0) { msgEl.textContent = '수신자를 먼저 선택해주세요.'; msgEl.classList.add('error'); return; }
     if (channels.length === 0) { msgEl.textContent = '발송 채널(이메일/문자)을 선택해주세요.'; msgEl.classList.add('error'); return; }
@@ -475,7 +520,7 @@
       const t = recipients[i];
       try {
         const { data, error } = await sb.functions.invoke('notify-manual', {
-          body: { traineeId: t.id, channels, subject, body },
+          body: { traineeId: t.id, channels, subject, body, attachAgreement },
         });
         if (error) {
           failCount += channels.length;
@@ -640,6 +685,11 @@
               <label><input type="checkbox" id="claudeManualChEmail" checked> 이메일</label>
               <label><input type="checkbox" id="claudeManualChSms" checked> 문자</label>
             </div>
+            <!-- ===== [Claude 추가] 협약서 PDF 첨부 시작 ===== -->
+            <div class="claude-checks" style="margin-top:6px;">
+              <label><input type="checkbox" id="claudeManualAttachAgreement"> 협약서 양식 첨부 (이메일에만 첨부됩니다)</label>
+            </div>
+            <!-- ===== [Claude 추가] 끝 ===== -->
 
             <div style="margin-top:6px;">
               <span class="claude-hint" style="margin:0 0 6px;display:block;">빠른 채우기:</span>
@@ -983,6 +1033,101 @@
     claudeAttachColumnResizers();
     claudeTagRowCells();
     claudeFixPopupClipping();
+    claudeInjectRowSelectColumn();
+  }
+
+  /* ==================================================================
+   * [Claude 추가] 신청현황 테이블 각 행 맨 왼쪽에 체크박스를 추가함.
+   * 평소엔 숨겨져 있다가 그 행에 마우스를 올리면 나타나고, 체크된 행이 있으면
+   * 계속 보임. 여러 명을 선택해서 한 번에 삭제할 수 있음 (요청: "왼쪽에 가져다
+   * 대면 체크박스 나타나서 체크하면 일괄 삭제 가능하게").
+   * 한 행 = 한 신청자(trainee)이므로, 삭제 시 그 신청자의 신청 건 전체를
+   * 지움(신청 건이 여러 개로 묶인 신청자도 전부 삭제됨 — 개별 건만 남기고
+   * 싶으면 기존의 "이 건 삭제"를 사용해주세요).
+   * ================================================================== */
+  const claudeSelectedTraineeIds = new Set();
+
+  function claudeUpdateBulkBar() {
+    const bar = document.getElementById('claudeBulkBar');
+    if (!bar) return;
+    const count = claudeSelectedTraineeIds.size;
+    bar.style.display = count > 0 ? 'flex' : 'none';
+    const countEl = bar.querySelector('.claude-bulk-count');
+    if (countEl) countEl.textContent = `${count}명 선택됨`;
+  }
+
+  async function claudeBulkDeleteSelected() {
+    const ids = [...claudeSelectedTraineeIds];
+    if (ids.length === 0) return;
+    if (!confirm(`선택한 ${ids.length}명의 신청 내역을 전부 삭제할까요?\n(같은 신청자의 신청 건이 여러 개면 전부 함께 삭제됩니다)`)) return;
+    const btn = document.getElementById('claudeBulkDeleteBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '삭제 중...'; }
+    const results = await Promise.all(ids.map(traineeId => sb.from('applications').delete().eq('trainee_id', traineeId)));
+    const failed = results.filter(r => r && r.error);
+    claudeSelectedTraineeIds.clear();
+    if (btn) { btn.disabled = false; btn.textContent = '선택 삭제'; }
+    claudeUpdateBulkBar();
+    if (failed.length) {
+      alert(`${failed.length}건 삭제 중 실패했습니다: ${failed[0].error.message}`);
+    }
+    if (typeof loadApplications === 'function') {
+      await loadApplications();
+    } else if (typeof renderApps === 'function') {
+      renderApps();
+    }
+    if (typeof renderMetrics === 'function') renderMetrics();
+    if (typeof loadRecentActivity === 'function') loadRecentActivity();
+  }
+
+  function claudeInjectBulkBar() {
+    const view = document.getElementById('view-applications');
+    if (!view || document.getElementById('claudeBulkBar')) return;
+    const anchor = view.querySelector('.table-shell.application-table');
+    const bar = document.createElement('div');
+    bar.id = 'claudeBulkBar';
+    bar.className = 'claude-bulk-bar';
+    bar.style.display = 'none';
+    bar.innerHTML = `
+      <span class="claude-bulk-count">0명 선택됨</span>
+      <button type="button" id="claudeBulkDeleteBtn" class="claude-bulk-delete-btn">선택 삭제</button>
+      <button type="button" id="claudeBulkClearBtn" class="claude-bulk-clear-btn">선택 해제</button>
+    `;
+    if (anchor) view.insertBefore(bar, anchor);
+    else view.appendChild(bar);
+    bar.querySelector('#claudeBulkDeleteBtn').addEventListener('click', claudeBulkDeleteSelected);
+    bar.querySelector('#claudeBulkClearBtn').addEventListener('click', () => {
+      claudeSelectedTraineeIds.clear();
+      document.querySelectorAll('.claude-row-select:checked').forEach(cb => { cb.checked = false; });
+      claudeUpdateBulkBar();
+    });
+  }
+
+  function claudeInjectRowSelectColumn() {
+    const headRow = document.querySelector('#appHead tr');
+    if (headRow && !headRow.querySelector('.claude-row-select-th')) {
+      const th = document.createElement('th');
+      th.className = 'claude-row-select-th';
+      th.setAttribute('aria-label', '선택');
+      headRow.insertBefore(th, headRow.firstChild);
+    }
+    document.querySelectorAll('#appRows tr[data-trainee-id]').forEach(tr => {
+      if (tr.querySelector('.claude-row-select-cell')) return;
+      const traineeId = tr.dataset.traineeId;
+      if (!traineeId) return;
+      const td = document.createElement('td');
+      td.className = 'claude-row-select-cell';
+      td.innerHTML = `<input type="checkbox" class="claude-row-select" aria-label="이 신청자 선택">`;
+      tr.insertBefore(td, tr.firstChild);
+      const cb = td.querySelector('.claude-row-select');
+      cb.dataset.traineeId = traineeId;
+      if (claudeSelectedTraineeIds.has(traineeId)) cb.checked = true;
+      cb.addEventListener('click', (e) => e.stopPropagation());
+      cb.addEventListener('change', () => {
+        if (cb.checked) claudeSelectedTraineeIds.add(traineeId);
+        else claudeSelectedTraineeIds.delete(traineeId);
+        claudeUpdateBulkBar();
+      });
+    });
   }
 
   /* [Claude 추가] 예전에 드래그로 저장해둔 컬럼 너비(localStorage)가 있으면 새 기본값보다
@@ -1016,6 +1161,7 @@
     const head = document.getElementById('appHead');
     const body = document.getElementById('appRows');
     if (!head) return;
+    claudeInjectBulkBar();
     claudeRefreshColumnResize();
     claudeInjectColumnResetButton();
     if (!claudeResizeObserverBound) {
