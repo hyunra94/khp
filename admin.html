@@ -328,6 +328,8 @@
   select.status-select{
     border-radius:var(--radius);border:1px solid var(--line);padding:7px 8px;font-family:inherit;font-size:12.5px;background:#fff;
   }
+  /* [Claude 추가] 상태 칸의 버튼(select)이 컬럼 폭에 딱 맞게 늘어나도록 함 */
+  .application-status-list select.status-select{width:100%;box-sizing:border-box;max-width:100%;}
   textarea.memo-input{
     width:100%;min-width:190px;border-radius:var(--radius);border:1px solid var(--line);
     padding:9px 10px;font-family:inherit;font-size:12.5px;resize:vertical;min-height:40px;outline:none;background:var(--surface-soft);
@@ -536,7 +538,7 @@
   .application-course-detail::before{
     content:"";position:absolute;left:14px;top:-5px;width:8px;height:8px;background:#111418;transform:rotate(45deg);
   }
-  .application-status-list{display:grid;gap:7px;min-width:136px;}
+  .application-status-list{display:grid;gap:7px;min-width:0;max-width:100%;}
   .application-status-item{display:grid;gap:5px;}
   .application-status-item .compact-info{font-size:11px;}
   /* [Claude 추가] 신청 건별 삭제 버튼 (여러 건 묶인 신청자용) */
@@ -565,7 +567,7 @@
   .read-text{font-size:12.5px;color:#1D2530;}
   .read-text.muted{color:#7A8796;}
   .application-table textarea.row-memo{
-    min-width:180px;height:38px;resize:vertical;border:1px solid #D7E0EA;border-radius:7px;
+    width:100%;min-width:0;max-width:100%;box-sizing:border-box;height:38px;resize:vertical;border:1px solid #D7E0EA;border-radius:7px;
     padding:8px 9px;font-family:inherit;font-size:12.5px;background:#fff;color:#1D2530;
   }
   .rrn-cell{display:inline-flex;align-items:center;gap:7px;position:relative;max-width:100%;}
