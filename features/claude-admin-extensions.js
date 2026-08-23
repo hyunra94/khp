@@ -916,12 +916,39 @@
     claudeFixPopupClipping();
   }
 
+  /* [Claude 추가] 예전에 드래그로 저장해둔 컬럼 너비(localStorage)가 있으면 새 기본값보다
+     우선 적용되어, "상태/관리 칸이 버튼보다 훨씬 넓다" 같은 문제가 계속 남아있을 수 있음.
+     "컬럼 설정" 패널에 초기화 버튼을 추가해서 저장된 값을 지우고 기본값으로 되돌릴 수 있게 함. */
+  function claudeInjectColumnResetButton() {
+    const menu = document.getElementById('columnOrderMenu');
+    if (!menu || document.getElementById('claudeColWidthResetBtn')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'claudeColWidthResetBtn';
+    btn.textContent = '컬럼 너비 기본값으로 초기화';
+    btn.style.cssText = 'display:block;width:100%;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--accent-dark,#0F465A);font-family:inherit;font-size:11.5px;font-weight:800;cursor:pointer;';
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      claudeColumnWidths = {};
+      claudeSaveColumnWidths();
+      document.querySelectorAll('#appHead th[data-col]').forEach(th => { th.style.width = ''; });
+      claudeRefreshColumnResize();
+    });
+    const panel = document.getElementById('columnOrderPanel');
+    if (panel && panel.parentElement) {
+      panel.parentElement.appendChild(btn);
+    } else {
+      menu.appendChild(btn);
+    }
+  }
+
   function claudeInitColumnResize() {
     claudeLoadColumnWidths();
     const head = document.getElementById('appHead');
     const body = document.getElementById('appRows');
     if (!head) return;
     claudeRefreshColumnResize();
+    claudeInjectColumnResetButton();
     if (!claudeResizeObserverBound) {
       const observer = new MutationObserver(() => {
         requestAnimationFrame(claudeRefreshColumnResize);
