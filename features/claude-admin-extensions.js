@@ -39,6 +39,17 @@
       .claude-section{margin-bottom:28px;}
       .claude-section h3{font-size:14px;font-weight:900;margin:0 0 10px;color:var(--ink);}
       .claude-section p.claude-hint{font-size:12px;color:var(--ink-soft);margin:-4px 0 12px;}
+
+      /* 알림 관리 하위 탭 */
+      .claude-subtabs{display:flex;gap:6px;margin:4px 0 18px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+      .claude-subtab-btn{
+        border:none;background:transparent;padding:10px 14px;font-family:inherit;font-size:13px;font-weight:800;
+        color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s, border-color .12s;
+      }
+      .claude-subtab-btn:hover{color:var(--ink);}
+      .claude-subtab-btn.active{color:var(--accent-dark,#0F465A);border-bottom-color:var(--accent-dark,#0F465A);}
+      .claude-tab-panel{display:none;}
+      .claude-tab-panel.active{display:block;}
       .claude-toggle-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
       .claude-toggle-card{border:1px solid var(--line);border-radius:var(--radius,8px);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;background:var(--surface,#fff);}
       .claude-toggle-card .label{font-size:13px;font-weight:800;color:var(--ink);}
@@ -451,25 +462,51 @@
     sendBtn.disabled = true;
     sendBtn.textContent = `발송 중... (0/${recipients.length})`;
 
+    /* ===== [Claude 추가] 실제 발송 성공/실패 판정 버그 수정 시작 =====
+       기존엔 sb.functions.invoke()가 HTTP 레벨에서 에러 없이 응답만 오면(200 OK) 무조건
+       "성공"으로 카운트했음. 그런데 notify-manual 함수는 실제 이메일/문자 발송이 실패해도
+       (Resend/Aligo 쪽 오류) HTTP 자체는 200으로 응답하고 결과를 body.results 안에 담아서
+       돌려주기 때문에, 실제로는 다 실패했는데도 "발송 성공"으로 잘못 표시되는 문제가 있었음.
+       이제 응답의 results.email / results.sms 안의 실제 ok 값을 보고 판정함. */
     let successCount = 0;
     let failCount = 0;
+    const firstErrors = [];
     for (let i = 0; i < recipients.length; i++) {
       const t = recipients[i];
       try {
         const { data, error } = await sb.functions.invoke('notify-manual', {
           body: { traineeId: t.id, channels, subject, body },
         });
-        if (error) { failCount++; } else { successCount++; }
+        if (error) {
+          failCount += channels.length;
+          firstErrors.push(`${t.name}: ${error.message || '요청 실패'}`);
+        } else {
+          channels.forEach(ch => {
+            const r = data?.results?.[ch];
+            if (r && r.ok) {
+              successCount++;
+            } else {
+              failCount++;
+              if (r?.error) firstErrors.push(`${t.name}(${CHANNEL_LABELS[ch]}): ${r.error}`);
+            }
+          });
+        }
       } catch (e) {
-        failCount++;
+        failCount += channels.length;
+        firstErrors.push(`${t.name}: ${String(e)}`);
       }
       sendBtn.textContent = `발송 중... (${i + 1}/${recipients.length})`;
     }
     sendBtn.disabled = false;
     sendBtn.textContent = '발송하기';
 
-    msgEl.textContent = `발송 완료: 성공 ${successCount}건, 실패 ${failCount}건. 아래 발송 이력에서 확인할 수 있습니다.`;
+    let summary = `발송 완료: 성공 ${successCount}건, 실패 ${failCount}건.`;
+    if (failCount > 0 && firstErrors.length) {
+      summary += ` 첫 실패 사유: ${firstErrors[0]}`;
+    }
+    msgEl.textContent = summary;
     msgEl.classList.add(failCount ? 'error' : 'success');
+    /* ===== [Claude 추가] 끝 ===== */
     claudeManualSelected = new Map();
     renderManualRecipientChips();
     loadNotificationLog();
@@ -561,6 +598,12 @@
     }
   }
 
+  /* ==================================================================
+   * [Claude 추가] 알림 관리 탭 UI 개선 — 내용이 많아 한 화면에 다 몰려있던 걸
+   * 하위 탭(문구 편집 / 개별 발송 / 발송 이력 / on-off 설정)으로 나눔.
+   * 기존 DOM id(claudeTemplateEditor, claudeManual*, claudeSettingsGrid,
+   * claudeLogRows 등)는 전부 그대로 유지 — 로딩/바인딩 로직 변경 없음.
+   * ================================================================== */
   function buildSectionMarkup() {
     return `
       <div class="view-header">
@@ -568,65 +611,90 @@
         <p>문자/메일 알림 발송 이력을 확인하고, 상황별 발송 여부를 켜고 끌 수 있습니다.</p>
       </div>
 
-      <div class="claude-section">
-        <h3>발송 문구 편집</h3>
-        <p class="claude-hint">실제로 발송되는 이메일/문자 내용입니다. 아래에서 직접 수정 후 "저장"을 누르면 다음 발송부터 바로 반영됩니다. <span class="var">{{name}}</span>(이름), <span class="var">{{course}}</span>(과정명), <span class="var">{{start_date}}</span>(교육 시작일)은 신청자별로 자동 대체됩니다.</p>
-        <div id="claudeTemplateEditor">불러오는 중...</div>
+      <div class="claude-subtabs" id="claudeSubtabs">
+        <button type="button" class="claude-subtab-btn active" data-tab="templates">발송 문구</button>
+        <button type="button" class="claude-subtab-btn" data-tab="manual">개별 발송</button>
+        <button type="button" class="claude-subtab-btn" data-tab="log">발송 이력</button>
+        <button type="button" class="claude-subtab-btn" data-tab="settings">발송 설정</button>
       </div>
 
-      <div class="claude-section">
-        <h3>개별 발송</h3>
-        <p class="claude-hint">특정 신청자를 골라 문자/이메일을 바로 보낼 수 있습니다. 자동 발송 on/off 설정과 무관하게 항상 발송됩니다.</p>
-        <div class="claude-manual-box">
-          <label>수신자 검색 (이름/연락처/이메일)</label>
-          <div class="claude-manual-search-wrap">
-            <input type="text" id="claudeManualSearch" placeholder="이름, 연락처 일부 입력">
-            <div id="claudeManualResults" class="claude-manual-results" style="display:none;"></div>
-          </div>
-          <div id="claudeManualChips" class="claude-chip-list"></div>
-
-          <div class="claude-checks" style="margin-top:14px;">
-            <label><input type="checkbox" id="claudeManualChEmail" checked> 이메일</label>
-            <label><input type="checkbox" id="claudeManualChSms" checked> 문자</label>
-          </div>
-
-          <div style="margin-top:6px;">
-            <span class="claude-hint" style="margin:0 0 6px;display:block;">빠른 채우기:</span>
-            <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="application_received" data-channel="email">신청접수 문구</button>
-            <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="status_change" data-channel="email" data-detail="승인">승인 문구</button>
-            <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="course_reminder" data-channel="email">일정임박 문구</button>
-          </div>
-
-          <div style="margin-top:12px;"><label>제목 (이메일에만 적용)</label><input type="text" id="claudeManualSubject" placeholder="예: [교육 안내] 참석 확인 요청"></div>
-          <div style="margin-top:12px;"><label>내용</label><textarea id="claudeManualBody" rows="4" placeholder="{{name}}님, ... 처럼 이름을 자동으로 넣을 수 있습니다."></textarea></div>
-
-          <div style="margin-top:14px;">
-            <button type="button" id="claudeManualSendBtn" class="submit" style="width:auto;padding:10px 22px;">발송하기</button>
-          </div>
-          <div id="claudeManualMsg" class="claude-msg"></div>
+      <div class="claude-tab-panel active" data-tab-panel="templates">
+        <div class="claude-section">
+          <p class="claude-hint">실제로 발송되는 이메일/문자 내용입니다. 아래에서 직접 수정 후 "저장"을 누르면 다음 발송부터 바로 반영됩니다. <span class="var">{{name}}</span>(이름), <span class="var">{{course}}</span>(과정명), <span class="var">{{start_date}}</span>(교육 시작일)은 신청자별로 자동 대체됩니다.</p>
+          <div id="claudeTemplateEditor">불러오는 중...</div>
         </div>
       </div>
 
-      <div class="claude-section">
-        <h3>발송 on/off</h3>
-        <div class="claude-toggle-grid" id="claudeSettingsGrid">불러오는 중...</div>
-      </div>
+      <div class="claude-tab-panel" data-tab-panel="manual">
+        <div class="claude-section">
+          <p class="claude-hint">특정 신청자를 골라 문자/이메일을 바로 보낼 수 있습니다. 자동 발송 on/off 설정과 무관하게 항상 발송됩니다.</p>
+          <div class="claude-manual-box">
+            <label>수신자 검색 (이름/연락처/이메일)</label>
+            <div class="claude-manual-search-wrap">
+              <input type="text" id="claudeManualSearch" placeholder="이름, 연락처 일부 입력">
+              <div id="claudeManualResults" class="claude-manual-results" style="display:none;"></div>
+            </div>
+            <div id="claudeManualChips" class="claude-chip-list"></div>
 
-      <div class="claude-section">
-        <h3>발송 이력 (최근 100건)</h3>
-        <div class="table-shell simple-table">
-          <table>
-            <thead><tr><th>시간</th><th>상황</th><th>채널</th><th>수신자</th><th>상태</th><th>재발송</th></tr></thead>
-            <tbody id="claudeLogRows"><tr><td colspan="6" class="empty-row">불러오는 중...</td></tr></tbody>
-          </table>
+            <div class="claude-checks" style="margin-top:14px;">
+              <label><input type="checkbox" id="claudeManualChEmail" checked> 이메일</label>
+              <label><input type="checkbox" id="claudeManualChSms" checked> 문자</label>
+            </div>
+
+            <div style="margin-top:6px;">
+              <span class="claude-hint" style="margin:0 0 6px;display:block;">빠른 채우기:</span>
+              <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="application_received" data-channel="email">신청접수 문구</button>
+              <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="status_change" data-channel="email" data-detail="승인">승인 문구</button>
+              <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="course_reminder" data-channel="email">일정임박 문구</button>
+            </div>
+
+            <div style="margin-top:12px;"><label>제목 (이메일에만 적용)</label><input type="text" id="claudeManualSubject" placeholder="예: [교육 안내] 참석 확인 요청"></div>
+            <div style="margin-top:12px;"><label>내용</label><textarea id="claudeManualBody" rows="4" placeholder="{{name}}님, ... 처럼 이름을 자동으로 넣을 수 있습니다."></textarea></div>
+
+            <div style="margin-top:14px;">
+              <button type="button" id="claudeManualSendBtn" class="submit" style="width:auto;padding:10px 22px;">발송하기</button>
+            </div>
+            <div id="claudeManualMsg" class="claude-msg"></div>
+          </div>
+        </div>
+        <div class="claude-section">
+          <p class="claude-hint">신청자를 1명씩 직접 등록하는 기능은 <strong>신청 현황</strong> 화면으로 이동했습니다. 신청 현황 상단의 "+ 신청자 수동 등록"을 열어주세요.</p>
         </div>
       </div>
 
-      <div class="claude-section">
-        <h3>신청자 수동 등록</h3>
-        <p class="claude-hint">신청자를 1명씩 직접 등록하는 기능은 <strong>신청 현황</strong> 화면으로 이동했습니다. 신청 현황 상단의 "+ 신청자 수동 등록"을 열어주세요.</p>
+      <div class="claude-tab-panel" data-tab-panel="log">
+        <div class="claude-section">
+          <div class="table-shell simple-table">
+            <table>
+              <thead><tr><th>시간</th><th>상황</th><th>채널</th><th>수신자</th><th>상태</th><th>재발송</th></tr></thead>
+              <tbody id="claudeLogRows"><tr><td colspan="6" class="empty-row">불러오는 중...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="claude-tab-panel" data-tab-panel="settings">
+        <div class="claude-section">
+          <p class="claude-hint">상황별로 자동 발송을 켜고 끌 수 있습니다. 꺼두면 발송 이력에 "꺼짐"으로만 기록되고 실제 발송은 되지 않습니다.</p>
+          <div class="claude-toggle-grid" id="claudeSettingsGrid">불러오는 중...</div>
+        </div>
       </div>
     `;
+  }
+
+  function bindNotifySubTabs() {
+    const bar = document.getElementById('claudeSubtabs');
+    if (!bar || bar.dataset.claudeBound) return;
+    bar.dataset.claudeBound = 'true';
+    bar.querySelectorAll('.claude-subtab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        bar.querySelectorAll('.claude-subtab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('#view-claude-notify .claude-tab-panel').forEach(panel => {
+          panel.classList.toggle('active', panel.dataset.tabPanel === btn.dataset.tab);
+        });
+      });
+    });
   }
 
   /* ==================================================================
@@ -705,6 +773,7 @@
     section.innerHTML = buildSectionMarkup();
     main.appendChild(section);
     bindManualSendUI();
+    bindNotifySubTabs();
 
     navBtn.addEventListener('click', () => {
       document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
