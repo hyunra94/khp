@@ -310,10 +310,103 @@
       }
       templatesCache = data || [];
       renderTemplateEditor();
+      renderManualQuickfillButtons();
     } catch (e) {
       console.warn('[Claude] 알림 문구 로드 중 예외:', e);
       if (el) el.innerHTML = `<p class="claude-hint" style="color:var(--danger, #A33C3C);">문구를 불러오지 못했습니다: ${escapeHtml(String(e && e.message ? e.message : e))}</p>`;
     }
+  }
+  /* ===== [Claude 추가] 끝 ===== */
+
+  /* ===== [Claude 추가] 자유롭게 이름 붙여서 추가하는 "나만의 문구 템플릿" 시작
+     기존 문구(신청접수/상태변경/일정임박)는 정해진 상황에서만 쓰이는데,
+     "문구를 자유롭게 추가하고 싶다"는 요청에 따라 이름만 붙이면 몇 개든 추가할 수
+     있는 템플릿을 별도로 지원함. notification_templates 테이블을 그대로 쓰되
+     event_type='custom', detail=템플릿 이름으로 저장 — 새 테이블 없이 재사용.
+     "개별 발송" 탭의 빠른 채우기에도 자동으로 나타남. */
+  function customTemplateRowMarkup(tpl) {
+    const isEmail = tpl.channel === 'email';
+    return `
+      <div class="claude-tpl-row" data-row-id="custom__${escapeHtml(tpl.channel)}__${escapeHtml(tpl.detail)}">
+        <span class="ch ${isEmail ? '' : 'sms'}">${escapeHtml(tpl.detail)} · ${CHANNEL_LABELS[tpl.channel]}</span>
+        ${isEmail ? `<label>제목</label><input type="text" class="claude-tpl-subject" value="${escapeHtml(tpl.subject || '')}">` : ''}
+        <label>${isEmail ? '본문' : '내용'}</label>
+        <textarea class="claude-tpl-body" rows="${isEmail ? 4 : 2}">${escapeHtml(tpl.body || '')}</textarea>
+        <div class="claude-tpl-row-foot">
+          <span class="claude-hint" style="margin:0;">사용 가능: <span class="var">{{name}}</span></span>
+          <button type="button" class="claude-tpl-save-btn" data-event="custom" data-channel="${escapeHtml(tpl.channel)}" data-detail="${escapeHtml(tpl.detail)}">저장</button>
+          <button type="button" class="claude-tpl-delete-btn" data-channel="${escapeHtml(tpl.channel)}" data-detail="${escapeHtml(tpl.detail)}">삭제</button>
+          <span class="claude-tpl-msg"></span>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCustomTemplateSection() {
+    const listEl = document.getElementById('claudeCustomTplList');
+    if (!listEl) return;
+    const customTpls = templatesCache.filter(t => t.event_type === 'custom');
+    listEl.innerHTML = customTpls.length
+      ? customTpls.map(customTemplateRowMarkup).join('')
+      : `<p class="claude-hint" style="margin:0 0 10px;">아직 추가한 템플릿이 없습니다. 아래에서 새로 만들어보세요.</p>`;
+
+    listEl.querySelectorAll('.claude-tpl-save-btn').forEach(btn => {
+      btn.addEventListener('click', () => claudeSaveTemplateRow(btn));
+    });
+    listEl.querySelectorAll('.claude-tpl-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(`"${btn.dataset.detail}" 템플릿을 삭제할까요?`)) return;
+        btn.disabled = true;
+        const { error } = await sb.from('notification_templates').delete()
+          .eq('event_type', 'custom').eq('channel', btn.dataset.channel).eq('detail', btn.dataset.detail);
+        if (error) { alert(`삭제 실패: ${error.message}`); btn.disabled = false; return; }
+        templatesCache = templatesCache.filter(t => !(t.event_type === 'custom' && t.channel === btn.dataset.channel && t.detail === btn.dataset.detail));
+        renderCustomTemplateSection();
+        renderManualQuickfillButtons();
+      });
+    });
+  }
+
+  function bindCustomTemplateAddForm() {
+    const btn = document.getElementById('claudeCustomTplAddBtn');
+    if (!btn || btn.dataset.claudeBound) return;
+    btn.dataset.claudeBound = 'true';
+    const channelSelect = document.getElementById('claudeCustomTplChannel');
+    const subjectWrap = document.getElementById('claudeCustomTplSubjectWrap');
+    const toggleSubjectWrap = () => { if (subjectWrap) subjectWrap.style.display = channelSelect.value === 'email' ? '' : 'none'; };
+    if (channelSelect) { channelSelect.addEventListener('change', toggleSubjectWrap); toggleSubjectWrap(); }
+
+    btn.addEventListener('click', async () => {
+      const nameEl = document.getElementById('claudeCustomTplName');
+      const bodyEl = document.getElementById('claudeCustomTplBody');
+      const subjectEl = document.getElementById('claudeCustomTplSubject');
+      const msgEl = document.getElementById('claudeCustomTplMsg');
+      const name = (nameEl.value || '').trim();
+      const channel = channelSelect.value;
+      const body = (bodyEl.value || '').trim();
+      msgEl.className = 'claude-tpl-msg';
+      if (!name) { msgEl.textContent = '템플릿 이름을 입력해주세요.'; msgEl.classList.add('error'); return; }
+      if (!body) { msgEl.textContent = '내용을 입력해주세요.'; msgEl.classList.add('error'); return; }
+      if (templatesCache.some(t => t.event_type === 'custom' && t.channel === channel && t.detail === name)) {
+        msgEl.textContent = '같은 이름의 템플릿이 이미 있습니다.'; msgEl.classList.add('error'); return;
+      }
+      btn.disabled = true;
+      msgEl.textContent = '추가 중...';
+      const { data, error } = await sb.from('notification_templates').insert({
+        event_type: 'custom', channel, detail: name,
+        subject: channel === 'email' ? (subjectEl.value || null) : null,
+        body,
+      }).select().maybeSingle();
+      btn.disabled = false;
+      if (error) { msgEl.textContent = `추가 실패: ${error.message}`; msgEl.classList.add('error'); return; }
+      if (data) templatesCache.push(data);
+      nameEl.value = ''; subjectEl.value = ''; bodyEl.value = '';
+      msgEl.textContent = '추가됨';
+      msgEl.classList.add('success');
+      setTimeout(() => { msgEl.textContent = ''; msgEl.className = 'claude-tpl-msg'; }, 1800);
+      renderCustomTemplateSection();
+      renderManualQuickfillButtons();
+    });
   }
   /* ===== [Claude 추가] 끝 ===== */
 
@@ -369,46 +462,76 @@
           <div style="font-size:11px;color:var(--ink-soft);margin-top:8px;">※ 상태가 "신청확정"인 신청자에게만, 교육 시작일 하루 전 오전 9시(KST)에 자동 발송됩니다.</div>
         </div>
       </details>
+      <details class="claude-preview-group" open>
+        <summary>④ 나만의 문구 템플릿 (자유 추가)</summary>
+        <div class="claude-preview-body">
+          <p class="claude-hint">이름만 붙이면 몇 개든 자유롭게 추가할 수 있습니다. "개별 발송" 탭의 빠른 채우기에도 자동으로 나타납니다.</p>
+          <div id="claudeCustomTplList"></div>
+          <div class="claude-custom-tpl-add">
+            <div class="claude-form-grid" style="grid-template-columns:1fr 130px;">
+              <div><label>템플릿 이름</label><input type="text" id="claudeCustomTplName" placeholder="예: 수료증 발급 안내"></div>
+              <div><label>채널</label>
+                <select id="claudeCustomTplChannel">
+                  <option value="email">이메일</option>
+                  <option value="sms">문자</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top:10px;" id="claudeCustomTplSubjectWrap"><label>제목</label><input type="text" id="claudeCustomTplSubject"></div>
+            <div style="margin-top:10px;"><label>내용</label><textarea id="claudeCustomTplBody" rows="3" placeholder="{{name}}님, ... 처럼 이름을 자동으로 넣을 수 있습니다."></textarea></div>
+            <div style="margin-top:10px;">
+              <button type="button" id="claudeCustomTplAddBtn" class="claude-tpl-save-btn">+ 새 템플릿 추가</button>
+              <span class="claude-tpl-msg" id="claudeCustomTplMsg"></span>
+            </div>
+          </div>
+        </div>
+      </details>
     `;
 
     el.querySelectorAll('.claude-tpl-save-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const row = btn.closest('.claude-tpl-row');
-        const eventType = btn.dataset.event;
-        const channel = btn.dataset.channel;
-        const detail = btn.dataset.detail;
-        const subjectInput = row.querySelector('.claude-tpl-subject');
-        const bodyInput = row.querySelector('.claude-tpl-body');
-        const msgEl = row.querySelector('.claude-tpl-msg');
-        btn.disabled = true;
-        msgEl.textContent = '저장 중...';
-        msgEl.className = 'claude-tpl-msg';
-        const { error } = await sb
-          .from('notification_templates')
-          .update({
-            subject: subjectInput ? subjectInput.value : null,
-            body: bodyInput.value,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('event_type', eventType)
-          .eq('channel', channel)
-          .eq('detail', detail);
-        btn.disabled = false;
-        if (error) {
-          msgEl.textContent = `저장 실패: ${error.message}`;
-          msgEl.classList.add('error');
-          return;
-        }
-        const cached = findTemplate(eventType, channel, detail);
-        if (cached) {
-          if (subjectInput) cached.subject = subjectInput.value;
-          cached.body = bodyInput.value;
-        }
-        msgEl.textContent = '저장됨';
-        msgEl.classList.add('success');
-        setTimeout(() => { msgEl.textContent = ''; msgEl.className = 'claude-tpl-msg'; }, 1800);
-      });
+      if (btn.id === 'claudeCustomTplAddBtn') return;
+      btn.addEventListener('click', () => claudeSaveTemplateRow(btn));
     });
+    renderCustomTemplateSection();
+    bindCustomTemplateAddForm();
+  }
+
+  /* ===== [Claude 추가] 기존 저장 로직을 공용 함수로 분리 (나만의 문구 템플릿에서도 재사용) ===== */
+  async function claudeSaveTemplateRow(btn) {
+    const row = btn.closest('.claude-tpl-row');
+    const eventType = btn.dataset.event;
+    const channel = btn.dataset.channel;
+    const detail = btn.dataset.detail;
+    const subjectInput = row.querySelector('.claude-tpl-subject');
+    const bodyInput = row.querySelector('.claude-tpl-body');
+    const msgEl = row.querySelector('.claude-tpl-msg');
+    btn.disabled = true;
+    msgEl.textContent = '저장 중...';
+    msgEl.className = 'claude-tpl-msg';
+    const { error } = await sb
+      .from('notification_templates')
+      .update({
+        subject: subjectInput ? subjectInput.value : null,
+        body: bodyInput.value,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('event_type', eventType)
+      .eq('channel', channel)
+      .eq('detail', detail);
+    btn.disabled = false;
+    if (error) {
+      msgEl.textContent = `저장 실패: ${error.message}`;
+      msgEl.classList.add('error');
+      return;
+    }
+    const cached = findTemplate(eventType, channel, detail);
+    if (cached) {
+      if (subjectInput) cached.subject = subjectInput.value;
+      cached.body = bodyInput.value;
+    }
+    msgEl.textContent = '저장됨';
+    msgEl.classList.add('success');
+    setTimeout(() => { msgEl.textContent = ''; msgEl.className = 'claude-tpl-msg'; }, 1800);
   }
 
   /* ==================================================================
@@ -568,6 +691,20 @@
     const sendBtn = document.getElementById('claudeManualSendBtn');
     if (sendBtn) sendBtn.addEventListener('click', claudeSendManual);
     renderManualRecipientChips();
+    renderManualQuickfillButtons();
+  }
+
+  /* ===== [Claude 추가] "나만의 문구 템플릿"을 개별 발송의 빠른 채우기 목록에 반영 ===== */
+  function renderManualQuickfillButtons() {
+    const el = document.getElementById('claudeCustomQuickfillList');
+    if (!el) return;
+    const customTpls = templatesCache.filter(t => t.event_type === 'custom');
+    el.innerHTML = customTpls.map(t => `
+      <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="custom" data-channel="${escapeHtml(t.channel)}" data-detail="${escapeHtml(t.detail)}">${escapeHtml(t.detail)}</button>
+    `).join('');
+    el.querySelectorAll('.claude-manual-quickfill').forEach(btn => {
+      btn.addEventListener('click', () => claudeFillManualTemplate(btn.dataset.event, btn.dataset.channel, btn.dataset.detail || ''));
+    });
   }
 
   /* ==================================================================
@@ -738,6 +875,9 @@
               <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="application_received" data-channel="email">신청접수 문구</button>
               <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="status_change" data-channel="email" data-detail="승인">승인 문구</button>
               <button type="button" class="claude-resend-btn claude-manual-quickfill" data-event="course_reminder" data-channel="email">일정임박 문구</button>
+              <!-- ===== [Claude 추가] 나만의 문구 템플릿도 빠른 채우기에 자동으로 추가됨 ===== -->
+              <span id="claudeCustomQuickfillList"></span>
+              <!-- ===== [Claude 추가] 끝 ===== -->
             </div>
 
             <div style="margin-top:12px;"><label>제목 (이메일에만 적용)</label><input type="text" id="claudeManualSubject" placeholder="예: [교육 안내] 참석 확인 요청"></div>
