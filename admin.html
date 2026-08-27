@@ -1698,7 +1698,7 @@ function bindCourseButtons(scope){
 async function loadApplications(){
   const { data, error } = await sb
     .from('applications')
-    .select('id, status, employment_category, attempt_no, applied_at, cancelled_at, status_updated_at, trainee_id, trainees(id, name, phone, email, company, referral_sources, note, admin_memo, birth6), courses(id, name, course_type_id, start_date, end_date, course_types(name))') /* [Claude 추가] birth6: 주민번호 마스킹 기본 표시용, 감사로그 없이 조회 가능 */
+    .select('id, status, employment_category, attempt_no, applied_at, cancelled_at, status_updated_at, trainee_id, trainees(id, name, phone, email, company, referral_sources, note, admin_memo, birth6, custom_fields), courses(id, name, course_type_id, start_date, end_date, course_types(name))') /* [Claude 추가] birth6: 주민번호 마스킹 기본 표시용, 감사로그 없이 조회 가능 / custom_fields: 관리자가 자유롭게 추가하는 속성값 저장용 */
     .order('applied_at', { ascending: false });
   if (error){
     document.getElementById('appRows').innerHTML = `<tr><td class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</td></tr>`;

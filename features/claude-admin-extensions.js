@@ -167,6 +167,99 @@
         background:transparent;border:1px solid #E4B75E;border-radius:6px;padding:6px 14px;
         font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;color:#7A5C1E;
       }
+
+      /* ===== [Claude 추가] 단체 등록 (여러 명 한 번에) ===== */
+      .claude-group-shared{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 16px;margin-bottom:14px;}
+      .claude-group-shared label{display:block;font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px;}
+      .claude-group-shared input, .claude-group-shared select{
+        width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px;box-sizing:border-box;
+      }
+      .claude-group-rows{display:grid;gap:8px;margin-bottom:10px;}
+      .claude-group-row{
+        display:grid;grid-template-columns:1fr 1fr 1fr 1.2fr auto;gap:8px;align-items:center;
+        padding:8px;border:1px solid var(--line);border-radius:7px;background:var(--surface-soft,#F7F9FB);
+      }
+      .claude-group-row input{
+        padding:8px 9px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:12.5px;box-sizing:border-box;background:#fff;
+      }
+      .claude-group-row input.claude-row-err{border-color:var(--danger,#C43D3D);}
+      .claude-group-row-remove{
+        border:none;background:transparent;color:var(--danger,#A33C3C);font-size:16px;font-weight:900;cursor:pointer;padding:4px 6px;line-height:1;
+      }
+      .claude-group-row-status{grid-column:1/-1;font-size:11px;font-weight:800;margin-top:-2px;}
+      .claude-group-row-status.ok{color:var(--green,#1F7A55);}
+      .claude-group-row-status.err{color:var(--danger,#C43D3D);}
+      .claude-group-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+      .claude-add-row-btn{
+        border:1px dashed var(--line);background:#fff;border-radius:6px;padding:9px 14px;font-family:inherit;font-size:12.5px;font-weight:800;
+        color:var(--accent-dark,#0F465A);cursor:pointer;
+      }
+      .claude-add-row-btn:hover{border-color:var(--accent,#176B87);background:var(--accent-soft,#E7F4F7);}
+      .claude-group-summary{font-size:12px;font-weight:700;color:var(--ink-soft);margin-top:8px;}
+
+      /* ===== [Claude 추가] 컬럼 설정 - 커스텀 속성 추가/삭제 ===== */
+      .column-order-item .claude-custom-del{
+        border:none;background:transparent;color:var(--danger,#A33C3C);font-size:13px;font-weight:900;cursor:pointer;padding:0 2px;margin-left:auto;
+      }
+      .claude-addfield-box{border-top:1px dashed var(--line);margin-top:10px;padding-top:10px;}
+      .claude-addfield-toggle{
+        display:block;width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;
+        color:var(--accent-dark,#0F465A);font-family:inherit;font-size:11.5px;font-weight:800;cursor:pointer;text-align:center;
+      }
+      .claude-addfield-form{display:none;gap:8px;margin-top:8px;}
+      .claude-addfield-form.open{display:grid;}
+      .claude-addfield-form input, .claude-addfield-form select, .claude-addfield-form textarea{
+        width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:12px;box-sizing:border-box;
+      }
+      .claude-addfield-form button{
+        padding:7px 8px;border:1px solid var(--accent-dark,#0F465A);border-radius:6px;background:var(--accent-dark,#0F465A);
+        color:#fff;font-family:inherit;font-size:11.5px;font-weight:800;cursor:pointer;
+      }
+
+      /* ===== [Claude 추가] 신청현황 인라인 편집 가능한 커스텀 셀 ===== */
+      .claude-inline-cell{
+        min-height:18px;padding:2px 3px;border-radius:4px;cursor:text;font-size:12.5px;color:var(--ink);
+      }
+      .claude-inline-cell:hover{background:var(--accent-soft,#E7F4F7);outline:1px dashed #BFDDE4;}
+      .claude-inline-cell.empty{color:var(--ink-soft,#8A94A0);}
+      .claude-inline-cell input{
+        width:100%;padding:4px 6px;border:1.5px solid var(--accent,#176B87);border-radius:4px;font-family:inherit;font-size:12.5px;box-sizing:border-box;
+      }
+      .claude-custom-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--accent-dark,#0F465A);}
+
+      /* ===== [Claude 추가] 과정 관리 - 상단 일정 캘린더 ===== */
+      .claude-cal-panel{margin-bottom:18px;}
+      .claude-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+      .claude-cal-head h3{font-size:14px;font-weight:900;margin:0;color:var(--ink);}
+      .claude-cal-nav{display:flex;align-items:center;gap:10px;}
+      .claude-cal-nav button{
+        border:1px solid var(--line);background:#fff;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:13px;font-weight:900;color:var(--ink);
+      }
+      .claude-cal-nav button:hover{border-color:var(--accent,#176B87);color:var(--accent-dark,#0F465A);}
+      .claude-cal-nav span{font-size:13px;font-weight:800;color:var(--ink);min-width:88px;text-align:center;}
+      .claude-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line,#E0E6EE);border:1px solid var(--line,#E0E6EE);border-radius:8px;overflow:hidden;}
+      .claude-cal-dow{background:#F8FAFC;padding:6px 4px;text-align:center;font-size:10.5px;font-weight:900;color:var(--ink-soft);}
+      .claude-cal-cell{background:#fff;min-height:64px;padding:4px;cursor:pointer;transition:background .1s;}
+      .claude-cal-cell:hover{background:var(--accent-soft,#E7F4F7);}
+      .claude-cal-cell.claude-cal-outside{background:#FAFBFC;color:#C7CED6;}
+      .claude-cal-cell.claude-cal-today .claude-cal-daynum{background:var(--accent-dark,#0F465A);color:#fff;border-radius:50%;}
+      .claude-cal-daynum{font-size:11px;font-weight:800;color:var(--ink-soft);display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;}
+      .claude-cal-pill{
+        display:block;margin-top:3px;padding:2px 5px;border-radius:4px;background:var(--accent-soft,#E7F4F7);color:var(--accent-dark,#0F465A);
+        font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      }
+      .claude-cal-pill.claude-cal-closed{background:#EDEDED;color:#888;}
+
+      /* ===== [Claude 추가] 수료 관리 탭 ===== */
+      .claude-cert-stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+      .claude-cert-stat{
+        flex:1;min-width:120px;border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:#fff;
+      }
+      .claude-cert-stat b{display:block;font-size:20px;font-weight:900;color:var(--ink);}
+      .claude-cert-stat span{font-size:11.5px;font-weight:700;color:var(--ink-soft);}
+      .claude-cert-num-input{
+        padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:12px;width:130px;box-sizing:border-box;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -1216,6 +1309,8 @@
     claudeTagRowCells();
     claudeFixPopupClipping();
     claudeInjectRowSelectColumn();
+    claudeBindCustomFieldCells();
+    claudeAugmentColumnOrderPanel();
   }
 
   /* ==================================================================
@@ -1356,11 +1451,704 @@
     }
   }
 
+  /* ==================================================================
+   * [Claude 추가] 단체 등록 — 회사 하나에 대해 여러 명을 한 번에 등록.
+   * 기존 "+ 신청자 수동 등록(1명씩)" 패널의 RPC(claude_admin_add_application)를
+   * 행마다 재사용함. 신청 과정/초기 상태/회사명은 공통으로 적용.
+   * ================================================================== */
+  let claudeGroupRowSeq = 0;
+
+  function claudeGroupRowMarkup(rowKey) {
+    return `
+      <div class="claude-group-row" data-row-key="${rowKey}">
+        <input type="text" placeholder="이름 *" data-field="name">
+        <input type="tel" placeholder="연락처 *" data-field="phone">
+        <input type="email" placeholder="이메일" data-field="email">
+        <input type="text" placeholder="주민등록번호 * (000000-0000000)" data-field="rrn">
+        <button type="button" class="claude-group-row-remove" title="이 행 삭제">×</button>
+      </div>
+    `;
+  }
+
+  function buildGroupAddPanel() {
+    return `
+      <details class="claude-add-details" id="claudeGroupAddDetails">
+        <summary>+ 단체 등록 (여러 명 한 번에)</summary>
+        <div class="claude-add-body">
+          <p class="claude-hint">회사명·신청 과정·초기 상태는 아래 목록 전체에 공통으로 적용됩니다. 각 사람마다 이름/연락처/주민등록번호는 필수입니다.</p>
+          <div class="claude-group-shared">
+            <div><label>회사명</label><input type="text" id="claudeGroupCompany" placeholder="예: ○○산업"></div>
+            <div><label>신청 과정 *</label><select id="claudeGroupCourse"></select></div>
+            <div><label>초기 상태 *</label><select id="claudeGroupStatus"></select></div>
+          </div>
+          <div class="claude-group-rows" id="claudeGroupRows"></div>
+          <div class="claude-group-actions">
+            <button type="button" class="claude-add-row-btn" id="claudeGroupAddRowBtn">+ 행 추가</button>
+            <button type="button" id="claudeGroupSubmitBtn" class="submit" style="width:auto;padding:10px 22px;">전체 등록</button>
+          </div>
+          <div id="claudeGroupMsg" class="claude-msg"></div>
+        </div>
+      </details>
+    `;
+  }
+
+  function claudeAddGroupRow() {
+    const rows = document.getElementById('claudeGroupRows');
+    if (!rows) return;
+    claudeGroupRowSeq += 1;
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = claudeGroupRowMarkup(claudeGroupRowSeq);
+    rows.appendChild(wrapper.firstElementChild);
+  }
+
+  function populateGroupSelects() {
+    const courseSel = document.getElementById('claudeGroupCourse');
+    if (courseSel) {
+      const courses = (typeof allCourses !== 'undefined' && Array.isArray(allCourses)) ? allCourses : [];
+      courseSel.innerHTML = '<option value="">과정 선택</option>' + courses.map(c =>
+        `<option value="${escapeHtml(c.id)}">${escapeHtml((c.course_types?.name || '') + ' ' + c.name)}${c.start_date ? ' (' + escapeHtml(c.start_date) + ')' : ''}</option>`
+      ).join('');
+    }
+    const statusSel = document.getElementById('claudeGroupStatus');
+    if (statusSel) {
+      const statuses = (typeof APPLICATION_STATUSES !== 'undefined') ? APPLICATION_STATUSES : ['대기', '승인', '중복신청', '신청확정', '수료', '거절', '취소'];
+      statusSel.innerHTML = statuses.map(s => `<option value="${s}" ${s === '대기' ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('');
+    }
+  }
+
+  async function submitGroupApplications() {
+    const msgEl = document.getElementById('claudeGroupMsg');
+    const company = document.getElementById('claudeGroupCompany').value.trim();
+    const courseId = document.getElementById('claudeGroupCourse').value;
+    const status = document.getElementById('claudeGroupStatus').value;
+    msgEl.textContent = '';
+    msgEl.className = 'claude-msg';
+
+    if (!courseId) {
+      msgEl.textContent = '신청 과정을 선택해주세요.';
+      msgEl.classList.add('error');
+      return;
+    }
+
+    const rowEls = [...document.querySelectorAll('#claudeGroupRows .claude-group-row')];
+    const rowsToSubmit = [];
+    let hasBlockingError = false;
+
+    rowEls.forEach(rowEl => {
+      rowEl.querySelectorAll('.claude-group-row-status').forEach(n => n.remove());
+      rowEl.querySelectorAll('input').forEach(inp => inp.classList.remove('claude-row-err'));
+
+      const name = rowEl.querySelector('[data-field="name"]').value.trim();
+      const phone = rowEl.querySelector('[data-field="phone"]').value.trim();
+      const email = rowEl.querySelector('[data-field="email"]').value.trim();
+      const rrn = rowEl.querySelector('[data-field="rrn"]').value.trim();
+
+      if (!name && !phone && !rrn && !email) return; // 완전히 빈 행은 건너뜀
+
+      const missing = [];
+      if (!name) missing.push('name');
+      if (!phone) missing.push('phone');
+      if (!rrn) missing.push('rrn');
+      if (missing.length) {
+        missing.forEach(f => rowEl.querySelector(`[data-field="${f}"]`)?.classList.add('claude-row-err'));
+        hasBlockingError = true;
+        return;
+      }
+      rowsToSubmit.push({ rowEl, name, phone, email, rrn });
+    });
+
+    if (hasBlockingError) {
+      msgEl.textContent = '빨간 테두리로 표시된 필수 항목(이름/연락처/주민등록번호)을 채워주세요.';
+      msgEl.classList.add('error');
+      return;
+    }
+    if (!rowsToSubmit.length) {
+      msgEl.textContent = '등록할 사람을 1명 이상 입력해주세요.';
+      msgEl.classList.add('error');
+      return;
+    }
+
+    const submitBtn = document.getElementById('claudeGroupSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = `등록 중... (0/${rowsToSubmit.length})`;
+
+    let okCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < rowsToSubmit.length; i++) {
+      const row = rowsToSubmit[i];
+      const { error } = await sb.rpc('claude_admin_add_application', {
+        p_name: row.name,
+        p_phone: row.phone,
+        p_email: row.email || null,
+        p_company: company || null,
+        p_resident_number: row.rrn,
+        p_course_id: courseId,
+        p_status: status,
+        p_employment_category: null,
+        p_note: '단체 등록',
+      });
+      submitBtn.textContent = `등록 중... (${i + 1}/${rowsToSubmit.length})`;
+
+      const statusNote = document.createElement('div');
+      statusNote.className = 'claude-group-row-status';
+      if (error) {
+        failCount += 1;
+        statusNote.classList.add('err');
+        statusNote.textContent = `실패: ${error.message}`;
+        row.rowEl.appendChild(statusNote);
+      } else {
+        okCount += 1;
+        row.rowEl.remove(); // 성공한 행은 목록에서 제거
+      }
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = '전체 등록';
+
+    msgEl.textContent = `완료: 성공 ${okCount}건, 실패 ${failCount}건${failCount ? ' (실패한 행은 아래 남아있습니다. 수정 후 다시 등록해주세요.)' : ''}`;
+    msgEl.classList.add(failCount ? 'error' : 'success');
+
+    if (!document.querySelectorAll('#claudeGroupRows .claude-group-row').length) {
+      claudeAddGroupRow();
+      claudeAddGroupRow();
+      claudeAddGroupRow();
+    }
+
+    if (okCount && typeof loadApplications === 'function') {
+      loadApplications();
+    }
+  }
+
+  function injectGroupAddPanel() {
+    const view = document.getElementById('view-applications');
+    if (!view || document.getElementById('claudeGroupAddDetails')) return;
+    const anchor = document.getElementById('claudeAddDetails');
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = buildGroupAddPanel();
+    const details = wrapper.firstElementChild;
+    if (anchor && anchor.parentElement) {
+      anchor.insertAdjacentElement('afterend', details);
+    } else {
+      view.insertBefore(details, view.querySelector('.table-shell.application-table') || null);
+    }
+    populateGroupSelects();
+    claudeAddGroupRow();
+    claudeAddGroupRow();
+    claudeAddGroupRow();
+    document.getElementById('claudeGroupAddRowBtn').addEventListener('click', claudeAddGroupRow);
+    document.getElementById('claudeGroupSubmitBtn').addEventListener('click', submitGroupApplications);
+    document.getElementById('claudeGroupRows').addEventListener('click', (e) => {
+      const btn = e.target.closest('.claude-group-row-remove');
+      if (!btn) return;
+      btn.closest('.claude-group-row')?.remove();
+    });
+
+    const appsNavBtn = document.querySelector('.nav-item[data-view="applications"]');
+    if (appsNavBtn) appsNavBtn.addEventListener('click', () => populateGroupSelects());
+  }
+
+  /* ==================================================================
+   * [Claude 추가] 신청현황 "나만의 속성(컬럼)" — 노션의 커스텀 프로퍼티처럼
+   * 관리자가 자유롭게 새 컬럼을 추가/삭제하고, 셀을 클릭해 바로 값을 수정.
+   * 값은 trainees.custom_fields (jsonb, key=필드 id)에 저장됨.
+   * admin.html의 appColumnOrder/appColumnVisibility/appColumns(전역, let/const)를
+   * 그대로 확장해서 사용 — renderApps() 등 기존 렌더 함수는 수정하지 않음.
+   * ================================================================== */
+  let claudeCustomFieldDefs = [];
+
+  function claudeCustomColId(defId) {
+    return `custom_${defId}`;
+  }
+
+  async function claudeLoadCustomFieldDefs() {
+    const { data, error } = await sb.from('trainee_custom_fields').select('*').order('sort_order', { ascending: true });
+    if (error) {
+      console.warn('[Claude] 커스텀 속성 로드 실패:', error);
+      return;
+    }
+    claudeCustomFieldDefs = data || [];
+    claudeApplyCustomColumnsToAppColumns();
+    if (typeof renderApps === 'function' && document.getElementById('appHead')) {
+      renderApps();
+    }
+  }
+
+  function claudeApplyCustomColumnsToAppColumns() {
+    if (typeof appColumnOrder === 'undefined' || typeof appColumns === 'undefined' || typeof appColumnVisibility === 'undefined') return;
+
+    // 삭제된 커스텀 속성은 컬럼 목록에서도 제거
+    const validIds = new Set(claudeCustomFieldDefs.map(d => claudeCustomColId(d.id)));
+    for (let i = appColumnOrder.length - 1; i >= 0; i--) {
+      const id = appColumnOrder[i];
+      if (id.startsWith('custom_') && !validIds.has(id)) {
+        appColumnOrder.splice(i, 1);
+        delete appColumns[id];
+        delete appColumnVisibility[id];
+      }
+    }
+
+    claudeCustomFieldDefs.forEach(def => {
+      const colId = claudeCustomColId(def.id);
+      appColumns[colId] = {
+        label: def.label,
+        render: row => claudeRenderCustomCell(row, def),
+      };
+      if (!appColumnOrder.includes(colId)) {
+        const actionsIdx = appColumnOrder.indexOf('actions');
+        if (actionsIdx >= 0) appColumnOrder.splice(actionsIdx, 0, colId);
+        else appColumnOrder.push(colId);
+      }
+      if (appColumnVisibility[colId] === undefined) appColumnVisibility[colId] = true;
+    });
+  }
+
+  function claudeRenderCustomCell(row, def) {
+    const traineeId = escapeHtml(row.trainee_id || '');
+    const value = row.trainees?.custom_fields ? row.trainees.custom_fields[def.id] : undefined;
+    if (def.field_type === 'checkbox') {
+      return `<input type="checkbox" class="claude-custom-cb" data-trainee-id="${traineeId}" data-field-id="${escapeHtml(def.id)}" ${value ? 'checked' : ''}>`;
+    }
+    if (def.field_type === 'select') {
+      const options = Array.isArray(def.options) ? def.options : [];
+      return `
+        <select class="claude-custom-select" data-trainee-id="${traineeId}" data-field-id="${escapeHtml(def.id)}">
+          <option value="">선택 안 함</option>
+          ${options.map(opt => `<option value="${escapeHtml(opt)}" ${opt === value ? 'selected' : ''}>${escapeHtml(opt)}</option>`).join('')}
+        </select>
+      `;
+    }
+    const display = value === undefined || value === null || value === '' ? '' : escapeHtml(String(value));
+    return `<div class="claude-inline-cell${display ? '' : ' empty'}" tabindex="0" data-trainee-id="${traineeId}" data-field-id="${escapeHtml(def.id)}" data-type="${escapeHtml(def.field_type)}">${display || '입력...'}</div>`;
+  }
+
+  async function claudeSaveCustomFieldValue(traineeId, fieldId, value) {
+    // 로컬 캐시(allApps)에서 현재 custom_fields를 찾아 병합 후 저장
+    let current = {};
+    if (typeof allApps !== 'undefined' && Array.isArray(allApps)) {
+      const found = allApps.find(a => a.trainee_id === traineeId);
+      if (found?.trainees?.custom_fields) current = { ...found.trainees.custom_fields };
+    }
+    current[fieldId] = value;
+    const { error } = await sb.from('trainees').update({ custom_fields: current }).eq('id', traineeId);
+    if (error) {
+      alert(`저장 실패: ${error.message}`);
+      return false;
+    }
+    if (typeof allApps !== 'undefined' && Array.isArray(allApps)) {
+      allApps.forEach(a => {
+        if (a.trainee_id === traineeId && a.trainees) a.trainees.custom_fields = { ...current };
+      });
+    }
+    return true;
+  }
+
+  function claudeBindCustomFieldCells() {
+    const tbody = document.getElementById('appRows');
+    if (!tbody || tbody.dataset.claudeCustomBound) return;
+    tbody.dataset.claudeCustomBound = 'true';
+
+    tbody.addEventListener('click', (e) => {
+      const cell = e.target.closest('.claude-inline-cell');
+      if (!cell || cell.querySelector('input')) return;
+      const currentText = cell.classList.contains('empty') ? '' : cell.textContent.trim();
+      const input = document.createElement('input');
+      input.type = cell.dataset.type === 'number' ? 'number' : 'text';
+      input.value = currentText;
+      cell.textContent = '';
+      cell.appendChild(input);
+      input.focus();
+      input.select();
+
+      const finish = async (save) => {
+        const newValue = input.value.trim();
+        if (save && newValue !== currentText) {
+          const ok = await claudeSaveCustomFieldValue(cell.dataset.traineeId, cell.dataset.fieldId, newValue);
+          if (!ok) { cell.textContent = currentText || '입력...'; cell.classList.toggle('empty', !currentText); return; }
+        }
+        const finalText = save ? newValue : currentText;
+        cell.textContent = finalText || '입력...';
+        cell.classList.toggle('empty', !finalText);
+      };
+
+      input.addEventListener('blur', () => finish(true));
+      input.addEventListener('keydown', (ke) => {
+        if (ke.key === 'Enter') { ke.preventDefault(); input.blur(); }
+        if (ke.key === 'Escape') { ke.preventDefault(); finish(false); }
+      });
+    });
+
+    tbody.addEventListener('change', async (e) => {
+      const cb = e.target.closest('.claude-custom-cb');
+      if (cb) {
+        cb.disabled = true;
+        await claudeSaveCustomFieldValue(cb.dataset.traineeId, cb.dataset.fieldId, cb.checked);
+        cb.disabled = false;
+        return;
+      }
+      const sel = e.target.closest('.claude-custom-select');
+      if (sel) {
+        sel.disabled = true;
+        await claudeSaveCustomFieldValue(sel.dataset.traineeId, sel.dataset.fieldId, sel.value || null);
+        sel.disabled = false;
+      }
+    });
+  }
+
+  /* 컬럼 설정 패널에 커스텀 속성 삭제 버튼 + "+ 새 속성 추가" 폼을 덧붙임 */
+  function claudeAugmentColumnOrderPanel() {
+    const panel = document.getElementById('columnOrderPanel');
+    if (!panel) return;
+
+    panel.querySelectorAll('.column-order-item').forEach(item => {
+      const id = item.dataset.id;
+      if (!id || !id.startsWith('custom_') || item.querySelector('.claude-custom-del')) return;
+      const def = claudeCustomFieldDefs.find(d => claudeCustomColId(d.id) === id);
+      if (!def) return;
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'claude-custom-del';
+      delBtn.title = '이 속성 삭제';
+      delBtn.textContent = '×';
+      delBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!confirm(`"${def.label}" 속성을 삭제할까요? 저장된 값도 더 이상 표시되지 않습니다.`)) return;
+        const { error } = await sb.from('trainee_custom_fields').delete().eq('id', def.id);
+        if (error) { alert(`삭제 실패: ${error.message}`); return; }
+        await claudeLoadCustomFieldDefs();
+      });
+      item.appendChild(delBtn);
+    });
+
+    if (!document.getElementById('claudeAddFieldBox')) {
+      const box = document.createElement('div');
+      box.className = 'claude-addfield-box';
+      box.id = 'claudeAddFieldBox';
+      box.innerHTML = `
+        <button type="button" class="claude-addfield-toggle" id="claudeAddFieldToggle">+ 새 속성 추가</button>
+        <div class="claude-addfield-form" id="claudeAddFieldForm">
+          <input type="text" id="claudeAddFieldLabel" placeholder="속성 이름 (예: 참석확인)">
+          <select id="claudeAddFieldType">
+            <option value="text">텍스트</option>
+            <option value="number">숫자</option>
+            <option value="checkbox">체크박스</option>
+            <option value="select">선택 목록</option>
+          </select>
+          <textarea id="claudeAddFieldOptions" placeholder="선택 목록일 때만: 옵션을 쉼표로 구분 (예: 미확인,확인,보류)" rows="2" style="display:none;"></textarea>
+          <button type="button" id="claudeAddFieldSubmit">추가</button>
+          <div id="claudeAddFieldMsg" class="claude-msg"></div>
+        </div>
+      `;
+      panel.parentElement?.appendChild(box);
+
+      document.getElementById('claudeAddFieldToggle').addEventListener('click', () => {
+        document.getElementById('claudeAddFieldForm').classList.toggle('open');
+      });
+      document.getElementById('claudeAddFieldType').addEventListener('change', (e) => {
+        document.getElementById('claudeAddFieldOptions').style.display = e.target.value === 'select' ? 'block' : 'none';
+      });
+      document.getElementById('claudeAddFieldSubmit').addEventListener('click', async () => {
+        const label = document.getElementById('claudeAddFieldLabel').value.trim();
+        const fieldType = document.getElementById('claudeAddFieldType').value;
+        const msgEl = document.getElementById('claudeAddFieldMsg');
+        msgEl.textContent = '';
+        msgEl.className = 'claude-msg';
+        if (!label) {
+          msgEl.textContent = '속성 이름을 입력해주세요.';
+          msgEl.classList.add('error');
+          return;
+        }
+        let options = null;
+        if (fieldType === 'select') {
+          options = document.getElementById('claudeAddFieldOptions').value.split(',').map(s => s.trim()).filter(Boolean);
+          if (!options.length) {
+            msgEl.textContent = '선택 목록 옵션을 최소 1개 이상 입력해주세요.';
+            msgEl.classList.add('error');
+            return;
+          }
+        }
+        const sortOrder = claudeCustomFieldDefs.length ? Math.max(...claudeCustomFieldDefs.map(d => d.sort_order || 0)) + 1 : 0;
+        const { error } = await sb.from('trainee_custom_fields').insert({ label, field_type: fieldType, options, sort_order: sortOrder });
+        if (error) {
+          msgEl.textContent = `추가 실패: ${error.message}`;
+          msgEl.classList.add('error');
+          return;
+        }
+        document.getElementById('claudeAddFieldLabel').value = '';
+        document.getElementById('claudeAddFieldOptions').value = '';
+        document.getElementById('claudeAddFieldForm').classList.remove('open');
+        await claudeLoadCustomFieldDefs();
+      });
+    }
+  }
+
+  /* ==================================================================
+   * [Claude 추가] 과정 관리 화면 상단 — 회차 일정을 달력으로 보기.
+   * allCourses(전역, admin.html)의 start_date 기준으로 월별 그리드에 표시.
+   * 빈 날짜를 클릭하면 회차 추가 폼(#newCourseDate)에 그 날짜를 채워줌.
+   * ================================================================== */
+  let claudeCalMonth = null; // Date (해당 월의 1일)
+
+  function claudeTodayDateKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function claudeBuildCourseCalendar() {
+    if (!claudeCalMonth) {
+      const now = new Date();
+      claudeCalMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+    const year = claudeCalMonth.getFullYear();
+    const month = claudeCalMonth.getMonth();
+    const firstDow = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+    const todayKey = claudeTodayDateKey();
+
+    const courses = (typeof allCourses !== 'undefined' && Array.isArray(allCourses)) ? allCourses : [];
+    const byDate = {};
+    courses.forEach(c => {
+      if (!c.start_date) return;
+      (byDate[c.start_date] = byDate[c.start_date] || []).push(c);
+    });
+
+    const cells = [];
+    for (let i = firstDow - 1; i >= 0; i--) {
+      cells.push({ day: daysInPrevMonth - i, outside: true, key: null });
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      cells.push({ day: d, outside: false, key });
+    }
+    while (cells.length % 7 !== 0) {
+      cells.push({ day: cells.length - (firstDow + daysInMonth) + 1, outside: true, key: null });
+    }
+
+    const dowLabels = ['일', '월', '화', '수', '목', '금', '토'];
+    return `
+      <section class="panel claude-cal-panel">
+        <div class="claude-cal-head">
+          <h3>회차 일정 캘린더</h3>
+          <div class="claude-cal-nav">
+            <button type="button" id="claudeCalPrev">‹</button>
+            <span>${year}년 ${month + 1}월</span>
+            <button type="button" id="claudeCalNext">›</button>
+          </div>
+        </div>
+        <div class="claude-cal-grid">
+          ${dowLabels.map(l => `<div class="claude-cal-dow">${l}</div>`).join('')}
+          ${cells.map(cell => `
+            <div class="claude-cal-cell ${cell.outside ? 'claude-cal-outside' : ''} ${cell.key === todayKey ? 'claude-cal-today' : ''}" ${cell.key ? `data-date="${cell.key}"` : ''}>
+              <span class="claude-cal-daynum">${cell.day}</span>
+              ${cell.key && byDate[cell.key] ? byDate[cell.key].map(c => `
+                <span class="claude-cal-pill ${c.is_open === false ? 'claude-cal-closed' : ''}" title="${escapeHtml((c.course_types?.name || '') + ' ' + (c.name || ''))}">${escapeHtml(c.course_types?.name || c.name || '회차')}${c.round ? ' ' + escapeHtml(c.round) + '회' : ''}</span>
+              `).join('') : ''}
+            </div>
+          `).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  function claudeRefreshCourseCalendar() {
+    const existing = document.getElementById('claudeCourseCalendar');
+    if (!existing) return;
+    existing.outerHTML = `<div id="claudeCourseCalendar">${claudeBuildCourseCalendar()}</div>`;
+    claudeBindCourseCalendar();
+  }
+
+  function claudeBindCourseCalendar() {
+    const wrap = document.getElementById('claudeCourseCalendar');
+    if (!wrap) return;
+    const prevBtn = document.getElementById('claudeCalPrev');
+    const nextBtn = document.getElementById('claudeCalNext');
+    if (prevBtn) prevBtn.addEventListener('click', () => {
+      claudeCalMonth = new Date(claudeCalMonth.getFullYear(), claudeCalMonth.getMonth() - 1, 1);
+      claudeRefreshCourseCalendar();
+    });
+    if (nextBtn) nextBtn.addEventListener('click', () => {
+      claudeCalMonth = new Date(claudeCalMonth.getFullYear(), claudeCalMonth.getMonth() + 1, 1);
+      claudeRefreshCourseCalendar();
+    });
+    wrap.querySelectorAll('.claude-cal-cell[data-date]').forEach(cell => {
+      cell.addEventListener('click', (e) => {
+        if (e.target.closest('.claude-cal-pill')) return;
+        const dateInput = document.getElementById('newCourseDate');
+        if (dateInput) {
+          dateInput.value = cell.dataset.date;
+          dateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          dateInput.focus();
+        }
+      });
+    });
+  }
+
+  function claudeInjectCourseCalendar() {
+    const view = document.getElementById('view-courses');
+    if (!view || document.getElementById('claudeCourseCalendar')) return;
+    const anchor = document.getElementById('coursePanelLayout');
+    const wrap = document.createElement('div');
+    wrap.id = 'claudeCourseCalendar';
+    wrap.innerHTML = claudeBuildCourseCalendar();
+    if (anchor) view.insertBefore(wrap, anchor);
+    else view.appendChild(wrap);
+    claudeBindCourseCalendar();
+
+    const coursesNavBtn = document.querySelector('.nav-item[data-view="courses"]');
+    if (coursesNavBtn) coursesNavBtn.addEventListener('click', () => claudeRefreshCourseCalendar());
+
+    const rowsEl = document.getElementById('courseRows');
+    if (rowsEl) {
+      const observer = new MutationObserver(() => requestAnimationFrame(claudeRefreshCourseCalendar));
+      observer.observe(rowsEl, { childList: true, subtree: true });
+    }
+  }
+
+  /* ==================================================================
+   * [Claude 추가] 수료 관리 탭 — 상태가 "수료"인 신청 건을 모아 수료증 발급을
+   * 관리. certificate_issued/certificate_number/certificate_issued_at
+   * (applications 테이블, 이번에 추가)을 사용.
+   * ================================================================== */
+  let claudeCompletions = [];
+
+  async function claudeLoadCompletions() {
+    const tbody = document.getElementById('claudeCertRows');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="empty-row">불러오는 중...</td></tr>';
+    const { data, error } = await sb
+      .from('applications')
+      .select('id, status_updated_at, certificate_issued, certificate_number, certificate_issued_at, trainee_id, trainees(name, phone, company, email), courses(name, course_types(name))')
+      .eq('status', '수료')
+      .order('status_updated_at', { ascending: false });
+    if (error) {
+      if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</td></tr>`;
+      return;
+    }
+    claudeCompletions = data || [];
+    claudeRenderCompletions();
+  }
+
+  function claudeRenderCompletions() {
+    const tbody = document.getElementById('claudeCertRows');
+    const statsEl = document.getElementById('claudeCertStats');
+    if (!tbody) return;
+
+    const total = claudeCompletions.length;
+    const issued = claudeCompletions.filter(c => c.certificate_issued).length;
+    if (statsEl) {
+      statsEl.innerHTML = `
+        <div class="claude-cert-stat"><b>${total.toLocaleString('ko-KR')}</b><span>전체 수료생</span></div>
+        <div class="claude-cert-stat"><b>${issued.toLocaleString('ko-KR')}</b><span>수료증 발급 완료</span></div>
+        <div class="claude-cert-stat"><b>${(total - issued).toLocaleString('ko-KR')}</b><span>미발급</span></div>
+      `;
+    }
+
+    if (!total) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-row">수료 상태인 신청자가 없습니다</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = claudeCompletions.map(c => `
+      <tr data-id="${escapeHtml(c.id)}">
+        <td>${escapeHtml(c.trainees?.name || '-')}</td>
+        <td>${escapeHtml(c.trainees?.phone || '-')}</td>
+        <td>${escapeHtml(c.trainees?.company || '-')}</td>
+        <td>${escapeHtml((c.courses?.course_types?.name || '') + ' ' + (c.courses?.name || ''))}</td>
+        <td>${escapeHtml(formatDateTime(c.status_updated_at))}</td>
+        <td><input type="text" class="claude-cert-num-input" data-id="${escapeHtml(c.id)}" placeholder="수료증 번호" value="${escapeHtml(c.certificate_number || '')}"></td>
+        <td style="text-align:center;"><input type="checkbox" class="claude-cert-issued-cb" data-id="${escapeHtml(c.id)}" ${c.certificate_issued ? 'checked' : ''}></td>
+      </tr>
+    `).join('');
+  }
+
+  function claudeBindCompletionsTable() {
+    const tbody = document.getElementById('claudeCertRows');
+    if (!tbody || tbody.dataset.claudeBound) return;
+    tbody.dataset.claudeBound = 'true';
+
+    tbody.addEventListener('change', async (e) => {
+      const cb = e.target.closest('.claude-cert-issued-cb');
+      if (cb) {
+        cb.disabled = true;
+        const issued = cb.checked;
+        const { error } = await sb.from('applications').update({
+          certificate_issued: issued,
+          certificate_issued_at: issued ? new Date().toISOString() : null,
+        }).eq('id', cb.dataset.id);
+        cb.disabled = false;
+        if (error) { alert(`저장 실패: ${error.message}`); cb.checked = !issued; return; }
+        const item = claudeCompletions.find(c => c.id === cb.dataset.id);
+        if (item) { item.certificate_issued = issued; item.certificate_issued_at = issued ? new Date().toISOString() : null; }
+        claudeRenderCompletions();
+      }
+    });
+
+    tbody.addEventListener('blur', async (e) => {
+      const input = e.target.closest('.claude-cert-num-input');
+      if (!input) return;
+      const item = claudeCompletions.find(c => c.id === input.dataset.id);
+      const newVal = input.value.trim() || null;
+      if (item && item.certificate_number === newVal) return;
+      const { error } = await sb.from('applications').update({ certificate_number: newVal }).eq('id', input.dataset.id);
+      if (error) { alert(`저장 실패: ${error.message}`); return; }
+      if (item) item.certificate_number = newVal;
+    }, true);
+  }
+
+  function buildCertSectionMarkup() {
+    return `
+      <div class="view-header">
+        <h2>수료 관리</h2>
+        <p>상태가 "수료"로 변경된 신청자를 모아 수료증 발급 여부와 번호를 관리합니다.</p>
+      </div>
+      <div class="claude-cert-stats" id="claudeCertStats"></div>
+      <div class="table-shell simple-table">
+        <table>
+          <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>과정</th><th>수료 확정일</th><th>수료증 번호</th><th>발급</th></tr></thead>
+          <tbody id="claudeCertRows"><tr><td colspan="7" class="empty-row">불러오는 중...</td></tr></tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function buildCertNavAndSection() {
+    const nav = document.querySelector('.nav');
+    const main = document.querySelector('.admin-main');
+    if (!nav || !main || document.getElementById('view-claude-cert')) return;
+
+    const navBtn = document.createElement('button');
+    navBtn.className = 'nav-item';
+    navBtn.type = 'button';
+    navBtn.dataset.view = 'claude-cert';
+    navBtn.innerHTML = '<span>07</span>수료 관리';
+    nav.appendChild(navBtn);
+
+    const section = document.createElement('section');
+    section.className = 'view';
+    section.id = 'view-claude-cert';
+    section.innerHTML = buildCertSectionMarkup();
+    main.appendChild(section);
+    claudeBindCompletionsTable();
+
+    navBtn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+      navBtn.classList.add('active');
+      section.classList.add('active');
+      claudeLoadCompletions();
+    });
+  }
+
   function init() {
     injectStyle();
     buildNavAndSection();
+    buildCertNavAndSection();
     claudeInitColumnResize();
     bindQuickNotifyDelegate();
+    injectGroupAddPanel();
+    claudeLoadCustomFieldDefs();
+    claudeInjectCourseCalendar();
   }
 
   if (document.readyState === 'loading') {
