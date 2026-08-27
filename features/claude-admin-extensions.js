@@ -2645,6 +2645,30 @@
     if (overviewNavBtn) overviewNavBtn.addEventListener('click', () => claudeRenderUpcomingPanel());
   }
 
+  /* ==================================================================
+   * [Claude 추가] "등록된 회차" 상단의 과정 필터 드롭박스 라벨 정리.
+   * admin.html의 renderCourseTypeTabs()가 옵션을 "OO 회차만 보기"로 그리는데,
+   * 과정별 그룹핑이 생긴 뒤로는 중복/장황해서 "OO"만 남기고 " 회차만 보기"는 뗌.
+   * ("전체 회차 보기" 옵션은 값이 없어서(value="") 그대로 둠.)
+   * ================================================================== */
+  function claudeSimplifyCourseTypeTabs() {
+    const tabs = document.getElementById('courseTypeTabs');
+    if (!tabs) return;
+    Array.from(tabs.options).forEach(opt => {
+      if (opt.value && / 회차만 보기$/.test(opt.textContent)) {
+        opt.textContent = opt.textContent.replace(/ 회차만 보기$/, '');
+      }
+    });
+  }
+
+  function claudeWatchCourseTypeTabs() {
+    const tabs = document.getElementById('courseTypeTabs');
+    if (!tabs) return;
+    claudeSimplifyCourseTypeTabs();
+    const observer = new MutationObserver(() => claudeSimplifyCourseTypeTabs());
+    observer.observe(tabs, { childList: true });
+  }
+
   function init() {
     injectStyle();
     buildNavAndSection();
@@ -2661,6 +2685,7 @@
     claudeInitTypeYearUI();
     claudeInjectUpcomingPanel();
     claudeBindCourseDateHelpers();
+    claudeWatchCourseTypeTabs();
   }
 
   if (document.readyState === 'loading') {
