@@ -272,6 +272,24 @@
       .claude-settings-item .label{font-size:13.5px;font-weight:900;color:var(--ink);}
       .claude-settings-item .sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
       .claude-settings-item .arrow{font-size:16px;color:var(--ink-soft);}
+
+      /* ===== [Claude 추가] 신청현황 "신청과정"/"상태" 칸의 콜아웃(박스)이
+         컬럼 너비에 맞춰 줄바꿈 대신 말줄임(...)으로 보이게 함.
+         CSS grid 자식은 기본적으로 내용 크기 밑으로 줄어들지 않아서(min-width:auto)
+         그동안 컬럼을 좁혀도 텍스트가 넘쳐 보였음 — min-width:0으로 풀어주고,
+         실제 텍스트를 담은 요소에 overflow:hidden + text-overflow:ellipsis 적용.
+         td[data-col="course"] 자체의 overflow:visible(호버 상세 팝업용)은 그대로 둠. ===== */
+      .application-table .application-course-item{min-width:0;max-width:100%;}
+      .application-table .application-course-item b{
+        display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;
+      }
+      .application-table .application-course-meta{
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;
+      }
+      .application-table .application-status-item{min-width:0;max-width:100%;}
+      .application-table .application-status-list select.status-select{
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -1101,7 +1119,7 @@
     navBtn.className = 'nav-item';
     navBtn.type = 'button';
     navBtn.dataset.view = 'claude-notify';
-    navBtn.innerHTML = '<span>06</span>알림 관리';
+    navBtn.innerHTML = '<span>05</span>알림 관리'; /* [Claude 추가] 활동 로그(구 05)가 설정으로 옮겨가면서 한 칸씩 당김 */
     nav.appendChild(navBtn);
 
     const section = document.createElement('section');
@@ -1323,6 +1341,7 @@
     claudeInjectRowSelectColumn();
     claudeBindCustomFieldCells();
     claudeAugmentColumnOrderPanel();
+    claudeRenderUpcomingPanel();
   }
 
   /* ==================================================================
@@ -1992,9 +2011,67 @@
           dateInput.value = cell.dataset.date;
           dateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
           dateInput.focus();
+          claudeAutoFillEndDate(dateInput, document.getElementById('newCourseEndDate'));
         }
       });
     });
+  }
+
+  /* ==================================================================
+   * [Claude 추가] 회차 시작일/종료일 입력 보완.
+   * 1) 종료일을 안 채우고 등록하면 비어버리던 걸, 시작일 입력 시 종료일이
+   *    비어있으면 자동으로 시작일과 같은 날짜(=1일짜리 교육)로 채워줌.
+   *    (물론 채워진 뒤에 직접 다른 날짜로 바꿀 수 있음)
+   * 2) 날짜 입력칸에 타이핑할 때 연도가 4자리를 넘게 입력되는 브라우저
+   *    기본 동작(<input type="date"> 자체의 특성)을 완전히 막을 수는 없지만,
+   *    min/max로 허용 연도 범위를 좁혀서 터무니없는 값이 저장되는 건 막음.
+   * ================================================================== */
+  const CLAUDE_DATE_MIN = '2015-01-01';
+  const CLAUDE_DATE_MAX = '2099-12-31';
+
+  function claudeAutoFillEndDate(startInput, endInput) {
+    if (!startInput || !endInput) return;
+    if (startInput.value && !endInput.value) {
+      endInput.value = startInput.value;
+    }
+  }
+
+  function claudeConstrainDateInput(input) {
+    if (!input || input.dataset.claudeDateBound) return;
+    input.dataset.claudeDateBound = 'true';
+    if (!input.min) input.min = CLAUDE_DATE_MIN;
+    if (!input.max) input.max = CLAUDE_DATE_MAX;
+  }
+
+  function claudeBindCourseDateHelpers() {
+    // 회차 추가 폼
+    const newStart = document.getElementById('newCourseDate');
+    const newEnd = document.getElementById('newCourseEndDate');
+    if (newStart && !newStart.dataset.claudeDateBound) {
+      claudeConstrainDateInput(newStart);
+      claudeConstrainDateInput(newEnd);
+      newStart.addEventListener('change', () => claudeAutoFillEndDate(newStart, newEnd));
+    }
+
+    // 등록된 회차 목록의 빠른 수정(course-quick-start/end)과 편집 행(course-start/end-input) —
+    // 매번 새로 그려지므로 이벤트 위임으로 한 번만 바인딩
+    const list = document.getElementById('courseRows');
+    if (list && !list.dataset.claudeDateHelperBound) {
+      list.dataset.claudeDateHelperBound = 'true';
+      list.addEventListener('focusin', (e) => {
+        if (e.target.matches('input[type="date"]')) claudeConstrainDateInput(e.target);
+      });
+      list.addEventListener('change', (e) => {
+        const target = e.target;
+        if (target.classList.contains('course-quick-start')) {
+          const row = target.closest('[data-course-id]');
+          claudeAutoFillEndDate(target, row?.querySelector('.course-quick-end'));
+        } else if (target.classList.contains('course-start-input')) {
+          const row = target.closest('[data-course-id]');
+          claudeAutoFillEndDate(target, row?.querySelector('.course-end-input'));
+        }
+      });
+    }
   }
 
   function claudeInjectCourseCalendar() {
@@ -2013,9 +2090,72 @@
 
     const rowsEl = document.getElementById('courseRows');
     if (rowsEl) {
-      const observer = new MutationObserver(() => requestAnimationFrame(claudeRefreshCourseCalendar));
+      /* claudeGroupCourseRowsByType()가 courseRows 안의 DOM을 직접 옮기기 때문에,
+         그 작업 도중엔 observer를 잠깐 끊어서 자기 자신을 다시 트리거하는
+         무한 루프를 막음. */
+      const observer = new MutationObserver(() => {
+        requestAnimationFrame(() => {
+          observer.disconnect();
+          claudeRefreshCourseCalendar();
+          claudeRenderUpcomingPanel();
+          claudeGroupCourseRowsByType();
+          observer.observe(rowsEl, { childList: true, subtree: true });
+        });
+      });
       observer.observe(rowsEl, { childList: true, subtree: true });
     }
+
+    const typeFilterSel = document.getElementById('courseTypeTabs');
+    if (typeFilterSel) typeFilterSel.addEventListener('change', () => requestAnimationFrame(claudeGroupCourseRowsByType));
+  }
+
+  /* ==================================================================
+   * [Claude 추가] "등록된 회차"가 "전체 회차 보기"일 때는 과정별로 그룹 헤더를
+   * 붙여서 묶어 보여줌. 특정 과정만 보고 있을 때는(필터가 걸려있을 때) 원래
+   * 순서 그대로 두고 그룹핑하지 않음. renderCourses()가 그리는 실제 행(.course-row/
+   * .course-edit-row) DOM 노드는 그대로 옮기기만 해서 바인딩된 이벤트가 유지됨.
+   * ================================================================== */
+  function claudeGroupCourseRowsByType() {
+    const list = document.getElementById('courseRows');
+    const filterSel = document.getElementById('courseTypeTabs');
+    if (!list || !filterSel) return;
+
+    list.querySelectorAll('.claude-course-group-header').forEach(h => h.remove());
+    if (filterSel.value) return; // 특정 과정만 볼 때는 원래 순서 그대로
+
+    const rows = [...list.querySelectorAll(':scope > [data-course-id]')];
+    if (rows.length < 2) return;
+
+    const courses = (typeof allCourses !== 'undefined' && Array.isArray(allCourses)) ? allCourses : [];
+    const types = (typeof allCourseTypes !== 'undefined' && Array.isArray(allCourseTypes)) ? allCourseTypes : [];
+
+    const groups = new Map();
+    const groupOrder = [];
+    rows.forEach(row => {
+      const course = courses.find(c => c.id === row.dataset.courseId);
+      const typeId = course?.course_type_id || '__unknown__';
+      if (!groups.has(typeId)) { groups.set(typeId, []); groupOrder.push(typeId); }
+      groups.get(typeId).push(row);
+    });
+    if (groupOrder.length < 2) return; // 과정이 하나뿐이면 그룹핑 의미 없음
+
+    const typeIdOrder = types.map(t => t.id);
+    groupOrder.sort((a, b) => {
+      const ai = typeIdOrder.indexOf(a);
+      const bi = typeIdOrder.indexOf(b);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+
+    groupOrder.forEach((typeId, idx) => {
+      const typeName = types.find(t => t.id === typeId)?.name || '과정 미지정';
+      const groupRows = groups.get(typeId);
+      const header = document.createElement('div');
+      header.className = 'claude-course-group-header';
+      header.textContent = `${typeName} · ${groupRows.length}개`;
+      header.style.cssText = `font-size:12px;font-weight:900;color:var(--accent-dark,#0F465A);padding:10px 2px 6px;${idx > 0 ? 'border-top:1px solid var(--line);margin-top:8px;' : ''}`;
+      list.appendChild(header);
+      groupRows.forEach(row => list.appendChild(row));
+    });
   }
 
   /* ==================================================================
@@ -2133,7 +2273,7 @@
     navBtn.className = 'nav-item';
     navBtn.type = 'button';
     navBtn.dataset.view = 'claude-cert';
-    navBtn.innerHTML = '<span>07</span>수료 관리';
+    navBtn.innerHTML = '<span>06</span>수료 관리'; /* [Claude 추가] 활동 로그(구 05)가 설정으로 옮겨가면서 한 칸씩 당김 */
     nav.appendChild(navBtn);
 
     const section = document.createElement('section');
@@ -2177,17 +2317,12 @@
     `;
   }
 
-  function buildSettingsNavAndSection() {
-    const nav = document.querySelector('.nav');
+  /* [Claude 추가] "설정"은 번호 매겨진 메인 메뉴 목록에 넣지 않고, 사이드바 하단
+     이메일 옆에 작은 아이콘 버튼으로만 둠 (요청: "설정은 로그아웃 위쪽 이메일
+     오른쪽에 작은 글씨로 아이콘만 올려놔줘"). */
+  function buildSettingsSection() {
     const main = document.querySelector('.admin-main');
-    if (!nav || !main || document.getElementById('view-claude-settings')) return;
-
-    const navBtn = document.createElement('button');
-    navBtn.className = 'nav-item';
-    navBtn.type = 'button';
-    navBtn.dataset.view = 'claude-settings';
-    navBtn.innerHTML = '<span>⚙</span>설정';
-    nav.appendChild(navBtn);
+    if (!main || document.getElementById('view-claude-settings')) return;
 
     const section = document.createElement('section');
     section.className = 'view';
@@ -2195,18 +2330,43 @@
     section.innerHTML = buildSettingsSectionMarkup();
     main.appendChild(section);
 
-    navBtn.addEventListener('click', () => {
-      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-      document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
-      navBtn.classList.add('active');
-      section.classList.add('active');
-    });
-
     const auditItem = document.getElementById('claudeSettingsAuditLogItem');
     const logNavBtn = document.querySelector('.nav-item[data-view="log"]');
     if (auditItem && logNavBtn) {
       auditItem.addEventListener('click', () => logNavBtn.click());
     }
+  }
+
+  function claudeShowSettingsSection() {
+    const section = document.getElementById('view-claude-settings');
+    if (!section) return;
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+    section.classList.add('active');
+  }
+
+  function injectSettingsFooterButton() {
+    const who = document.getElementById('whoAmI');
+    if (!who || document.getElementById('claudeSettingsGearBtn')) return;
+    const footer = who.parentElement;
+    if (!footer) return;
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;';
+    who.parentElement.insertBefore(row, who);
+    row.appendChild(who);
+
+    const gearBtn = document.createElement('button');
+    gearBtn.id = 'claudeSettingsGearBtn';
+    gearBtn.type = 'button';
+    gearBtn.title = '설정';
+    gearBtn.setAttribute('aria-label', '설정');
+    gearBtn.textContent = '⚙';
+    gearBtn.style.cssText = 'flex:0 0 auto;background:transparent;border:none;color:#A9B4C0;font-size:14px;cursor:pointer;padding:2px 4px;line-height:1;';
+    gearBtn.addEventListener('mouseenter', () => { gearBtn.style.color = '#fff'; });
+    gearBtn.addEventListener('mouseleave', () => { gearBtn.style.color = '#A9B4C0'; });
+    gearBtn.addEventListener('click', claudeShowSettingsSection);
+    row.appendChild(gearBtn);
   }
 
   /* ==================================================================
@@ -2284,7 +2444,7 @@
     const summary = document.createElement('summary');
     summary.className = 'claude-addfield-toggle';
     summary.style.cssText = 'margin:10px 0 14px;cursor:pointer;list-style:none;';
-    summary.textContent = savedOpen ? '과정명 목록 접기' : '과정명 목록 펼치기 (평소엔 안 바꾸는 목록이라 접어뒀어요)';
+    summary.textContent = savedOpen ? '과정명 목록 접기' : '과정명 목록 펼치기';
     details.appendChild(summary);
     restNodes.forEach(node => details.appendChild(node));
     panel.appendChild(details);
@@ -2403,11 +2563,85 @@
     }
   }
 
+  /* ==================================================================
+   * [Claude 추가] 개요 화면 — "최근 활동" 대신 "가장 가까운 교육 · 참석자 명단"을
+   * 보여줌. 오늘 이후로 가장 빨리 시작하는 회차를 찾아서, 그 회차에 신청한
+   * 사람들(취소/거절 제외)을 이름/연락처/상태와 함께 보여줌.
+   * admin.html의 loadRecentActivity()/#recentActivity는 그대로 두고
+   * (다른 곳에서도 호출되므로 지우지 않음) 그 패널만 화면에서 숨김.
+   * ================================================================== */
+  function claudeHideRecentActivityPanel() {
+    const panel = [...document.querySelectorAll('.overview-grid > .panel')].find(p => p.querySelector('h2')?.textContent.trim() === '최근 활동');
+    if (panel) panel.style.display = 'none';
+  }
+
+  function claudeFindNearestUpcomingCourse() {
+    const courses = (typeof allCourses !== 'undefined' && Array.isArray(allCourses)) ? allCourses : [];
+    const todayKey = claudeTodayDateKey();
+    const upcoming = courses
+      .filter(c => c.start_date && c.start_date >= todayKey)
+      .sort((a, b) => {
+        if (a.start_date !== b.start_date) return a.start_date < b.start_date ? -1 : 1;
+        return (a.is_open === false ? 1 : 0) - (b.is_open === false ? 1 : 0);
+      });
+    return upcoming[0] || null;
+  }
+
+  function claudeRenderUpcomingPanel() {
+    const body = document.getElementById('claudeUpcomingBody');
+    if (!body) return;
+    const course = claudeFindNearestUpcomingCourse();
+    if (!course) {
+      body.innerHTML = '<div class="empty-row">예정된 회차가 없습니다</div>';
+      return;
+    }
+    const apps = (typeof allApps !== 'undefined' && Array.isArray(allApps)) ? allApps : [];
+    const attendees = apps.filter(a => a.courses?.id === course.id && a.status !== '취소' && a.status !== '거절');
+
+    const header = `
+      <div style="margin-bottom:10px;">
+        <b style="font-size:14px;color:var(--ink);">${escapeHtml((course.course_types?.name || '') + ' ' + (course.name || ''))}${course.round ? ' · ' + escapeHtml(course.round) + '회차' : ''}</b>
+        <div class="compact-info" style="margin-top:2px;">${escapeHtml(course.start_date || '')}${course.end_date && course.end_date !== course.start_date ? ' ~ ' + escapeHtml(course.end_date) : ''} · 신청 ${attendees.length.toLocaleString('ko-KR')}명${course.capacity ? ' / 정원 ' + escapeHtml(course.capacity) : ''}</div>
+      </div>
+    `;
+    if (!attendees.length) {
+      body.innerHTML = header + '<div class="empty-row">아직 신청자가 없습니다</div>';
+      return;
+    }
+    const rows = attendees.map(a => `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid #F1F4F8;font-size:12.5px;">
+        <span style="font-weight:800;color:var(--ink);">${escapeHtml(a.trainees?.name || '-')}</span>
+        <span style="color:var(--ink-soft);">${escapeHtml(a.trainees?.phone || '-')}</span>
+        <span class="status-${escapeHtml(a.status || '')}" style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:800;">${escapeHtml(a.status || '')}</span>
+      </div>
+    `).join('');
+    body.innerHTML = header + rows;
+  }
+
+  function claudeInjectUpcomingPanel() {
+    const grid = document.querySelector('.overview-grid');
+    if (!grid || document.getElementById('claudeUpcomingPanel')) return;
+    claudeHideRecentActivityPanel();
+    const panel = document.createElement('section');
+    panel.className = 'panel';
+    panel.id = 'claudeUpcomingPanel';
+    panel.innerHTML = `
+      <h2>다가오는 교육 · 참석자 명단</h2>
+      <div id="claudeUpcomingBody"><div class="empty-row">불러오는 중...</div></div>
+    `;
+    grid.appendChild(panel);
+    claudeRenderUpcomingPanel();
+
+    const overviewNavBtn = document.querySelector('.nav-item[data-view="overview"]');
+    if (overviewNavBtn) overviewNavBtn.addEventListener('click', () => claudeRenderUpcomingPanel());
+  }
+
   function init() {
     injectStyle();
     buildNavAndSection();
     buildCertNavAndSection();
-    buildSettingsNavAndSection();
+    buildSettingsSection();
+    injectSettingsFooterButton();
     claudeInitColumnResize();
     bindQuickNotifyDelegate();
     injectGroupAddPanel();
@@ -2416,6 +2650,8 @@
     claudeBindTabPersistence();
     claudeWatchDashboardShow();
     claudeInitTypeYearUI();
+    claudeInjectUpcomingPanel();
+    claudeBindCourseDateHelpers();
   }
 
   if (document.readyState === 'loading') {
