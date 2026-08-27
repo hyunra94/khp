@@ -2154,7 +2154,16 @@
       header.textContent = `${typeName} · ${groupRows.length}개`;
       header.style.cssText = `font-size:12px;font-weight:900;color:var(--accent-dark,#0F465A);padding:10px 2px 6px;${idx > 0 ? 'border-top:1px solid var(--line);margin-top:8px;' : ''}`;
       list.appendChild(header);
-      groupRows.forEach(row => list.appendChild(row));
+      groupRows.forEach(row => {
+        list.appendChild(row);
+        /* 그룹 헤더에 이미 과정명이 나와 있으므로, 행 안의 메타 텍스트에서
+           과정명은 빼고 회차 번호만 남김("드론 교육 · 3회차" → "3회차"). */
+        const meta = row.querySelector('.course-row-meta');
+        if (meta) {
+          const course = courses.find(c => c.id === row.dataset.courseId);
+          meta.textContent = course && course.round ? `${course.round}회차` : '';
+        }
+      });
     });
   }
 
