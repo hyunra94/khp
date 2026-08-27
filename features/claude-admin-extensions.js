@@ -290,6 +290,38 @@
       .application-table .application-status-list select.status-select{
         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
       }
+
+      /* ===== [Claude 추가] 회차별 "개별 교육일"(띄엄띄엄 진행되는 일정) 관리 ===== */
+      .claude-sessions-toggle-btn{
+        min-height:32px;border-radius:var(--radius);border:1px solid var(--line);background:#fff;
+        color:var(--ink-soft);font-family:inherit;font-size:11.5px;font-weight:800;padding:0 10px;cursor:pointer;
+      }
+      .claude-sessions-toggle-btn:hover{border-color:var(--accent,#176B87);color:var(--accent-dark,#0F465A);}
+      .claude-sessions-panel{
+        grid-column:1 / -1;margin-top:8px;padding-top:10px;border-top:1px dashed var(--line);
+      }
+      .claude-sessions-panel .claude-sessions-hint{font-size:11px;color:var(--ink-soft);margin-bottom:8px;line-height:1.5;}
+      .claude-sessions-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+      .claude-session-chip{
+        display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 10px;border-radius:999px;
+        background:var(--accent-soft,#E7F4F7);color:var(--accent-dark,#0F465A);font-size:12px;font-weight:800;
+      }
+      .claude-session-del{
+        width:18px;height:18px;border:none;border-radius:50%;background:rgba(15,70,90,0.12);color:inherit;
+        font-size:12px;line-height:1;cursor:pointer;
+      }
+      .claude-session-del:hover{background:rgba(15,70,90,0.24);}
+      .claude-sessions-empty{font-size:12px;color:#C7CED6;}
+      .claude-sessions-add{display:flex;gap:6px;align-items:center;}
+      .claude-sessions-add input{
+        border:1px solid #D7E0EA;border-radius:7px;background:#fff;padding:7px 8px;
+        font-family:inherit;font-size:12px;color:#1D2530;outline:none;
+      }
+      .claude-sessions-add button{
+        min-height:32px;border-radius:var(--radius);border:1px solid var(--accent,#176B87);
+        background:var(--accent,#176B87);color:#fff;font-family:inherit;font-size:11.5px;font-weight:800;
+        padding:0 10px;cursor:pointer;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -1921,6 +1953,43 @@
    * ================================================================== */
   let claudeCalMonth = null; // Date (해당 월의 1일)
 
+  /* ==================================================================
+   * [Claude 추가] 띄엄띄엄 진행되는(비연속) 교육 일정 지원.
+   * course_sessions 테이블(course_id, session_date)에 개별 교육일을 등록해두면
+   * 캘린더는 그 날짜들에만 표시됨. 한 건도 등록 안 된 회차는 기존처럼
+   * start_date~end_date 범위 전체(연속 교육 가정)로 표시(하위호환).
+   * ================================================================== */
+  let claudeAllCourseSessions = {}; // course_id -> [dateStr, ...]
+
+  async function claudeLoadAllCourseSessions() {
+    if (typeof sb === 'undefined' || !sb) return;
+    const { data, error } = await sb.from('course_sessions').select('course_id, session_date');
+    if (error) { console.error('[claude] course_sessions 로드 실패', error); return; }
+    const map = {};
+    (data || []).forEach(row => {
+      (map[row.course_id] = map[row.course_id] || []).push(row.session_date);
+    });
+    Object.keys(map).forEach(id => map[id].sort());
+    claudeAllCourseSessions = map;
+  }
+
+  function claudeDateRangeKeys(startStr, endStr) {
+    const keys = [];
+    if (!startStr) return keys;
+    const start = new Date(startStr + 'T00:00:00');
+    const end = new Date((endStr || startStr) + 'T00:00:00');
+    if (isNaN(start.getTime())) return keys;
+    const last = isNaN(end.getTime()) || end < start ? start : end;
+    const cur = new Date(start.getTime());
+    let guard = 0;
+    while (cur <= last && guard < 366) {
+      keys.push(`${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`);
+      cur.setDate(cur.getDate() + 1);
+      guard++;
+    }
+    return keys;
+  }
+
   function claudeTodayDateKey() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -1941,8 +2010,9 @@
     const courses = (typeof allCourses !== 'undefined' && Array.isArray(allCourses)) ? allCourses : [];
     const byDate = {};
     courses.forEach(c => {
-      if (!c.start_date) return;
-      (byDate[c.start_date] = byDate[c.start_date] || []).push(c);
+      const sessions = claudeAllCourseSessions[c.id];
+      const keys = (sessions && sessions.length) ? sessions : claudeDateRangeKeys(c.start_date, c.end_date);
+      keys.forEach(key => { (byDate[key] = byDate[key] || []).push(c); });
     });
 
     const cells = [];
@@ -2098,6 +2168,7 @@
           observer.disconnect();
           claudeRefreshCourseCalendar();
           claudeRenderUpcomingPanel();
+          claudeAugmentCourseRowsWithSessions();
           claudeGroupCourseRowsByType();
           observer.observe(rowsEl, { childList: true, subtree: true });
         });
@@ -2165,6 +2236,108 @@
         }
       });
     });
+  }
+
+  /* ==================================================================
+   * [Claude 추가] "등록된 회차" 각 행에 "개별일정" 버튼을 붙여서, 클릭하면
+   * 그 회차의 개별 교육일(course_sessions)을 추가/삭제할 수 있는 패널을
+   * 행 안에(그리드 전체 너비로) 펼침. 편집 모드(.course-edit-row)에는 붙이지 않음.
+   * ================================================================== */
+  function claudeSessionsPanelMarkup(courseId) {
+    const dates = (claudeAllCourseSessions[courseId] || []).slice().sort();
+    const chips = dates.length
+      ? dates.map(d => `<span class="claude-session-chip">${escapeHtml(d)}<button type="button" class="claude-session-del" data-date="${escapeHtml(d)}" aria-label="삭제">×</button></span>`).join('')
+      : '<span class="claude-sessions-empty">등록된 개별 일자 없음 — 아래에서 날짜를 추가해주세요.</span>';
+    return `
+      <div class="claude-sessions-panel" data-course-id="${escapeHtml(courseId)}">
+        <div class="claude-sessions-hint">개별 교육일(띄엄띄엄 진행되는 경우)을 등록해두면 캘린더에는 이 날짜들에만 표시됩니다. 하나도 등록 안 하면 지금처럼 시작일~종료일 범위로 표시돼요.</div>
+        <div class="claude-sessions-chips">${chips}</div>
+        <div class="claude-sessions-add">
+          <input type="date" class="claude-session-add-input" min="${CLAUDE_DATE_MIN}" max="${CLAUDE_DATE_MAX}" aria-label="개별 교육일 추가">
+          <button type="button" class="claude-session-add-btn">+ 날짜 추가</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function claudeBindSessionsPanel(panel, courseId) {
+    panel.querySelectorAll('.claude-session-del').forEach(btn => {
+      btn.addEventListener('click', () => claudeDeleteCourseSession(courseId, btn.dataset.date));
+    });
+    const addBtn = panel.querySelector('.claude-session-add-btn');
+    const addInput = panel.querySelector('.claude-session-add-input');
+    if (addBtn && addInput) {
+      addBtn.addEventListener('click', () => {
+        if (!addInput.value) return;
+        claudeAddCourseSession(courseId, addInput.value);
+        addInput.value = '';
+      });
+    }
+  }
+
+  function claudeToggleSessionsPanel(courseId, row) {
+    const existing = row.querySelector('.claude-sessions-panel');
+    if (existing) { existing.remove(); return; }
+    const list = document.getElementById('courseRows');
+    if (list) list.querySelectorAll('.claude-sessions-panel').forEach(p => p.remove());
+    const wrap = document.createElement('div');
+    wrap.innerHTML = claudeSessionsPanelMarkup(courseId);
+    const panel = wrap.firstElementChild;
+    row.appendChild(panel);
+    claudeBindSessionsPanel(panel, courseId);
+  }
+
+  function claudeAugmentCourseRowsWithSessions() {
+    const list = document.getElementById('courseRows');
+    if (!list) return;
+    list.querySelectorAll(':scope > .course-row[data-course-id]').forEach(row => {
+      if (row.querySelector('.claude-sessions-toggle-btn')) return;
+      const actions = row.querySelector('.course-row-actions');
+      if (!actions) return;
+      const courseId = row.dataset.courseId;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'claude-sessions-toggle-btn';
+      const n = (claudeAllCourseSessions[courseId] || []).length;
+      btn.textContent = n ? `개별일정 ${n}` : '개별일정';
+      btn.addEventListener('click', () => claudeToggleSessionsPanel(courseId, row));
+      actions.insertBefore(btn, actions.firstChild);
+    });
+  }
+
+  function claudeRefreshSessionsUI(courseId) {
+    claudeRefreshCourseCalendar();
+    const list = document.getElementById('courseRows');
+    if (!list) return;
+    const row = list.querySelector(`.course-row[data-course-id="${CSS.escape(courseId)}"]`);
+    if (!row) return;
+    const panel = row.querySelector('.claude-sessions-panel');
+    if (panel) {
+      const wrap = document.createElement('div');
+      wrap.innerHTML = claudeSessionsPanelMarkup(courseId);
+      const fresh = wrap.firstElementChild;
+      panel.replaceWith(fresh);
+      claudeBindSessionsPanel(fresh, courseId);
+    }
+    const toggleBtn = row.querySelector('.claude-sessions-toggle-btn');
+    if (toggleBtn) {
+      const n = (claudeAllCourseSessions[courseId] || []).length;
+      toggleBtn.textContent = n ? `개별일정 ${n}` : '개별일정';
+    }
+  }
+
+  async function claudeAddCourseSession(courseId, dateStr) {
+    const { error } = await sb.from('course_sessions').insert({ course_id: courseId, session_date: dateStr });
+    if (error) { alert('날짜 추가 실패: ' + error.message); return; }
+    await claudeLoadAllCourseSessions();
+    claudeRefreshSessionsUI(courseId);
+  }
+
+  async function claudeDeleteCourseSession(courseId, dateStr) {
+    const { error } = await sb.from('course_sessions').delete().eq('course_id', courseId).eq('session_date', dateStr);
+    if (error) { alert('날짜 삭제 실패: ' + error.message); return; }
+    await claudeLoadAllCourseSessions();
+    claudeRefreshSessionsUI(courseId);
   }
 
   /* ==================================================================
@@ -2686,6 +2859,7 @@
     claudeInjectUpcomingPanel();
     claudeBindCourseDateHelpers();
     claudeWatchCourseTypeTabs();
+    claudeLoadAllCourseSessions().then(() => claudeRefreshCourseCalendar());
   }
 
   if (document.readyState === 'loading') {
