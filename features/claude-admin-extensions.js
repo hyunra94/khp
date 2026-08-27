@@ -260,6 +260,18 @@
       .claude-cert-num-input{
         padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:12px;width:130px;box-sizing:border-box;
       }
+
+      /* ===== [Claude 추가] 설정 메뉴 (활동 로그 등 자주 안 쓰는 항목을 여기로) ===== */
+      .nav-item[data-view="log"]{display:none;}
+      .claude-settings-menu{display:grid;gap:10px;max-width:420px;}
+      .claude-settings-item{
+        display:flex;align-items:center;justify-content:space-between;gap:12px;
+        border:1px solid var(--line);border-radius:8px;padding:14px 16px;background:#fff;cursor:pointer;transition:border-color .12s,background .12s;
+      }
+      .claude-settings-item:hover{border-color:var(--accent,#176B87);background:var(--accent-soft,#E7F4F7);}
+      .claude-settings-item .label{font-size:13.5px;font-weight:900;color:var(--ink);}
+      .claude-settings-item .sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+      .claude-settings-item .arrow{font-size:16px;color:var(--ink-soft);}
     `;
     document.head.appendChild(style);
   }
@@ -2140,15 +2152,270 @@
     });
   }
 
+  /* ==================================================================
+   * [Claude 추가] 설정 메뉴 — "활동 로그"처럼 자주 안 쓰는 화면을 사이드바
+   * 메인 목록에서 빼고 "설정" 안으로 넣음. 기존 활동 로그 nav-item은
+   * (CSS로) 숨기기만 하고, 그 nav-item의 클릭 이벤트/#view-log/loadAuditLog()는
+   * admin.html 코드 그대로 재사용 — 설정 메뉴에서는 그 버튼을 클릭한 것처럼
+   * .click()만 대신 호출함.
+   * ================================================================== */
+  function buildSettingsSectionMarkup() {
+    return `
+      <div class="view-header">
+        <h2>설정</h2>
+        <p>자주 쓰지 않는 화면을 모아뒀습니다.</p>
+      </div>
+      <div class="claude-settings-menu">
+        <div class="claude-settings-item" id="claudeSettingsAuditLogItem">
+          <div>
+            <div class="label">활동 로그</div>
+            <div class="sub">관리자가 등록·수정·삭제한 이력을 확인합니다.</div>
+          </div>
+          <span class="arrow">›</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function buildSettingsNavAndSection() {
+    const nav = document.querySelector('.nav');
+    const main = document.querySelector('.admin-main');
+    if (!nav || !main || document.getElementById('view-claude-settings')) return;
+
+    const navBtn = document.createElement('button');
+    navBtn.className = 'nav-item';
+    navBtn.type = 'button';
+    navBtn.dataset.view = 'claude-settings';
+    navBtn.innerHTML = '<span>⚙</span>설정';
+    nav.appendChild(navBtn);
+
+    const section = document.createElement('section');
+    section.className = 'view';
+    section.id = 'view-claude-settings';
+    section.innerHTML = buildSettingsSectionMarkup();
+    main.appendChild(section);
+
+    navBtn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+      navBtn.classList.add('active');
+      section.classList.add('active');
+    });
+
+    const auditItem = document.getElementById('claudeSettingsAuditLogItem');
+    const logNavBtn = document.querySelector('.nav-item[data-view="log"]');
+    if (auditItem && logNavBtn) {
+      auditItem.addEventListener('click', () => logNavBtn.click());
+    }
+  }
+
+  /* ==================================================================
+   * [Claude 추가] 새로고침(F5) 해도 보고 있던 탭이 유지되도록 함.
+   * admin.html은 새로고침될 때마다 항상 "개요" 탭으로 초기화되는데,
+   * 마지막으로 클릭한 탭(data-view)을 localStorage에 저장해뒀다가
+   * 로그인 후 대시보드가 뜨는 시점에 그 탭을 대신 클릭해줌.
+   * (nav-item 클릭 이벤트/뷰 전환 로직은 admin.html 것 그대로 재사용)
+   * ================================================================== */
+  const CLAUDE_ACTIVE_TAB_KEY = 'claudeActiveTab';
+
+  function claudeBindTabPersistence() {
+    const nav = document.querySelector('.nav');
+    if (!nav || nav.dataset.claudeTabPersistBound) return;
+    nav.dataset.claudeTabPersistBound = 'true';
+    nav.addEventListener('click', (e) => {
+      const btn = e.target.closest('.nav-item');
+      if (!btn || !btn.dataset.view) return;
+      try { localStorage.setItem(CLAUDE_ACTIVE_TAB_KEY, btn.dataset.view); } catch (e2) { /* localStorage 불가 시 조용히 무시 */ }
+    });
+  }
+
+  function claudeRestoreActiveTab() {
+    let saved = null;
+    try { saved = localStorage.getItem(CLAUDE_ACTIVE_TAB_KEY); } catch (e) { saved = null; }
+    if (!saved) return;
+    const btn = [...document.querySelectorAll('.nav-item[data-view]')].find(el => el.dataset.view === saved);
+    if (btn && !btn.classList.contains('active')) btn.click();
+  }
+
+  function claudeWatchDashboardShow() {
+    const dash = document.getElementById('dashboard');
+    if (!dash) return;
+    if (dash.classList.contains('show')) {
+      claudeRestoreActiveTab();
+      return;
+    }
+    const observer = new MutationObserver(() => {
+      if (dash.classList.contains('show')) {
+        claudeRestoreActiveTab();
+        observer.disconnect();
+      }
+    });
+    observer.observe(dash, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  /* ==================================================================
+   * [Claude 추가] "과정명 목록" 패널 접어두기 + 과정명마다 연도 태그.
+   * 자주 안 바뀌는 패널이라 기본은 접어두고, 연도(2024/2025/2026...)를
+   * 붙여서 연도별로 운영 과정이 다른 걸 구분할 수 있게 함.
+   * admin.html의 renderCourseTypes()는 건드리지 않고, #typeRows가
+   * 다시 그려질 때마다(MutationObserver) 연도 칸만 덧붙임.
+   * ================================================================== */
+  const CLAUDE_TYPE_PANEL_OPEN_KEY = 'claudeTypePanelOpen';
+
+  function claudeFindTypePanel() {
+    return [...document.querySelectorAll('#view-courses > .panel')].find(p => p.querySelector('h2')?.textContent.trim() === '과정명 목록') || null;
+  }
+
+  function claudeInjectTypeCollapsible() {
+    const panel = claudeFindTypePanel();
+    if (!panel || panel.dataset.claudeCollapsible) return;
+    panel.dataset.claudeCollapsible = 'true';
+
+    const header = panel.querySelector('.section-title') || panel.querySelector('h2')?.parentElement;
+    const restNodes = [...panel.children].filter(el => el !== header);
+    if (!restNodes.length) return;
+
+    let savedOpen = false;
+    try { savedOpen = localStorage.getItem(CLAUDE_TYPE_PANEL_OPEN_KEY) === '1'; } catch (e) { /* 무시 */ }
+
+    const details = document.createElement('details');
+    details.id = 'claudeTypePanelDetails';
+    if (savedOpen) details.open = true;
+    const summary = document.createElement('summary');
+    summary.className = 'claude-addfield-toggle';
+    summary.style.cssText = 'margin:10px 0 14px;cursor:pointer;list-style:none;';
+    summary.textContent = savedOpen ? '과정명 목록 접기' : '과정명 목록 펼치기 (평소엔 안 바꾸는 목록이라 접어뒀어요)';
+    details.appendChild(summary);
+    restNodes.forEach(node => details.appendChild(node));
+    panel.appendChild(details);
+
+    details.addEventListener('toggle', () => {
+      summary.textContent = details.open ? '과정명 목록 접기' : '과정명 목록 펼치기 (평소엔 안 바꾸는 목록이라 접어뒀어요)';
+      try { localStorage.setItem(CLAUDE_TYPE_PANEL_OPEN_KEY, details.open ? '1' : '0'); } catch (e) { /* 무시 */ }
+    });
+  }
+
+  function claudeInjectTypeYearColumn() {
+    const table = document.querySelector('#typeRows')?.closest('table');
+    if (!table) return;
+    const headRow = table.querySelector('thead tr');
+    if (headRow && !headRow.querySelector('.claude-type-year-th')) {
+      const th = document.createElement('th');
+      th.className = 'claude-type-year-th';
+      th.textContent = '연도';
+      const lastTh = headRow.lastElementChild;
+      if (lastTh) headRow.insertBefore(th, lastTh);
+      else headRow.appendChild(th);
+    }
+
+    const currentYear = new Date().getFullYear();
+    const yearOptions = ['', ...Array.from({ length: 6 }, (_, i) => String(currentYear + 1 - i))];
+
+    document.querySelectorAll('#typeRows tr.type-row-table').forEach(tr => {
+      if (tr.querySelector('.claude-type-year-select')) return;
+      const typeId = tr.dataset.typeId;
+      const type = (typeof allCourseTypes !== 'undefined' ? allCourseTypes : []).find(t => t.id === typeId);
+      const td = document.createElement('td');
+      td.innerHTML = `
+        <select class="claude-type-year-select" data-id="${escapeHtml(typeId)}" style="padding:6px 7px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:12px;">
+          ${yearOptions.map(y => `<option value="${y}" ${String(type?.year || '') === y ? 'selected' : ''}>${y ? y + '년' : '미지정'}</option>`).join('')}
+        </select>
+      `;
+      const lastTd = tr.lastElementChild;
+      if (lastTd) tr.insertBefore(td, lastTd);
+      else tr.appendChild(td);
+      tr.dataset.claudeYear = type?.year || '';
+    });
+  }
+
+  function claudeBindTypeYearSelects() {
+    const tbody = document.getElementById('typeRows');
+    if (!tbody || tbody.dataset.claudeYearBound) return;
+    tbody.dataset.claudeYearBound = 'true';
+    tbody.addEventListener('change', async (e) => {
+      const sel = e.target.closest('.claude-type-year-select');
+      if (!sel) return;
+      sel.disabled = true;
+      const yearVal = sel.value ? Number(sel.value) : null;
+      const { error } = await sb.from('course_types').update({ year: yearVal }).eq('id', sel.dataset.id);
+      sel.disabled = false;
+      if (error) { alert(`연도 저장 실패: ${error.message}`); return; }
+      if (typeof allCourseTypes !== 'undefined') {
+        const t = allCourseTypes.find(t => t.id === sel.dataset.id);
+        if (t) t.year = yearVal;
+      }
+      sel.closest('tr').dataset.claudeYear = yearVal || '';
+      claudeApplyTypeYearFilter();
+    });
+  }
+
+  function claudeInjectTypeYearFilter() {
+    const details = document.getElementById('claudeTypePanelDetails');
+    if (!details || document.getElementById('claudeTypeYearFilter')) return;
+    const table = document.querySelector('#typeRows')?.closest('.table-shell');
+    if (!table) return;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:10px;display:flex;align-items:center;gap:8px;';
+    wrap.innerHTML = `
+      <label style="font-size:12px;font-weight:800;color:var(--ink);">연도로 보기</label>
+      <select id="claudeTypeYearFilter" style="padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:12px;">
+        <option value="">전체</option>
+      </select>
+    `;
+    table.parentElement.insertBefore(wrap, table);
+    document.getElementById('claudeTypeYearFilter').addEventListener('change', claudeApplyTypeYearFilter);
+  }
+
+  function claudeApplyTypeYearFilter() {
+    const filterSel = document.getElementById('claudeTypeYearFilter');
+    if (!filterSel) return;
+
+    // 옵션 목록을 실제 존재하는 연도들로 최신화
+    const years = new Set();
+    document.querySelectorAll('#typeRows tr.type-row-table').forEach(tr => {
+      if (tr.dataset.claudeYear) years.add(tr.dataset.claudeYear);
+    });
+    const sortedYears = [...years].sort((a, b) => b - a);
+    const prevValue = filterSel.value;
+    filterSel.innerHTML = '<option value="">전체</option>' + sortedYears.map(y => `<option value="${y}">${y}년</option>`).join('');
+    filterSel.value = sortedYears.includes(prevValue) ? prevValue : '';
+
+    const active = filterSel.value;
+    document.querySelectorAll('#typeRows tr.type-row-table').forEach(tr => {
+      tr.style.display = (!active || tr.dataset.claudeYear === active) ? '' : 'none';
+    });
+  }
+
+  function claudeRefreshTypeYearUI() {
+    claudeInjectTypeCollapsible();
+    claudeInjectTypeYearColumn();
+    claudeBindTypeYearSelects();
+    claudeInjectTypeYearFilter();
+    claudeApplyTypeYearFilter();
+  }
+
+  function claudeInitTypeYearUI() {
+    claudeRefreshTypeYearUI();
+    const tbody = document.getElementById('typeRows');
+    if (tbody) {
+      const observer = new MutationObserver(() => requestAnimationFrame(claudeRefreshTypeYearUI));
+      observer.observe(tbody, { childList: true, subtree: true });
+    }
+  }
+
   function init() {
     injectStyle();
     buildNavAndSection();
     buildCertNavAndSection();
+    buildSettingsNavAndSection();
     claudeInitColumnResize();
     bindQuickNotifyDelegate();
     injectGroupAddPanel();
     claudeLoadCustomFieldDefs();
     claudeInjectCourseCalendar();
+    claudeBindTabPersistence();
+    claudeWatchDashboardShow();
+    claudeInitTypeYearUI();
   }
 
   if (document.readyState === 'loading') {
