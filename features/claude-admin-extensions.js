@@ -43,6 +43,90 @@
          이 스타일이 나중에(head에 더 늦게) 추가되므로 같은 우선순위에서 이 규칙이 이김. ===== */
       body{font-family:'Pretendard','Noto Sans KR',-apple-system,'Malgun Gothic',sans-serif;line-height:1.55;}
 
+      /* ==================================================================
+       * [Claude 추가] 관리자 화면 테마 — 사용자가 첨부한 레퍼런스(크림/베이지 배경 +
+       * 화이트 라운드 카드 + 더스티로즈 포인트색의 "Life Dashboard" 톤)에 맞춰
+       * admin.html 자체는 건드리지 않고 색/모서리 둥글기/그림자만 CSS로 덮어씀.
+       * admin.html의 :root 변수(--bg,--accent,--radius 등)를 그대로 재사용하는
+       * 곳(로그인 카드/패널/메트릭카드/버튼 등)은 아래 변수 재정의만으로 자동 반영됨.
+       * 변수를 안 쓰고 하드코딩된 옛 청록색(#176B87/#0F465A 등)만 별도로 덮어씀.
+       * 상태 배지(대기/승인/거절 등) 색은 의미 구분용이라 그대로 둠.
+       * ================================================================== */
+      :root{
+        --bg:#FBF3EC;
+        --surface:#FFFFFF;
+        --surface-soft:#FBF4EE;
+        --line:#ECDDD0;
+        --line-strong:#DFC7B4;
+        --ink:#4A3A33;
+        --ink-soft:#8C7568;
+        --muted:#B4A093;
+        --accent:#C98F7E;
+        --accent-dark:#A96754;
+        --accent-soft:#F5E5DC;
+        --gold:#C89B5C;
+        --shadow:0 22px 56px rgba(120,80,60,0.12);
+        --shadow-soft:0 12px 28px rgba(120,80,60,0.08);
+        --radius:16px;
+      }
+      body{background:var(--bg);}
+      #dashboard{background:var(--bg);}
+      .sidebar{background:#F6ECE3;border-right:1px solid #ECDDD0;box-shadow:8px 0 28px rgba(120,80,60,0.06);}
+      .sidebar-brand{border-bottom:1px solid #ECDDD0;}
+      .sidebar-brand h1{color:var(--ink);}
+      .sidebar-brand .hero-kicker{color:var(--muted);}
+      .nav{background:transparent;}
+      .nav-item{color:var(--ink-soft);border-radius:12px;}
+      .nav-item span{color:#C7AA97;}
+      .nav-item:hover{background:rgba(201,143,126,0.12);color:var(--ink);}
+      .nav-item.active{background:#fff;color:var(--ink);box-shadow:0 8px 20px rgba(120,80,60,0.10);}
+      .nav-item.active span{color:var(--accent);}
+      .sidebar-footer{border-top:1px solid #ECDDD0;}
+      .sidebar-footer .who{color:var(--ink-soft);}
+      .sidebar-footer .logout-btn{border-color:var(--line-strong);color:var(--ink);}
+      .sidebar-footer .logout-btn:hover{background:#fff;color:var(--ink);}
+      @media (max-width:980px){
+        .nav{background:#F6ECE3;}
+        .nav-item{border-color:#ECDDD0;background:rgba(255,255,255,0.6);}
+        .nav-item.active{background:#fff;border-color:#fff;color:var(--ink);}
+        .sidebar-footer{border-top-color:#ECDDD0;}
+      }
+      .view .panel{border:1px solid var(--line);border-radius:var(--radius);background:#fff;box-shadow:0 10px 28px rgba(120,80,60,0.07);}
+      .console-metrics .metric-card{border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 28px rgba(120,80,60,0.06);border-top:3px solid var(--accent);}
+      .console-metrics .metric-card:nth-child(3){border-top-color:var(--gold);}
+      .console-metrics .metric-card:nth-child(4){border-top-color:#7FA379;}
+      .view-header{border-bottom-color:var(--line);}
+      /* 옛 하드코딩 청록색(#176B87/#0F465A/#E7F4F7/#BFDDE4) 잔재를 새 포인트색으로 교체 */
+      .course-resizer:hover::before,.course-resizer.dragging::before{background:var(--accent);}
+      .course-open-toggle.open{border-color:#E7CBBE;background:var(--accent-soft);color:var(--accent-dark);}
+      .course-date-quick input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(169,103,84,0.12);}
+      .status-신청확정{background:var(--accent-soft);color:var(--accent-dark);}
+      .status-select.status-신청확정{border-color:#E7CBBE;background:var(--accent-soft);color:var(--accent-dark);}
+      .course-tag:hover,.course-tag.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-dark);}
+      .column-order-item input{accent-color:var(--accent-dark);}
+      .column-order-item.drag-over{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent);}
+      .row-input:focus,.trainee-input:focus{box-shadow:0 0 0 3px rgba(169,103,84,0.12);}
+      .trainee-save-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+      .copy-icon-btn{color:var(--accent-dark);}
+      .copy-icon-btn:hover{border-color:var(--accent);background:var(--accent-soft);}
+      .lookup-interest-title{color:var(--accent);}
+      .login-card input:focus{box-shadow:0 0 0 4px rgba(169,103,84,0.14);}
+      .login-card button{box-shadow:0 14px 26px rgba(169,103,84,0.24);}
+      .login-card button:active{box-shadow:0 8px 18px rgba(169,103,84,0.2);}
+      .logout-btn{box-shadow:0 8px 18px rgba(120,80,60,0.08);}
+      textarea.memo-input:focus{box-shadow:0 0 0 3px rgba(169,103,84,0.12);}
+      /* 신청/알림 등에서 쓰는 .submit 버튼 — 지금까지 정의가 없어 기본 버튼 모양이었던 걸
+         새 테마에 맞는 알약형 버튼으로 정의 */
+      .submit{
+        border:none;border-radius:999px;background:linear-gradient(135deg, var(--accent), var(--accent-dark));
+        color:#fff;font-family:inherit;font-weight:800;cursor:pointer;padding:10px 20px;
+        box-shadow:0 10px 22px rgba(169,103,84,0.22);transition:transform .12s, box-shadow .12s;
+      }
+      .submit:hover{transform:translateY(-1px);box-shadow:0 14px 28px rgba(169,103,84,0.28);}
+      .submit:active{transform:translateY(0);}
+      .claude-fab-menu-item{border-radius:999px;}
+      .claude-drawer{border-top-left-radius:20px;border-bottom-left-radius:20px;}
+
       .claude-section{margin-bottom:28px;}
       .claude-section h3{font-size:14px;font-weight:900;margin:0 0 10px;color:var(--ink);}
       .claude-section p.claude-hint{font-size:12px;color:var(--ink-soft);margin:-4px 0 12px;}
