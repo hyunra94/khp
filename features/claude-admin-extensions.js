@@ -125,13 +125,57 @@
       .claude-preview-row .body{font-size:12px;color:var(--ink-soft);line-height:1.6;white-space:pre-line;}
       .claude-preview-row .var{background:#FFF3E8;color:#A35A18;border-radius:3px;padding:0 3px;font-weight:800;}
 
-      /* 신청자 수동 등록 (신청현황 화면에 삽입) */
-      .claude-add-details{border:1px solid var(--line);border-radius:8px;background:#fff;margin-bottom:14px;}
-      .claude-add-details summary{list-style:none;cursor:pointer;padding:12px 16px;font-size:13px;font-weight:900;color:var(--accent-dark,#0F465A);display:flex;align-items:center;gap:8px;}
-      .claude-add-details summary::-webkit-details-marker{display:none;}
-      .claude-add-details summary::before{content:"+";font-size:15px;font-weight:900;}
-      .claude-add-details[open] summary::before{content:"−";}
-      .claude-add-body{padding:4px 16px 18px;border-top:1px solid #EDF1F5;}
+      /* ===== [Claude 추가] 신청자 수동 등록/단체 등록 — 오른쪽 아래 플로팅(+) 버튼
+         + 노션 스타일 사이드 드로어(오른쪽에서 슬라이드로 열리는 패널) ===== */
+      .claude-fab-wrap{
+        position:fixed;right:26px;bottom:26px;z-index:210;display:flex;flex-direction:column;
+        align-items:flex-end;gap:10px;transition:opacity .15s;
+      }
+      .claude-fab-wrap.claude-fab-hidden{display:none;}
+      .claude-fab-btn{
+        width:56px;height:56px;border-radius:50%;border:none;background:var(--accent-dark,#0F465A);
+        color:#fff;font-size:28px;font-weight:400;line-height:1;cursor:pointer;
+        box-shadow:0 10px 24px rgba(15,70,90,0.35);transition:transform .15s;
+      }
+      .claude-fab-btn:hover{transform:scale(1.06);}
+      .claude-fab-btn.open{transform:rotate(45deg);}
+      .claude-fab-menu{display:none;flex-direction:column;align-items:flex-end;gap:8px;}
+      .claude-fab-menu.open{display:flex;}
+      .claude-fab-menu-item{
+        background:#fff;border:1px solid var(--line);border-radius:999px;padding:11px 18px;
+        font-family:inherit;font-size:12.5px;font-weight:800;color:var(--ink);
+        box-shadow:0 8px 20px rgba(15,23,32,0.14);cursor:pointer;white-space:nowrap;
+      }
+      .claude-fab-menu-item:hover{border-color:var(--accent,#176B87);color:var(--accent-dark,#0F465A);}
+
+      .claude-drawer-backdrop{
+        position:fixed;inset:0;background:rgba(15,23,32,0.32);z-index:190;opacity:0;pointer-events:none;
+        transition:opacity .18s;
+      }
+      .claude-drawer-backdrop.open{opacity:1;pointer-events:auto;}
+      .claude-drawer{
+        position:fixed;top:0;right:0;height:100vh;width:min(440px,100vw);background:#fff;z-index:200;
+        box-shadow:-14px 0 34px rgba(15,23,32,0.18);transform:translateX(100%);transition:transform .22s ease;
+        display:flex;flex-direction:column;
+      }
+      .claude-drawer.open{transform:translateX(0);}
+      .claude-drawer-head{
+        display:flex;align-items:center;justify-content:space-between;padding:18px 20px;
+        border-bottom:1px solid var(--line);flex:0 0 auto;
+      }
+      .claude-drawer-head h3{margin:0;font-size:15px;font-weight:900;color:var(--ink);}
+      .claude-drawer-close{
+        width:30px;height:30px;border:none;background:transparent;font-size:20px;color:var(--ink-soft);
+        cursor:pointer;border-radius:50%;line-height:1;
+      }
+      .claude-drawer-close:hover{background:var(--surface-soft);}
+      .claude-drawer-body{padding:18px 20px 28px;overflow-y:auto;flex:1 1 auto;}
+      /* 사이드 패널은 폭이 좁으니 원래 2~3열이던 폼은 1열로 쌓음 */
+      .claude-drawer .claude-form-grid{grid-template-columns:1fr;}
+      .claude-drawer .claude-group-shared{grid-template-columns:1fr;}
+      .claude-drawer .claude-group-row{grid-template-columns:1fr;gap:6px;}
+      .claude-drawer .claude-group-row-remove{justify-self:end;}
+      @media (max-width:600px){ .claude-drawer{width:100vw;} }
 
       .application-table table{table-layout:fixed;}
       .application-table th[data-col], .application-table td[data-col]{
@@ -1085,16 +1129,19 @@
   }
 
   /* ==================================================================
-   * [Claude 추가] 신청자 수동 등록 패널을 "신청 현황" 화면으로 이동
-   * (기존에는 "알림 관리" 탭에 있었으나, 신청 현황에서 바로 등록/확인하는 게
-   * 더 자연스럽다는 피드백에 따라 이동함. admin.html의 #view-applications
-   * 섹션 안, 필터 툴바 아래 / 테이블 위에 <details> 접이식 패널로 삽입.)
+   * [Claude 추가] 신청자 수동 등록 폼. 예전엔 "신청 현황" 화면 안에 접이식(<details>)
+   * 패널로 박혀 있었는데, 오른쪽 아래 플로팅(+) 버튼을 누르면 노션처럼
+   * 오른쪽에서 슬라이드로 열리는 사이드 패널(드로어)로 바뀜.
+   * (드로어/플로팅 버튼 마크업과 여닫는 로직은 claudeInjectApplicantDrawers() 참고)
    * ================================================================== */
-  function buildApplicantAddPanel() {
+  function buildApplicantAddDrawer() {
     return `
-      <details class="claude-add-details" id="claudeAddDetails">
-        <summary>+ 신청자 수동 등록 (1명씩)</summary>
-        <div class="claude-add-body">
+      <aside class="claude-drawer" id="claudeAddDrawer">
+        <div class="claude-drawer-head">
+          <h3>+ 신청자 수동 등록 (1명씩)</h3>
+          <button type="button" class="claude-drawer-close" aria-label="닫기">×</button>
+        </div>
+        <div class="claude-drawer-body">
           <p class="claude-hint">일반 신청 페이지와 동일하게 주민등록번호 검증을 거쳐 등록됩니다. 초기 상태는 직접 선택할 수 있습니다. (엑셀/CSV 일괄 등록은 별도 논의 예정)</p>
           <form id="claudeAddForm">
             <div class="claude-form-grid">
@@ -1121,25 +1168,8 @@
             <div id="claudeAddMsg" class="claude-msg"></div>
           </form>
         </div>
-      </details>
+      </aside>
     `;
-  }
-
-  function injectApplicantAddPanel() {
-    const view = document.getElementById('view-applications');
-    if (!view || document.getElementById('claudeAddDetails')) return;
-    const anchor = view.querySelector('.table-shell.application-table') || view.querySelector('.table-shell');
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = buildApplicantAddPanel();
-    const details = wrapper.firstElementChild;
-    if (anchor) {
-      view.insertBefore(details, anchor);
-    } else {
-      view.appendChild(details);
-    }
-    populateCourseSelect();
-    populateStatusSelect();
-    document.getElementById('claudeAddForm').addEventListener('submit', submitManualApplication);
   }
 
   function buildNavAndSection() {
@@ -1170,16 +1200,7 @@
       onShowNotifyPanel();
     });
 
-    injectApplicantAddPanel();
-
-    /* 신청 현황 탭을 열 때마다 과정/상태 목록을 최신 상태로 갱신 */
-    const appsNavBtn = document.querySelector('.nav-item[data-view="applications"]');
-    if (appsNavBtn) {
-      appsNavBtn.addEventListener('click', () => {
-        populateCourseSelect();
-        populateStatusSelect();
-      });
-    }
+    claudeInjectApplicantDrawers();
   }
 
   function onShowNotifyPanel() {
@@ -1533,11 +1554,14 @@
     `;
   }
 
-  function buildGroupAddPanel() {
+  function buildGroupAddDrawer() {
     return `
-      <details class="claude-add-details" id="claudeGroupAddDetails">
-        <summary>+ 단체 등록 (여러 명 한 번에)</summary>
-        <div class="claude-add-body">
+      <aside class="claude-drawer" id="claudeGroupAddDrawer">
+        <div class="claude-drawer-head">
+          <h3>+ 단체 등록 (여러 명 한 번에)</h3>
+          <button type="button" class="claude-drawer-close" aria-label="닫기">×</button>
+        </div>
+        <div class="claude-drawer-body">
           <p class="claude-hint">회사명·신청 과정·초기 상태는 아래 목록 전체에 공통으로 적용됩니다. 각 사람마다 이름/연락처/주민등록번호는 필수입니다.</p>
           <div class="claude-group-shared">
             <div><label>회사명</label><input type="text" id="claudeGroupCompany" placeholder="예: ○○산업"></div>
@@ -1551,7 +1575,7 @@
           </div>
           <div id="claudeGroupMsg" class="claude-msg"></div>
         </div>
-      </details>
+      </aside>
     `;
   }
 
@@ -1683,18 +1707,69 @@
     }
   }
 
-  function injectGroupAddPanel() {
+  /* ==================================================================
+   * [Claude 추가] "신청자 수동 등록"/"단체 등록"을 신청 현황 화면 안에 끼워넣는
+   * 대신, 오른쪽 아래 플로팅(+) 버튼 → 메뉴 → 노션처럼 오른쪽에서 슬라이드로
+   * 열리는 사이드 패널(드로어)로 바꿈. 폼 자체(아이디/제출 로직)는 그대로 재사용.
+   * ================================================================== */
+  function claudeBuildFabMarkup() {
+    return `
+      <div class="claude-drawer-backdrop" id="claudeDrawerBackdrop"></div>
+      <div class="claude-fab-wrap claude-fab-hidden" id="claudeFabWrap">
+        <div class="claude-fab-menu" id="claudeFabMenu">
+          <button type="button" class="claude-fab-menu-item" data-open-drawer="claudeAddDrawer">📋 신청자 수동 등록</button>
+          <button type="button" class="claude-fab-menu-item" data-open-drawer="claudeGroupAddDrawer">👥 단체 등록</button>
+        </div>
+        <button type="button" class="claude-fab-btn" id="claudeFabBtn" aria-label="신청자 등록 메뉴 열기">+</button>
+      </div>
+    `;
+  }
+
+  function claudeOpenDrawer(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    document.querySelectorAll('.claude-drawer.open').forEach(d => { if (d !== el) d.classList.remove('open'); });
+    el.classList.add('open');
+    document.getElementById('claudeDrawerBackdrop')?.classList.add('open');
+    document.getElementById('claudeFabMenu')?.classList.remove('open');
+    document.getElementById('claudeFabBtn')?.classList.remove('open');
+  }
+
+  function claudeCloseAllDrawers() {
+    document.querySelectorAll('.claude-drawer.open').forEach(d => d.classList.remove('open'));
+    document.getElementById('claudeDrawerBackdrop')?.classList.remove('open');
+  }
+
+  function claudeSyncFabVisibility() {
     const view = document.getElementById('view-applications');
-    if (!view || document.getElementById('claudeGroupAddDetails')) return;
-    const anchor = document.getElementById('claudeAddDetails');
+    const wrap = document.getElementById('claudeFabWrap');
+    if (!view || !wrap) return;
+    const isActive = view.classList.contains('active');
+    wrap.classList.toggle('claude-fab-hidden', !isActive);
+    if (!isActive) claudeCloseAllDrawers();
+  }
+
+  function claudeWatchApplicationsViewForFab() {
+    const view = document.getElementById('view-applications');
+    if (!view) return;
+    claudeSyncFabVisibility();
+    const observer = new MutationObserver(() => claudeSyncFabVisibility());
+    observer.observe(view, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  function claudeInjectApplicantDrawers() {
+    if (document.getElementById('claudeFabWrap')) return;
+    const view = document.getElementById('view-applications');
+    if (!view) return;
+
     const wrapper = document.createElement('div');
-    wrapper.innerHTML = buildGroupAddPanel();
-    const details = wrapper.firstElementChild;
-    if (anchor && anchor.parentElement) {
-      anchor.insertAdjacentElement('afterend', details);
-    } else {
-      view.insertBefore(details, view.querySelector('.table-shell.application-table') || null);
-    }
+    wrapper.innerHTML = claudeBuildFabMarkup() + buildApplicantAddDrawer() + buildGroupAddDrawer();
+    Array.from(wrapper.children).forEach(node => document.body.appendChild(node));
+
+    populateCourseSelect();
+    populateStatusSelect();
+    document.getElementById('claudeAddForm').addEventListener('submit', submitManualApplication);
+
     populateGroupSelects();
     claudeAddGroupRow();
     claudeAddGroupRow();
@@ -1707,8 +1782,34 @@
       btn.closest('.claude-group-row')?.remove();
     });
 
+    const fabBtn = document.getElementById('claudeFabBtn');
+    const fabMenu = document.getElementById('claudeFabMenu');
+    if (fabBtn && fabMenu) {
+      fabBtn.addEventListener('click', () => {
+        const isOpen = fabMenu.classList.toggle('open');
+        fabBtn.classList.toggle('open', isOpen);
+      });
+      fabMenu.querySelectorAll('.claude-fab-menu-item').forEach(btn => {
+        btn.addEventListener('click', () => claudeOpenDrawer(btn.dataset.openDrawer));
+      });
+    }
+    document.getElementById('claudeDrawerBackdrop')?.addEventListener('click', claudeCloseAllDrawers);
+    document.querySelectorAll('.claude-drawer-close').forEach(btn => {
+      btn.addEventListener('click', claudeCloseAllDrawers);
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') claudeCloseAllDrawers(); });
+
+    claudeWatchApplicationsViewForFab();
+
+    /* 신청 현황 탭을 열 때마다 과정/상태 목록을 최신 상태로 갱신 */
     const appsNavBtn = document.querySelector('.nav-item[data-view="applications"]');
-    if (appsNavBtn) appsNavBtn.addEventListener('click', () => populateGroupSelects());
+    if (appsNavBtn) {
+      appsNavBtn.addEventListener('click', () => {
+        populateCourseSelect();
+        populateStatusSelect();
+        populateGroupSelects();
+      });
+    }
   }
 
   /* ==================================================================
@@ -2850,7 +2951,6 @@
     injectSettingsFooterButton();
     claudeInitColumnResize();
     bindQuickNotifyDelegate();
-    injectGroupAddPanel();
     claudeLoadCustomFieldDefs();
     claudeInjectCourseCalendar();
     claudeBindTabPersistence();
