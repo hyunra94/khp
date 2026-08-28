@@ -2344,19 +2344,39 @@
    * 그 회차의 개별 교육일(course_sessions)을 추가/삭제할 수 있는 패널을
    * 행 안에(그리드 전체 너비로) 펼침. 편집 모드(.course-edit-row)에는 붙이지 않음.
    * ================================================================== */
+  function claudeSuggestNextSessionDate(courseId, dates) {
+    /* [Claude 추가] "날짜 추가" 입력칸을 열 때 매번 오늘 날짜부터 달력을 뒤지지 않도록,
+       이미 등록된 날짜가 있으면 그 마지막 날짜 다음날을, 하나도 없으면 회차의
+       시작일을 기본값으로 제안함(=시작일 기준 근처에서 바로 고를 수 있게). */
+    if (dates.length) {
+      const last = new Date(dates[dates.length - 1] + 'T00:00:00');
+      if (!isNaN(last.getTime())) {
+        last.setDate(last.getDate() + 1);
+        return `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, '0')}-${String(last.getDate()).padStart(2, '0')}`;
+      }
+    }
+    const courses = (typeof allCourses !== 'undefined' && Array.isArray(allCourses)) ? allCourses : [];
+    const course = courses.find(c => c.id === courseId);
+    return course?.start_date || '';
+  }
+
   function claudeSessionsPanelMarkup(courseId) {
     const dates = (claudeAllCourseSessions[courseId] || []).slice().sort();
     const chips = dates.length
       ? dates.map(d => `<span class="claude-session-chip">${escapeHtml(d)}<button type="button" class="claude-session-del" data-date="${escapeHtml(d)}" aria-label="삭제">×</button></span>`).join('')
       : '<span class="claude-sessions-empty">등록된 개별 일자 없음 — 아래에서 날짜를 추가해주세요.</span>';
+    const suggested = claudeSuggestNextSessionDate(courseId, dates);
+    const courses = (typeof allCourses !== 'undefined' && Array.isArray(allCourses)) ? allCourses : [];
+    const course = courses.find(c => c.id === courseId);
     return `
       <div class="claude-sessions-panel" data-course-id="${escapeHtml(courseId)}">
         <div class="claude-sessions-hint">개별 교육일(띄엄띄엄 진행되는 경우)을 등록해두면 캘린더에는 이 날짜들에만 표시됩니다. 하나도 등록 안 하면 지금처럼 시작일~종료일 범위로 표시돼요.</div>
         <div class="claude-sessions-chips">${chips}</div>
         <div class="claude-sessions-add">
-          <input type="date" class="claude-session-add-input" min="${CLAUDE_DATE_MIN}" max="${CLAUDE_DATE_MAX}" aria-label="개별 교육일 추가">
+          <input type="date" class="claude-session-add-input" min="${CLAUDE_DATE_MIN}" max="${CLAUDE_DATE_MAX}" value="${escapeHtml(suggested)}" aria-label="개별 교육일 추가">
           <button type="button" class="claude-session-add-btn">+ 날짜 추가</button>
         </div>
+        ${course?.start_date ? `<div class="claude-sessions-hint" style="margin:6px 0 0;">시작일(${escapeHtml(course.start_date)}) 근처로 기본 제안돼요 — 원하는 날짜로 바꿔서 추가하면 됩니다.</div>` : ''}
       </div>
     `;
   }
