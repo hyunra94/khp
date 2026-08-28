@@ -36,6 +36,13 @@
     const style = document.createElement('style');
     style.id = 'claudeExtStyle';
     style.textContent = `
+      /* ===== [Claude 추가] 가독성 개선용 글씨체 교체.
+         기존 'Noto Sans KR' 대신, 한글 UI 가독성이 좋다고 널리 쓰이는
+         Pretendard로 바꿈(CDN, claudeInjectReadableFont()에서 <link> 추가).
+         admin.html의 body{font-family:'Noto Sans KR', sans-serif;}는 그대로 두고,
+         이 스타일이 나중에(head에 더 늦게) 추가되므로 같은 우선순위에서 이 규칙이 이김. ===== */
+      body{font-family:'Pretendard','Noto Sans KR',-apple-system,'Malgun Gothic',sans-serif;line-height:1.55;}
+
       .claude-section{margin-bottom:28px;}
       .claude-section h3{font-size:14px;font-weight:900;margin:0 0 10px;color:var(--ink);}
       .claude-section p.claude-hint{font-size:12px;color:var(--ink-soft);margin:-4px 0 12px;}
@@ -2963,8 +2970,21 @@
     observer.observe(tabs, { childList: true });
   }
 
+  /* ===== [Claude 추가] Pretendard 웹폰트 로드(CDN). body의 font-family는
+     injectStyle()의 CSS에서 이미 'Pretendard'를 1순위로 지정해뒀으니, 여기서는
+     그 폰트 파일 자체를 <link>로 불러오기만 함. ===== */
+  function claudeInjectReadableFont() {
+    if (document.getElementById('claudePretendardFont')) return;
+    const link = document.createElement('link');
+    link.id = 'claudePretendardFont';
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css';
+    document.head.appendChild(link);
+  }
+
   function init() {
     injectStyle();
+    claudeInjectReadableFont();
     buildNavAndSection();
     buildCertNavAndSection();
     buildSettingsSection();
