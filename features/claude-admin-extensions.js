@@ -59,6 +59,15 @@
        * 12px(카드용)로 두고 버튼·인풋 계열 selector들만 아래에서 8px로 다시 지정함.
        * ================================================================================== */
 
+      /* ==================================================================================
+       * v2 — 사용자 피드백("색만 바뀐 수준, 정보 위계·레이아웃까지 적극 재설계 필요")을 반영해
+       * 위 v1 규칙을 폐기하고 다시 씀. 이번엔 폰트 크기/여백/버튼-인풋-배지 크기를 실무용
+       * 데스크톱(1920px+) 기준으로 훨씬 크게 잡고, "등록된 회차" 행은 CSS만으로는 한계가 있어
+       * JS로 실제 DOM을 재구성(claudeRestructureCourseRow, 아래쪽 별도 함수)해서 제목/배지/
+       * 부가정보/액션이 물리적으로 다른 줄에 놓이도록 만듦(admin.html의 courseRowHtml()이 만든
+       * 엘리먼트를 "새로 그리지 않고 그대로 옮기기"만 해서 기존 이벤트 바인딩은 유지됨).
+       * ================================================================================== */
+
       /* ---------- 1. Design Tokens ---------- */
       :root{
         --bg:#F6F7F9;
@@ -80,29 +89,37 @@
       body{background:var(--bg);color:var(--ink);}
       #dashboard{background:var(--bg);}
 
-      /* ---------- 2. Typography ---------- */
+      /* ---------- 2. Typography ----------
+         페이지 제목 24 / 섹션 제목 17~18 / 항목명 15~16 / 본문·데이터 14 / 캡션 최소 12.
+         단순 일괄 확대가 아니라 역할별로 다시 잡음. */
       .topbar h1,.view-header h2{font-size:24px;font-weight:700;letter-spacing:-0.2px;}
       .hero-card h2{font-size:22px;font-weight:700;}
-      .panel h2,.panel-head h2,.section-title h2{font-size:18px;font-weight:700;color:var(--ink);}
-      .ops-panel h3,.course-row-title,.claude-drawer-head h3{font-size:15.5px;font-weight:600;}
-      body,table,.compact-info,.check-list{font-size:13.5px;line-height:1.6;}
-      .view-header p,.panel-head p,.hero-card p{font-size:13.5px;color:var(--ink-soft);line-height:1.6;}
-      .course-row-meta,.metric-label,.memo-status,th,.rrn-value{font-size:12px;}
-      .metric-value{font-size:28px;font-weight:700;}
+      .panel h2,.panel-head h2,.section-title h2,.claude-section h3{font-size:17.5px;font-weight:700;color:var(--ink);}
+      .ops-panel h3,.claude-drawer-head h3{font-size:15.5px;font-weight:600;}
+      .course-row-title{font-size:16px;font-weight:700;color:var(--ink);}
+      body,table,select,input,button,textarea{font-size:14px;}
+      table,.compact-info,.check-list,.claude-course-meta-line{font-size:14px;line-height:1.6;}
+      .view-header p,.panel-head p,.hero-card p{font-size:14px;color:var(--ink-soft);line-height:1.6;}
+      th{font-size:12.5px;letter-spacing:0.2px;font-weight:700;}
+      .course-row-meta,.metric-label,.memo-status,.rrn-value,.claude-hint,.status-badge,
+      .status-select,select.status-select,.claude-cal-pill{font-size:12.5px;}
+      .metric-value{font-size:30px;font-weight:700;}
+      td{font-size:14px;}
 
-      /* ---------- 3. Sidebar / Navigation ---------- */
-      .sidebar{background:var(--surface);border-right:1px solid var(--line);box-shadow:none;}
-      .sidebar-brand{border-bottom:1px solid var(--line);}
-      .sidebar-brand h1{color:var(--ink);}
+      /* ---------- 3. Sidebar / Navigation ----------
+         폭/높이/폰트를 키우고 활성 메뉴 표시는 유지. ---------- */
+      .sidebar{width:272px;flex:0 0 272px;background:var(--surface);border-right:1px solid var(--line);box-shadow:none;}
+      .sidebar-brand{padding:28px 22px;border-bottom:1px solid var(--line);}
+      .sidebar-brand h1{color:var(--ink);font-size:19px;}
       .sidebar-brand .hero-kicker{color:var(--muted);}
-      .nav{background:transparent;}
-      .nav-item{color:var(--ink-soft);border-radius:8px;font-weight:600;transition:background .12s,color .12s;}
-      .nav-item span{color:var(--muted);}
+      .nav{background:transparent;gap:6px;padding:16px 12px;}
+      .nav-item{color:var(--ink-soft);border-radius:8px;font-weight:600;font-size:14.5px;padding:13px 14px;transition:background .12s,color .12s;}
+      .nav-item span{color:var(--muted);font-size:11.5px;}
       .nav-item:hover{background:var(--surface-soft);color:var(--ink);}
       .nav-item.active{background:var(--accent-soft);color:var(--accent);box-shadow:none;}
       .nav-item.active span{color:var(--accent);}
-      .sidebar-footer{border-top:1px solid var(--line);}
-      .sidebar-footer .who{color:var(--ink-soft);}
+      .sidebar-footer{border-top:1px solid var(--line);padding:18px 16px;}
+      .sidebar-footer .who{color:var(--ink-soft);font-size:12.5px;}
       .sidebar-footer .logout-btn{border-color:var(--line);color:var(--ink-soft);box-shadow:none;}
       .sidebar-footer .logout-btn:hover{background:var(--surface-soft);color:var(--ink);}
       @media (max-width:980px){
@@ -112,47 +129,49 @@
         .sidebar-footer{border-top-color:var(--line);}
       }
 
-      /* ---------- 4. Cards / Panels ---------- */
+      /* ---------- 4. Cards / Panels — 여백을 실무 SaaS 수준으로 확보 ---------- */
       .hero-card,.panel,.view .panel{
         border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
-        box-shadow:var(--shadow-soft);padding:24px;
+        box-shadow:var(--shadow-soft);padding:28px 30px;
       }
-      .panel-head{margin-bottom:20px;}
+      .panel-head{margin-bottom:22px;}
       .metric-card,.console-metrics .metric-card{
         border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);
-        box-shadow:none;border-top:3px solid var(--accent);
+        box-shadow:none;border-top:3px solid var(--accent);padding:18px;min-height:96px;
       }
       .console-metrics .metric-card:nth-child(3){border-top-color:var(--gold);}
       .console-metrics .metric-card:nth-child(4){border-top-color:var(--green,#1F7A55);}
-      .view-header{border-bottom-color:var(--line);}
-      .ops-panel{border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);box-shadow:none;}
-      .mini-form{border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);box-shadow:none;}
-      .management-list{gap:12px;}
-      .course-panels,.ops-grid{gap:20px;}
+      .view-header{border-bottom-color:var(--line);padding-bottom:20px;margin-bottom:26px;}
+      .ops-panel{border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);box-shadow:none;padding:20px;}
+      .mini-form{border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);box-shadow:none;padding:18px;}
+      .management-list{gap:14px;}
+      .course-panels,.ops-grid{gap:24px;}
+      /* 카드 안에 카드(패널 중첩)로 보이는 경우 안쪽은 배경만 살리고 테두리/그림자는 뺌 */
+      .panel .ops-panel,.panel .mini-form{box-shadow:none;}
 
       /* ---------- 5. Buttons: Primary / Secondary / Ghost ----------
          Primary = 진한 배경 + 흰 글자, Secondary = 흰 배경 + 테두리, Ghost = 배경 없음.
-         Badge류(.status-badge, pill 뱃지)만 예외적으로 완전한 pill 유지, 나머지 버튼은 8px. */
+         Badge류(.status-badge, pill 뱃지)만 예외적으로 완전한 pill 유지, 나머지 버튼은 8px, 높이 40px+. */
       .login-card button,.add-course-form button,.primary-action,.submit{
         border:none;border-radius:8px;background:var(--accent);color:#fff;
-        font-family:inherit;font-weight:700;cursor:pointer;min-height:40px;padding:0 18px;
+        font-family:inherit;font-weight:700;cursor:pointer;min-height:42px;padding:0 20px;font-size:14px;
         box-shadow:none;transition:background .12s,transform .08s;
       }
       .login-card button:hover,.add-course-form button:hover,.primary-action:hover,.submit:hover{background:var(--accent-dark);}
       .login-card button:active,.submit:active{transform:translateY(1px);}
       .login-card button{width:100%;margin-top:22px;}
 
-      .logout-btn,.menu-btn,.mini-form button,.inline-btn,.filter-menu summary,.claude-sessions-toggle-btn,
+      .logout-btn,.mini-form button,.inline-btn,.filter-menu summary,
       .claude-add-row-btn,.claude-session-add-btn{
         border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);
-        font-family:inherit;font-weight:600;cursor:pointer;min-height:36px;box-shadow:none;
+        font-family:inherit;font-weight:600;cursor:pointer;min-height:40px;font-size:13.5px;box-shadow:none;
         transition:background .12s,border-color .12s;
       }
-      .logout-btn:hover,.mini-form button:hover,.inline-btn:hover,.claude-sessions-toggle-btn:hover,
+      .logout-btn:hover,.mini-form button:hover,.inline-btn:hover,
       .claude-add-row-btn:hover,.claude-session-add-btn:hover{
         border-color:var(--accent);background:var(--accent-soft);color:var(--accent);
       }
-      .menu-btn{min-height:32px;}
+      .menu-btn{min-height:36px;width:36px;border-radius:8px;}
       .menu-btn:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
       .inline-btn.secondary{background:var(--ink);color:#fff;border-color:var(--ink);}
       .inline-btn.light{background:#fff;color:var(--accent);border:1px solid var(--line);}
@@ -160,11 +179,11 @@
       .claude-session-add-btn:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:#fff;}
 
       /* Ghost: 드롭다운 메뉴 항목처럼 배경 없이 쓰는 버튼 */
-      .menu-pop button{border-radius:6px;font-weight:600;}
+      .menu-pop button{border-radius:6px;font-weight:600;font-size:13.5px;padding:9px 10px;}
       .menu-pop button:hover{background:var(--surface-soft);color:var(--accent);}
 
       /* ---------- 6. Inputs / Selects ----------
-         버튼과 명확히 구분: 흰 배경, 얇은 테두리, radius 8px, 최소 높이 확보, 포커스 시 Primary 링. */
+         버튼과 명확히 구분: 흰 배경, 얇은 테두리, radius 8px, 높이 42px, 포커스 시 Primary 링. */
       .login-card input,.mini-form input,.mini-form textarea,.mini-form select,
       .add-course-form input,.add-course-form select,.new-type-row input,
       .row-input,.trainee-input,textarea.memo-input,select.status-select,
@@ -172,10 +191,10 @@
       .claude-group-shared input,.claude-group-shared select,.claude-group-row input,
       .claude-sessions-add input{
         border-radius:8px;border:1px solid var(--line);background:var(--surface);
-        color:var(--ink);font-family:inherit;font-size:13.5px;min-height:40px;
+        color:var(--ink);font-family:inherit;font-size:14px;min-height:42px;
         outline:none;transition:border-color .12s,box-shadow .12s;
       }
-      .mini-form textarea,textarea.memo-input,.claude-form-grid textarea{min-height:64px;}
+      .mini-form textarea,textarea.memo-input,.claude-form-grid textarea{min-height:72px;}
       .login-card input:focus,.mini-form input:focus,.mini-form select:focus,
       .add-course-form input:focus,.add-course-form select:focus,.new-type-row input:focus,
       .row-input:focus,.trainee-input:focus,textarea.memo-input:focus,
@@ -185,8 +204,10 @@
         border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--accent-soft);
       }
       .filter-menu[open] summary{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+      /* 회차 목록의 시작일/종료일 인풋은 "일반 정보처럼 보이다가 조작 시에만 인풋으로 드러남" */
       .course-date-quick input{
         border:1px solid transparent;background:transparent;border-radius:6px;color:var(--ink-soft);
+        min-height:auto;padding:4px 6px;font-size:13.5px;
         transition:background .12s,border-color .12s;
       }
       .course-date-quick input:hover{background:var(--surface-soft);}
@@ -195,10 +216,10 @@
       }
 
       /* ---------- 7. Badges / Status Chips (pill 형태 유지, 대비만 정리) ---------- */
-      .status-badge{padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+      .status-badge{padding:5px 12px;border-radius:999px;font-weight:700;}
       .pill{border-radius:999px;background:var(--surface-soft);border-color:var(--line);color:var(--ink-soft);font-weight:600;}
       .course-open-toggle{
-        border:none;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;
+        border:none;border-radius:999px;padding:5px 12px;font-weight:700;
         background:var(--surface-soft);color:var(--muted);box-shadow:none;
       }
       .course-open-toggle.open{background:#E4F1EA;color:var(--green,#1F7A55);}
@@ -214,37 +235,79 @@
       .copy-icon-btn{color:var(--accent);}
       .copy-icon-btn:hover{border-color:var(--accent);background:var(--accent-soft);}
       .lookup-interest-title{color:var(--accent);}
-      .nav-item.active span{color:var(--accent);}
 
       /* ---------- 8. 회차 목록(과정 관리) — 정보 위계 재구성 ----------
-         회차명(title)은 강조, 공개 상태는 배지, 기간/정원은 일반 정보 텍스트,
-         실제 클릭 요소(⋯메뉴/개별일정)만 버튼으로 남김. row 간격도 넉넉하게. */
-      .course-row,.course-edit-row{
-        padding:16px 18px;border-radius:10px;gap:14px;
+         "드론 교육 3회차" 처럼 회차명은 크게 한 줄, 그 아래 "공개  기간  정원  개별일정"을
+         한 줄의 부가정보로. 실제 조작 요소(⋯메뉴)만 우측에 버튼으로 남김.
+         DOM 재배치는 claudeRestructureCourseRow() 함수(아래)에서 처리 —
+         이 CSS는 그 결과물(.claude-course-meta-line 등)에 대한 스타일만 담당. */
+      .course-row{
+        display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;
+        column-gap:20px;row-gap:8px;align-items:start;
+        padding:20px 22px;border-radius:10px;
       }
+      .course-row > div:first-child{grid-column:1;grid-row:1;}
+      .course-row .course-row-actions{grid-column:2;grid-row:1 / span 2;align-self:center;}
       .course-row-title{color:var(--ink);}
-      .course-row-meta{color:var(--ink-soft);margin-top:4px;}
-      .course-date-quick span{color:var(--muted);}
+      .course-row-meta{color:var(--ink-soft);margin-top:3px;font-size:12.5px;}
+      .claude-course-meta-line{
+        grid-column:1;grid-row:2;display:flex;align-items:center;flex-wrap:wrap;gap:10px;
+        color:var(--ink-soft);font-size:13.5px;
+      }
+      .claude-course-meta-line .claude-meta-dot{color:var(--line-strong);}
+      .claude-course-meta-line .claude-meta-item{display:inline-flex;align-items:center;gap:5px;}
+      .claude-course-meta-line .claude-meta-label{color:var(--muted);font-weight:600;font-size:12px;}
+      .claude-course-meta-line .course-date-quick{width:auto;flex:0 0 auto;}
+      .claude-course-meta-line .pill{
+        background:transparent;border:none;padding:0;min-height:auto;border-radius:0;
+        color:var(--ink-soft);font-weight:600;display:inline;
+      }
+      .claude-course-meta-line .claude-sessions-toggle-btn{
+        border:none;background:transparent;padding:0;min-height:auto;color:var(--ink-soft);font-weight:600;
+      }
+      .claude-course-meta-line .claude-sessions-toggle-btn:hover{
+        color:var(--accent);background:transparent;text-decoration:underline;
+      }
+      .course-edit-row{padding:20px 22px;border-radius:10px;row-gap:12px;}
+      @media (max-width:980px){
+        .course-row{grid-template-columns:1fr;grid-template-rows:auto auto auto;}
+        .course-row .course-row-actions{grid-column:1;grid-row:3;justify-content:flex-start;align-self:auto;}
+      }
 
       /* ---------- 9. 캘린더(제가 만든 회차 캘린더) — 시각 위계 강화 ---------- */
-      .claude-cal-daynum{color:var(--ink);font-weight:600;}
+      .claude-cal-panel{padding:24px 26px;}
+      .claude-cal-grid{gap:2px;}
+      .claude-cal-cell{min-height:84px;padding:8px;}
+      .claude-cal-dow{font-size:12.5px;font-weight:700;color:var(--ink-soft);padding:8px 0;}
+      .claude-cal-daynum{color:var(--ink);font-weight:600;font-size:14px;}
       .claude-cal-outside .claude-cal-daynum{color:var(--muted);font-weight:400;}
       .claude-cal-today{background:var(--accent-soft);border-radius:8px;}
-      .claude-cal-today .claude-cal-daynum{color:var(--accent);font-weight:800;}
-      .claude-cal-pill{background:var(--accent-soft);color:var(--accent);border:none;font-weight:600;}
+      .claude-cal-today .claude-cal-daynum{
+        color:#fff;background:var(--accent);font-weight:800;border-radius:50%;
+        display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+      }
+      .claude-cal-pill{
+        background:var(--accent-soft);color:var(--accent);border:none;font-weight:600;
+        padding:3px 8px;border-radius:6px;display:block;margin-top:3px;
+      }
       .claude-cal-pill.claude-cal-closed{background:var(--surface-soft);color:var(--muted);}
 
       /* ---------- 10. 제가 만든 사이드 드로어/플로팅 버튼도 새 톤에 맞춤 ---------- */
       .claude-fab-btn{background:var(--accent);box-shadow:0 10px 22px rgba(24,33,43,0.22);}
       .claude-fab-btn:hover{background:var(--accent-dark);}
-      .claude-fab-menu-item{border-radius:999px;font-weight:600;}
-      .claude-drawer{border-radius:0;box-shadow:-14px 0 34px rgba(24,33,43,0.14);}
+      .claude-fab-menu-item{border-radius:999px;font-weight:600;font-size:13.5px;padding:12px 20px;}
+      .claude-drawer{border-radius:0;box-shadow:-14px 0 34px rgba(24,33,43,0.14);width:min(460px,100vw);}
+      .claude-drawer-head h3{font-size:16px;}
 
-      /* ---------- 11. 반응형: 넓은 화면(1280~1920px)에서 콘텐츠가 과하게
-         작아지거나 한쪽으로 쏠리지 않도록 최대 폭 확보 ---------- */
-      .admin-main{max-width:1680px;}
+      /* ---------- 11. 레이아웃 폭 / 밀도 — 넓은 데스크톱(1280~1920px+)에서
+         콘텐츠가 왼쪽에 쏠리지 않도록 폭 상한을 크게 풀고, 핵심 리스트 영역에
+         더 많은 비율을 줌 ---------- */
+      .admin-main{max-width:none;padding:36px 40px 96px;}
+      .overview-grid{grid-template-columns:minmax(0,1.3fr) minmax(360px,0.9fr);}
+      .ops-grid{grid-template-columns:minmax(360px,0.85fr) minmax(0,1.5fr);}
       @media (min-width:1600px){
-        .metric-grid,.console-metrics{grid-template-columns:repeat(6,minmax(140px,1fr));}
+        .metric-grid,.console-metrics{grid-template-columns:repeat(6,minmax(150px,1fr));}
+        .admin-main{padding:40px 56px 96px;}
       }
 
       .claude-section{margin-bottom:28px;}
@@ -2481,6 +2544,7 @@
           claudeRefreshCourseCalendar();
           claudeRenderUpcomingPanel();
           claudeAugmentCourseRowsWithSessions();
+          claudeRestructureAllCourseRows();
           claudeGroupCourseRowsByType();
           observer.observe(rowsEl, { childList: true, subtree: true });
         });
@@ -2635,6 +2699,74 @@
       btn.addEventListener('click', () => claudeToggleSessionsPanel(courseId, row));
       actions.insertBefore(btn, actions.firstChild);
     });
+  }
+
+  /* ==================================================================
+   * [Claude 추가 v2] "등록된 회차" 행 정보 위계 재구성.
+   * courseRowHtml()이 만든 실제 DOM(제목+메타 div, 공개/비공개 토글 버튼,
+   * 시작~종료일 date input 2개, 정원 pill, 액션 영역)을 "새로 그리지 않고
+   * 그대로 옮기기"만 해서 기존 이벤트 바인딩(클릭/change 등)을 그대로 유지한 채
+   * 2번째 줄에 "공개 · 기간 · 정원 · 개별일정" meta-line을 만듦.
+   * claudeAugmentCourseRowsWithSessions()가 붙인 "개별일정" 버튼도 같은 줄로 옮김.
+   * 이미 재구성된 행(row.dataset.claudeRestructured)은 다시 처리하지 않음 —
+   * admin.html이 데이터 변경 시 행을 통째로 새로 그리므로 매번 새 DOM에는
+   * 이 플래그가 없어 자연히 다시 재구성됨.
+   * ================================================================== */
+  function claudeMetaDot() {
+    const dot = document.createElement('span');
+    dot.className = 'claude-meta-dot';
+    dot.textContent = '·';
+    dot.setAttribute('aria-hidden', 'true');
+    return dot;
+  }
+
+  function claudeWrapMetaItem(label, el) {
+    const wrap = document.createElement('span');
+    wrap.className = 'claude-meta-item';
+    if (label) {
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'claude-meta-label';
+      labelSpan.textContent = label;
+      wrap.appendChild(labelSpan);
+    }
+    wrap.appendChild(el);
+    return wrap;
+  }
+
+  function claudeRestructureCourseRow(row) {
+    if (!row || row.dataset.claudeRestructured === '1') return;
+    if (row.querySelector(':scope > .claude-course-meta-line')) { row.dataset.claudeRestructured = '1'; return; }
+
+    const titleWrap = row.querySelector(':scope > div:first-child');
+    const toggle = row.querySelector(':scope > .course-open-toggle');
+    const dateQuick = row.querySelector(':scope > .course-date-quick');
+    const pill = row.querySelector(':scope > .pill');
+    const actions = row.querySelector(':scope > .course-row-actions');
+    if (!titleWrap || !toggle || !dateQuick || !pill || !actions) return; // admin.html 구조가 바뀌었으면 손대지 않고 넘어감
+
+    const metaLine = document.createElement('div');
+    metaLine.className = 'claude-course-meta-line';
+
+    metaLine.appendChild(toggle);
+    metaLine.appendChild(claudeMetaDot());
+    metaLine.appendChild(claudeWrapMetaItem('기간', dateQuick));
+    metaLine.appendChild(claudeMetaDot());
+    metaLine.appendChild(claudeWrapMetaItem('정원', pill));
+
+    const sessionsBtn = actions.querySelector('.claude-sessions-toggle-btn');
+    if (sessionsBtn) {
+      metaLine.appendChild(claudeMetaDot());
+      metaLine.appendChild(sessionsBtn);
+    }
+
+    row.insertBefore(metaLine, titleWrap.nextSibling);
+    row.dataset.claudeRestructured = '1';
+  }
+
+  function claudeRestructureAllCourseRows() {
+    const list = document.getElementById('courseRows');
+    if (!list) return;
+    list.querySelectorAll(':scope > .course-row[data-course-id]').forEach(row => claudeRestructureCourseRow(row));
   }
 
   function claudeRefreshSessionsUI(courseId) {
