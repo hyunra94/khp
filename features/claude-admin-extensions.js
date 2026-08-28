@@ -43,89 +43,209 @@
          이 스타일이 나중에(head에 더 늦게) 추가되므로 같은 우선순위에서 이 규칙이 이김. ===== */
       body{font-family:'Pretendard','Noto Sans KR',-apple-system,'Malgun Gothic',sans-serif;line-height:1.55;}
 
-      /* ==================================================================
-       * [Claude 추가] 관리자 화면 테마 — 사용자가 첨부한 레퍼런스(크림/베이지 배경 +
-       * 화이트 라운드 카드 + 더스티로즈 포인트색의 "Life Dashboard" 톤)에 맞춰
-       * admin.html 자체는 건드리지 않고 색/모서리 둥글기/그림자만 CSS로 덮어씀.
-       * admin.html의 :root 변수(--bg,--accent,--radius 등)를 그대로 재사용하는
-       * 곳(로그인 카드/패널/메트릭카드/버튼 등)은 아래 변수 재정의만으로 자동 반영됨.
-       * 변수를 안 쓰고 하드코딩된 옛 청록색(#176B87/#0F465A 등)만 별도로 덮어씀.
-       * 상태 배지(대기/승인/거절 등) 색은 의미 구분용이라 그대로 둠.
-       * ================================================================== */
+      /* ==================================================================================
+       * [Claude 추가] 관리자 화면 디자인 시스템 전면 리뉴얼.
+       * "고급스러운 공공기관 업무 시스템 + Modern SaaS Dashboard" 컨셉.
+       * admin.html 자체(HTML 구조/JS 로직)는 건드리지 않고, CSS 디자인 토큰과
+       * 컴포넌트 스타일만 이 파일에서 재정의함. admin.html이 이미 CSS 변수
+       * (--bg/--accent/--radius 등)로 대부분의 색/여백을 관리하고 있어서,
+       * 변수 재정의만으로 로그인 카드/패널/메트릭카드/버튼/인풋 상당수가 자동 반영되고,
+       * 변수를 안 쓰고 하드코딩된 값(옛 청록색, 좁은 폰트크기 등)은 아래에서 개별 selector로
+       * 다시 덮어씀. 상태 배지(대기/승인/거절 등) "색상 자체"는 의미 구분용이라 유지하되
+       * 모양(패딩/크기)만 배지 규격에 맞춤.
+       *
+       * 참고: admin.html은 --radius 변수 하나를 카드/버튼/인풋에 전부 같이 씀. 이 디자인
+       * 시스템은 "카드 12px / 버튼·인풋 8px / 배지만 pill"로 구분하므로, --radius는
+       * 12px(카드용)로 두고 버튼·인풋 계열 selector들만 아래에서 8px로 다시 지정함.
+       * ================================================================================== */
+
+      /* ---------- 1. Design Tokens ---------- */
       :root{
-        --bg:#FBF3EC;
+        --bg:#F6F7F9;
         --surface:#FFFFFF;
-        --surface-soft:#FBF4EE;
-        --line:#ECDDD0;
-        --line-strong:#DFC7B4;
-        --ink:#4A3A33;
-        --ink-soft:#8C7568;
-        --muted:#B4A093;
-        --accent:#C98F7E;
-        --accent-dark:#A96754;
-        --accent-soft:#F5E5DC;
-        --gold:#C89B5C;
-        --shadow:0 22px 56px rgba(120,80,60,0.12);
-        --shadow-soft:0 12px 28px rgba(120,80,60,0.08);
-        --radius:16px;
+        --surface-soft:#F1F3F5;
+        --line:#E3E7EB;
+        --line-strong:#C7CED6;
+        --ink:#18212B;
+        --ink-soft:#66727D;
+        --muted:#929CA5;
+        --accent:#183B56;        /* Primary */
+        --accent-dark:#102F47;   /* Primary Hover */
+        --accent-soft:#EAF0F5;   /* Primary의 아주 연한 배경(활성 메뉴/포커스 배지 등) */
+        --gold:#B88746;          /* Accent — 화면 전체에 반복하지 않고 포인트로만 사용 */
+        --shadow:0 20px 44px rgba(24,33,43,0.10);
+        --shadow-soft:0 6px 16px rgba(24,33,43,0.06);
+        --radius:12px;           /* 카드 기준. 버튼/인풋은 아래에서 8px로 별도 지정 */
       }
-      body{background:var(--bg);}
+      body{background:var(--bg);color:var(--ink);}
       #dashboard{background:var(--bg);}
-      .sidebar{background:#F6ECE3;border-right:1px solid #ECDDD0;box-shadow:8px 0 28px rgba(120,80,60,0.06);}
-      .sidebar-brand{border-bottom:1px solid #ECDDD0;}
+
+      /* ---------- 2. Typography ---------- */
+      .topbar h1,.view-header h2{font-size:24px;font-weight:700;letter-spacing:-0.2px;}
+      .hero-card h2{font-size:22px;font-weight:700;}
+      .panel h2,.panel-head h2,.section-title h2{font-size:18px;font-weight:700;color:var(--ink);}
+      .ops-panel h3,.course-row-title,.claude-drawer-head h3{font-size:15.5px;font-weight:600;}
+      body,table,.compact-info,.check-list{font-size:13.5px;line-height:1.6;}
+      .view-header p,.panel-head p,.hero-card p{font-size:13.5px;color:var(--ink-soft);line-height:1.6;}
+      .course-row-meta,.metric-label,.memo-status,th,.rrn-value{font-size:12px;}
+      .metric-value{font-size:28px;font-weight:700;}
+
+      /* ---------- 3. Sidebar / Navigation ---------- */
+      .sidebar{background:var(--surface);border-right:1px solid var(--line);box-shadow:none;}
+      .sidebar-brand{border-bottom:1px solid var(--line);}
       .sidebar-brand h1{color:var(--ink);}
       .sidebar-brand .hero-kicker{color:var(--muted);}
       .nav{background:transparent;}
-      .nav-item{color:var(--ink-soft);border-radius:12px;}
-      .nav-item span{color:#C7AA97;}
-      .nav-item:hover{background:rgba(201,143,126,0.12);color:var(--ink);}
-      .nav-item.active{background:#fff;color:var(--ink);box-shadow:0 8px 20px rgba(120,80,60,0.10);}
+      .nav-item{color:var(--ink-soft);border-radius:8px;font-weight:600;transition:background .12s,color .12s;}
+      .nav-item span{color:var(--muted);}
+      .nav-item:hover{background:var(--surface-soft);color:var(--ink);}
+      .nav-item.active{background:var(--accent-soft);color:var(--accent);box-shadow:none;}
       .nav-item.active span{color:var(--accent);}
-      .sidebar-footer{border-top:1px solid #ECDDD0;}
+      .sidebar-footer{border-top:1px solid var(--line);}
       .sidebar-footer .who{color:var(--ink-soft);}
-      .sidebar-footer .logout-btn{border-color:var(--line-strong);color:var(--ink);}
-      .sidebar-footer .logout-btn:hover{background:#fff;color:var(--ink);}
+      .sidebar-footer .logout-btn{border-color:var(--line);color:var(--ink-soft);box-shadow:none;}
+      .sidebar-footer .logout-btn:hover{background:var(--surface-soft);color:var(--ink);}
       @media (max-width:980px){
-        .nav{background:#F6ECE3;}
-        .nav-item{border-color:#ECDDD0;background:rgba(255,255,255,0.6);}
-        .nav-item.active{background:#fff;border-color:#fff;color:var(--ink);}
-        .sidebar-footer{border-top-color:#ECDDD0;}
+        .nav{background:var(--surface);}
+        .nav-item{border-color:var(--line);background:var(--surface);}
+        .nav-item.active{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--accent);}
+        .sidebar-footer{border-top-color:var(--line);}
       }
-      .view .panel{border:1px solid var(--line);border-radius:var(--radius);background:#fff;box-shadow:0 10px 28px rgba(120,80,60,0.07);}
-      .console-metrics .metric-card{border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 28px rgba(120,80,60,0.06);border-top:3px solid var(--accent);}
+
+      /* ---------- 4. Cards / Panels ---------- */
+      .hero-card,.panel,.view .panel{
+        border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
+        box-shadow:var(--shadow-soft);padding:24px;
+      }
+      .panel-head{margin-bottom:20px;}
+      .metric-card,.console-metrics .metric-card{
+        border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);
+        box-shadow:none;border-top:3px solid var(--accent);
+      }
       .console-metrics .metric-card:nth-child(3){border-top-color:var(--gold);}
-      .console-metrics .metric-card:nth-child(4){border-top-color:#7FA379;}
+      .console-metrics .metric-card:nth-child(4){border-top-color:var(--green,#1F7A55);}
       .view-header{border-bottom-color:var(--line);}
-      /* 옛 하드코딩 청록색(#176B87/#0F465A/#E7F4F7/#BFDDE4) 잔재를 새 포인트색으로 교체 */
+      .ops-panel{border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);box-shadow:none;}
+      .mini-form{border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);box-shadow:none;}
+      .management-list{gap:12px;}
+      .course-panels,.ops-grid{gap:20px;}
+
+      /* ---------- 5. Buttons: Primary / Secondary / Ghost ----------
+         Primary = 진한 배경 + 흰 글자, Secondary = 흰 배경 + 테두리, Ghost = 배경 없음.
+         Badge류(.status-badge, pill 뱃지)만 예외적으로 완전한 pill 유지, 나머지 버튼은 8px. */
+      .login-card button,.add-course-form button,.primary-action,.submit{
+        border:none;border-radius:8px;background:var(--accent);color:#fff;
+        font-family:inherit;font-weight:700;cursor:pointer;min-height:40px;padding:0 18px;
+        box-shadow:none;transition:background .12s,transform .08s;
+      }
+      .login-card button:hover,.add-course-form button:hover,.primary-action:hover,.submit:hover{background:var(--accent-dark);}
+      .login-card button:active,.submit:active{transform:translateY(1px);}
+      .login-card button{width:100%;margin-top:22px;}
+
+      .logout-btn,.menu-btn,.mini-form button,.inline-btn,.filter-menu summary,.claude-sessions-toggle-btn,
+      .claude-add-row-btn,.claude-session-add-btn{
+        border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);
+        font-family:inherit;font-weight:600;cursor:pointer;min-height:36px;box-shadow:none;
+        transition:background .12s,border-color .12s;
+      }
+      .logout-btn:hover,.mini-form button:hover,.inline-btn:hover,.claude-sessions-toggle-btn:hover,
+      .claude-add-row-btn:hover,.claude-session-add-btn:hover{
+        border-color:var(--accent);background:var(--accent-soft);color:var(--accent);
+      }
+      .menu-btn{min-height:32px;}
+      .menu-btn:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+      .inline-btn.secondary{background:var(--ink);color:#fff;border-color:var(--ink);}
+      .inline-btn.light{background:#fff;color:var(--accent);border:1px solid var(--line);}
+      .claude-session-add-btn{background:var(--accent);color:#fff;border-color:var(--accent);}
+      .claude-session-add-btn:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:#fff;}
+
+      /* Ghost: 드롭다운 메뉴 항목처럼 배경 없이 쓰는 버튼 */
+      .menu-pop button{border-radius:6px;font-weight:600;}
+      .menu-pop button:hover{background:var(--surface-soft);color:var(--accent);}
+
+      /* ---------- 6. Inputs / Selects ----------
+         버튼과 명확히 구분: 흰 배경, 얇은 테두리, radius 8px, 최소 높이 확보, 포커스 시 Primary 링. */
+      .login-card input,.mini-form input,.mini-form textarea,.mini-form select,
+      .add-course-form input,.add-course-form select,.new-type-row input,
+      .row-input,.trainee-input,textarea.memo-input,select.status-select,
+      .claude-form-grid input,.claude-form-grid select,.claude-form-grid textarea,
+      .claude-group-shared input,.claude-group-shared select,.claude-group-row input,
+      .claude-sessions-add input{
+        border-radius:8px;border:1px solid var(--line);background:var(--surface);
+        color:var(--ink);font-family:inherit;font-size:13.5px;min-height:40px;
+        outline:none;transition:border-color .12s,box-shadow .12s;
+      }
+      .mini-form textarea,textarea.memo-input,.claude-form-grid textarea{min-height:64px;}
+      .login-card input:focus,.mini-form input:focus,.mini-form select:focus,
+      .add-course-form input:focus,.add-course-form select:focus,.new-type-row input:focus,
+      .row-input:focus,.trainee-input:focus,textarea.memo-input:focus,
+      .claude-form-grid input:focus,.claude-form-grid select:focus,
+      .claude-group-shared input:focus,.claude-group-shared select:focus,
+      .claude-sessions-add input:focus{
+        border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--accent-soft);
+      }
+      .filter-menu[open] summary{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+      .course-date-quick input{
+        border:1px solid transparent;background:transparent;border-radius:6px;color:var(--ink-soft);
+        transition:background .12s,border-color .12s;
+      }
+      .course-date-quick input:hover{background:var(--surface-soft);}
+      .course-date-quick input:focus{
+        border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--accent-soft);color:var(--ink);
+      }
+
+      /* ---------- 7. Badges / Status Chips (pill 형태 유지, 대비만 정리) ---------- */
+      .status-badge{padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+      .pill{border-radius:999px;background:var(--surface-soft);border-color:var(--line);color:var(--ink-soft);font-weight:600;}
+      .course-open-toggle{
+        border:none;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;
+        background:var(--surface-soft);color:var(--muted);box-shadow:none;
+      }
+      .course-open-toggle.open{background:#E4F1EA;color:var(--green,#1F7A55);}
+
+      /* 옛 하드코딩 청록색(#176B87/#0F465A/#E7F4F7/#BFDDE4) 잔재를 새 Primary 톤으로 교체 */
       .course-resizer:hover::before,.course-resizer.dragging::before{background:var(--accent);}
-      .course-open-toggle.open{border-color:#E7CBBE;background:var(--accent-soft);color:var(--accent-dark);}
-      .course-date-quick input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(169,103,84,0.12);}
-      .status-신청확정{background:var(--accent-soft);color:var(--accent-dark);}
-      .status-select.status-신청확정{border-color:#E7CBBE;background:var(--accent-soft);color:var(--accent-dark);}
-      .course-tag:hover,.course-tag.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-dark);}
-      .column-order-item input{accent-color:var(--accent-dark);}
+      .status-신청확정{background:var(--accent-soft);color:var(--accent);}
+      .status-select.status-신청확정{border-color:var(--accent-soft);background:var(--accent-soft);color:var(--accent);}
+      .course-tag:hover,.course-tag.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+      .column-order-item input{accent-color:var(--accent);}
       .column-order-item.drag-over{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent);}
-      .row-input:focus,.trainee-input:focus{box-shadow:0 0 0 3px rgba(169,103,84,0.12);}
       .trainee-save-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
-      .copy-icon-btn{color:var(--accent-dark);}
+      .copy-icon-btn{color:var(--accent);}
       .copy-icon-btn:hover{border-color:var(--accent);background:var(--accent-soft);}
       .lookup-interest-title{color:var(--accent);}
-      .login-card input:focus{box-shadow:0 0 0 4px rgba(169,103,84,0.14);}
-      .login-card button{box-shadow:0 14px 26px rgba(169,103,84,0.24);}
-      .login-card button:active{box-shadow:0 8px 18px rgba(169,103,84,0.2);}
-      .logout-btn{box-shadow:0 8px 18px rgba(120,80,60,0.08);}
-      textarea.memo-input:focus{box-shadow:0 0 0 3px rgba(169,103,84,0.12);}
-      /* 신청/알림 등에서 쓰는 .submit 버튼 — 지금까지 정의가 없어 기본 버튼 모양이었던 걸
-         새 테마에 맞는 알약형 버튼으로 정의 */
-      .submit{
-        border:none;border-radius:999px;background:linear-gradient(135deg, var(--accent), var(--accent-dark));
-        color:#fff;font-family:inherit;font-weight:800;cursor:pointer;padding:10px 20px;
-        box-shadow:0 10px 22px rgba(169,103,84,0.22);transition:transform .12s, box-shadow .12s;
+      .nav-item.active span{color:var(--accent);}
+
+      /* ---------- 8. 회차 목록(과정 관리) — 정보 위계 재구성 ----------
+         회차명(title)은 강조, 공개 상태는 배지, 기간/정원은 일반 정보 텍스트,
+         실제 클릭 요소(⋯메뉴/개별일정)만 버튼으로 남김. row 간격도 넉넉하게. */
+      .course-row,.course-edit-row{
+        padding:16px 18px;border-radius:10px;gap:14px;
       }
-      .submit:hover{transform:translateY(-1px);box-shadow:0 14px 28px rgba(169,103,84,0.28);}
-      .submit:active{transform:translateY(0);}
-      .claude-fab-menu-item{border-radius:999px;}
-      .claude-drawer{border-top-left-radius:20px;border-bottom-left-radius:20px;}
+      .course-row-title{color:var(--ink);}
+      .course-row-meta{color:var(--ink-soft);margin-top:4px;}
+      .course-date-quick span{color:var(--muted);}
+
+      /* ---------- 9. 캘린더(제가 만든 회차 캘린더) — 시각 위계 강화 ---------- */
+      .claude-cal-daynum{color:var(--ink);font-weight:600;}
+      .claude-cal-outside .claude-cal-daynum{color:var(--muted);font-weight:400;}
+      .claude-cal-today{background:var(--accent-soft);border-radius:8px;}
+      .claude-cal-today .claude-cal-daynum{color:var(--accent);font-weight:800;}
+      .claude-cal-pill{background:var(--accent-soft);color:var(--accent);border:none;font-weight:600;}
+      .claude-cal-pill.claude-cal-closed{background:var(--surface-soft);color:var(--muted);}
+
+      /* ---------- 10. 제가 만든 사이드 드로어/플로팅 버튼도 새 톤에 맞춤 ---------- */
+      .claude-fab-btn{background:var(--accent);box-shadow:0 10px 22px rgba(24,33,43,0.22);}
+      .claude-fab-btn:hover{background:var(--accent-dark);}
+      .claude-fab-menu-item{border-radius:999px;font-weight:600;}
+      .claude-drawer{border-radius:0;box-shadow:-14px 0 34px rgba(24,33,43,0.14);}
+
+      /* ---------- 11. 반응형: 넓은 화면(1280~1920px)에서 콘텐츠가 과하게
+         작아지거나 한쪽으로 쏠리지 않도록 최대 폭 확보 ---------- */
+      .admin-main{max-width:1680px;}
+      @media (min-width:1600px){
+        .metric-grid,.console-metrics{grid-template-columns:repeat(6,minmax(140px,1fr));}
+      }
 
       .claude-section{margin-bottom:28px;}
       .claude-section h3{font-size:14px;font-weight:900;margin:0 0 10px;color:var(--ink);}
