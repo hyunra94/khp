@@ -2436,7 +2436,14 @@ function escapeHtml(value){
     .replaceAll("'", '&#039;');
 }
 </script>
-<!-- ===== [Claude 추가] 알림 관리 화면 + 신청자 수동 등록 (features/claude-admin-extensions.js) ===== -->
+<!-- ===== [Claude 추가] 관리자 화면 확장 기능 — 파일이 너무 커져서(4000줄) 주제별로 나눔.
+     반드시 이 순서대로 로드되어야 함(뒤 파일이 앞 파일의 함수를 사용함). ===== -->
+<script src="features/claude-01-styles.js"></script>
+<script src="features/claude-02-notify.js"></script>
+<script src="features/claude-03-applications.js"></script>
+<script src="features/claude-04-course.js"></script>
+<script src="features/claude-05-cert.js"></script>
+<script src="features/claude-06-ui-settings.js"></script>
 <script src="features/claude-admin-extensions.js"></script>
 </body>
 </html>
