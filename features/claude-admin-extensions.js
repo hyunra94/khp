@@ -251,6 +251,26 @@
          줄어들게 하고(글자가 짤려도 최소한 박스 밖으로 안 삐져나가게), 신청일시는
          claudeHideStatusDatesAsTooltip()에서 display:none 처리하고 title 툴팁으로 옮김 */
       .application-status-list,.application-status-item{width:100%;min-width:0;}
+
+      /* ===== [Claude 추가] "신청 현황" 신청과정 컬럼도 상태 컬럼과 같은 방식으로 반응형 처리.
+         원래 .application-course-list{min-width:230px}라 컬럼을 좁게 조절하면 밖으로
+         삐져나가던 문제 — min-width를 없애고, 과정명/메타 텍스트는 한 줄로 줄이되 넘치면
+         ...으로 잘리게 함. 원래부터 있던 hover 시 상세 팝업(.application-course-detail,
+         과정명 전체+접수시간)은 그대로 남아있어서, 짧게 잘려도 마우스를 올리면 전체 내용을
+         볼 수 있음(상태 컬럼의 "날짜는 호버로" 처리와 같은 패턴). */
+      .application-course-list{min-width:0;max-width:100%;width:100%;}
+      .application-course-item{min-width:0;max-width:100%;}
+      .application-course-item b{
+        display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;
+      }
+      .application-course-meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+
+      /* [Claude 추가] "과정 조회" 인라인 편집 버튼 영역 + 메모 컬럼 */
+      .lookup-table td[data-label="관리"]{display:flex;gap:6px;white-space:nowrap;}
+      .claude-lookup-edit-btn,.claude-lookup-save-btn,.claude-lookup-cancel-btn{min-height:30px;padding:0 10px;font-size:12px;}
+      .claude-lookup-memo-td{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-soft);font-size:12.5px;}
+      .claude-lookup-memo-td textarea.row-memo{width:100%;min-width:120px;box-sizing:border-box;}
+
       .application-status-list select.status-select{
         width:100%;max-width:100%;box-sizing:border-box;
         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -1881,6 +1901,148 @@
     });
   }
 
+  /* ==================================================================
+   * [Claude 추가] "과정 조회" 화면 — 지금까지는 이름/연락처/소속이 텍스트로만
+   * 보여서 정보를 고치려면 "신청 현황" 화면으로 가야 했고, 메모도 아예 안 보였음.
+   * 요청: "과정 조회에서도 정보 수정 가능하게 해줘" + "메모도 떠야해".
+   * admin.html의 renderLookupRound()가 그리는 테이블(.lookup-round table.lookup-table)에
+   * "메모"/"관리" 열을 새로 붙여서, "편집"을 누르면 이름/연락처/소속/메모 칸이 입력창으로
+   * 바뀌고 저장하면 trainees 테이블을 바로 업데이트함(신청 현황의 "저장" 버튼과 같은
+   * 테이블/같은 방식). 메모 원본 값은 admin.html의 전역 allApps(신청 현황 데이터, 이미
+   * trainees.admin_memo를 포함해서 불러옴)에서 같은 신청 건을 찾아 읽어옴. 개설 알림
+   * 관심자 표(.lookup-interest)는 신청 데이터가 아니라 건드리지 않음.
+   * ================================================================== */
+  function claudeAugmentCourseLookupEdit() {
+    const container = document.getElementById('courseLookupGroups');
+    if (!container) return;
+    container.querySelectorAll('.lookup-round table.lookup-table').forEach(table => {
+      const headRow = table.querySelector('thead tr');
+      if (headRow && !headRow.dataset.claudeEditColAdded) {
+        headRow.dataset.claudeEditColAdded = '1';
+        ['메모', '관리'].forEach(label => {
+          const th = document.createElement('th');
+          th.textContent = label;
+          headRow.appendChild(th);
+        });
+      }
+      table.querySelectorAll('tbody tr').forEach(tr => {
+        if (tr.dataset.claudeEditBound) return;
+        const empSelect = tr.querySelector('select.employment-category-select[data-trainee-id]');
+        const traineeId = empSelect?.dataset.traineeId;
+        const appSelect = tr.querySelector('select.status-select:not(.employment-category-select)[data-id]');
+        const appId = appSelect?.dataset.id;
+        if (!traineeId) return; // 재직 구분 select를 못 찾으면(구조가 바뀌었으면) 손대지 않고 넘어감
+        tr.dataset.claudeEditBound = '1';
+
+        const cells = tr.querySelectorAll('td');
+        const nameTd = cells[0], phoneTd = cells[1], companyTd = cells[2];
+        if (!nameTd || !phoneTd || !companyTd) return;
+
+        const app = appId && typeof allApps !== 'undefined' ? allApps.find(a => a.id === appId) : null;
+        const memoText = app?.trainees?.admin_memo || '';
+
+        const memoTd = document.createElement('td');
+        memoTd.dataset.label = '메모';
+        memoTd.className = 'claude-lookup-memo-td';
+        memoTd.textContent = memoText || '-';
+        if (memoText) memoTd.title = memoText;
+        tr.appendChild(memoTd);
+
+        const actionTd = document.createElement('td');
+        actionTd.dataset.label = '관리';
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'inline-btn claude-lookup-edit-btn';
+        editBtn.textContent = '편집';
+        actionTd.appendChild(editBtn);
+        tr.appendChild(actionTd);
+
+        editBtn.addEventListener('click', () => claudeToggleLookupRowEdit(tr, traineeId, nameTd, phoneTd, companyTd, memoTd, actionTd));
+      });
+    });
+  }
+
+  function claudeToggleLookupRowEdit(tr, traineeId, nameTd, phoneTd, companyTd, memoTd, actionTd) {
+    if (tr.dataset.claudeEditing === '1') return; // 이미 편집 중
+    tr.dataset.claudeEditing = '1';
+    const original = {
+      name: nameTd.textContent.trim(),
+      phone: phoneTd.textContent.trim(),
+      company: companyTd.textContent.trim(),
+      memo: memoTd.textContent.trim(),
+    };
+    nameTd.innerHTML = `<input class="row-input" data-claude-field="name" value="${escapeHtml(original.name === '-' ? '' : original.name)}">`;
+    phoneTd.innerHTML = `<input class="row-input" data-claude-field="phone" value="${escapeHtml(original.phone === '-' ? '' : original.phone)}">`;
+    companyTd.innerHTML = `<input class="row-input" data-claude-field="company" value="${escapeHtml(original.company === '-' ? '' : original.company)}">`;
+    memoTd.innerHTML = `<textarea class="row-memo" data-claude-field="memo" placeholder="메모">${escapeHtml(original.memo === '-' ? '' : original.memo)}</textarea>`;
+    actionTd.innerHTML = `
+      <button type="button" class="inline-btn claude-lookup-save-btn">저장</button>
+      <button type="button" class="inline-btn light claude-lookup-cancel-btn">취소</button>
+    `;
+
+    const restore = () => {
+      nameTd.textContent = original.name;
+      phoneTd.textContent = original.phone;
+      companyTd.textContent = original.company;
+      memoTd.textContent = original.memo || '-';
+      memoTd.title = original.memo || '';
+      actionTd.innerHTML = '<button type="button" class="inline-btn claude-lookup-edit-btn">편집</button>';
+      tr.dataset.claudeEditing = '';
+      actionTd.querySelector('.claude-lookup-edit-btn').addEventListener('click', () => claudeToggleLookupRowEdit(tr, traineeId, nameTd, phoneTd, companyTd, memoTd, actionTd));
+    };
+
+    actionTd.querySelector('.claude-lookup-cancel-btn').addEventListener('click', restore);
+    actionTd.querySelector('.claude-lookup-save-btn').addEventListener('click', async () => {
+      const saveBtn = actionTd.querySelector('.claude-lookup-save-btn');
+      const payload = {
+        name: nameTd.querySelector('input').value.trim(),
+        phone: phoneTd.querySelector('input').value.trim(),
+        company: companyTd.querySelector('input').value.trim(),
+        admin_memo: memoTd.querySelector('textarea').value.trim() || null,
+      };
+      if (!payload.name || !payload.phone) {
+        alert('이름과 연락처는 비워둘 수 없습니다.');
+        return;
+      }
+      saveBtn.disabled = true;
+      saveBtn.textContent = '저장 중...';
+      const { error } = await sb.from('trainees').update(payload).eq('id', traineeId);
+      if (error) {
+        alert(`저장 실패: ${error.message}`);
+        saveBtn.disabled = false;
+        saveBtn.textContent = '저장';
+        return;
+      }
+      original.name = payload.name || '-';
+      original.phone = payload.phone || '-';
+      original.company = payload.company || '-';
+      original.memo = payload.admin_memo || '';
+      /* admin.html의 allApps 전역에도 같이 반영해서, "신청 현황" 화면으로 넘어가도
+         방금 고친 메모/정보가 바로 보이게 함 */
+      if (typeof allApps !== 'undefined') {
+        allApps.forEach(a => {
+          if (a.trainee_id === traineeId && a.trainees) {
+            a.trainees.name = payload.name;
+            a.trainees.phone = payload.phone;
+            a.trainees.company = payload.company;
+            a.trainees.admin_memo = payload.admin_memo;
+          }
+        });
+      }
+      restore();
+    });
+  }
+
+  function claudeWatchCourseLookup() {
+    const container = document.getElementById('courseLookupGroups');
+    if (!container) return;
+    claudeAugmentCourseLookupEdit();
+    const observer = new MutationObserver(() => {
+      requestAnimationFrame(claudeAugmentCourseLookupEdit);
+    });
+    observer.observe(container, { childList: true, subtree: true });
+  }
+
   function claudeInitColumnResize() {
     claudeLoadColumnWidths();
     const head = document.getElementById('appHead');
@@ -2939,6 +3101,25 @@
     return '일반';
   }
 
+  /* [Claude 추가] 요청: "발급 체크하면 현재 입력된 번호 기준 +1로" — 지금까지 입력된
+     수료증 번호 중 숫자로 끝나는 것들 중 가장 큰 값을 찾아 1을 더해서 반환함.
+     "2026-004"처럼 숫자 앞에 다른 글자가 붙어있으면 그 접두사와 자릿수(0 채움)를
+     가장 큰 번호 기준으로 그대로 이어받음. 기존 번호가 하나도 없으면 "1"부터 시작. */
+  function claudeNextCertificateNumber() {
+    let best = null;
+    claudeCompletions.forEach(c => {
+      const v = (c.certificate_number || '').trim();
+      if (!v) return;
+      const m = v.match(/^(.*?)(\d+)$/);
+      if (!m) return;
+      const num = parseInt(m[2], 10);
+      if (Number.isNaN(num)) return;
+      if (!best || num > best.num) best = { prefix: m[1], width: m[2].length, num };
+    });
+    if (!best) return '1';
+    return `${best.prefix}${String(best.num + 1).padStart(best.width, '0')}`;
+  }
+
   async function claudeLoadCompletions() {
     const tbody = document.getElementById('claudeCertRows');
     if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="empty-row">불러오는 중...</td></tr>';
@@ -3142,14 +3323,27 @@
       if (cb) {
         cb.disabled = true;
         const issued = cb.checked;
-        const { error } = await sb.from('applications').update({
+        const item = claudeCompletions.find(c => c.id === cb.dataset.id);
+        /* [Claude 추가] 요청: "발급을 체크하면 현재 입력된 번호 기준 +1로" — 발급 체크할 때
+           그 행의 수료증 번호가 비어있으면, 지금까지 입력된 수료증 번호 중 가장 큰 숫자에서
+           1을 더한 값을 자동으로 채워서 같이 저장함(번호가 이미 있으면 그대로 두고 건드리지 않음). */
+        const payload = {
           certificate_issued: issued,
           certificate_issued_at: issued ? new Date().toISOString() : null,
-        }).eq('id', cb.dataset.id);
+        };
+        let autoNumber = null;
+        if (issued && item && !item.certificate_number) {
+          autoNumber = claudeNextCertificateNumber();
+          payload.certificate_number = autoNumber;
+        }
+        const { error } = await sb.from('applications').update(payload).eq('id', cb.dataset.id);
         cb.disabled = false;
         if (error) { alert(`저장 실패: ${error.message}`); cb.checked = !issued; return; }
-        const item = claudeCompletions.find(c => c.id === cb.dataset.id);
-        if (item) { item.certificate_issued = issued; item.certificate_issued_at = issued ? new Date().toISOString() : null; }
+        if (item) {
+          item.certificate_issued = issued;
+          item.certificate_issued_at = payload.certificate_issued_at;
+          if (autoNumber) item.certificate_number = autoNumber;
+        }
         claudeRenderCompletions();
       }
     });
@@ -3753,6 +3947,7 @@
     claudeInjectUpcomingPanel();
     claudeBindCourseDateHelpers();
     claudeWatchCourseTypeTabs();
+    claudeWatchCourseLookup();
     claudeLoadAllCourseSessions().then(() => {
       claudeRefreshCourseCalendar();
       claudeRefreshAllSessionToggleLabels();
