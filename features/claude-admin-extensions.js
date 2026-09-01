@@ -182,12 +182,23 @@
       .menu-pop button{border-radius:6px;font-weight:600;font-size:13.5px;padding:9px 10px;}
       .menu-pop button:hover{background:var(--surface-soft);color:var(--accent);}
 
-      /* ===== [Claude 추가] 로그인 화면 "로그인 상태 유지" 체크박스 ===== */
-      .claude-keep-login-row{
-        display:flex;align-items:center;gap:8px;margin:14px 0 4px;cursor:pointer;
+      /* ===== [Claude 추가] 로그인 화면 "로그인 상태 유지" 체크박스 =====
+         admin.html의 ".login-card label{display:block}"와 ".login-card input{...}"이
+         이미 label/input 태그 전체를 대상으로 스타일을 걸어둬서(specificity가 class 1개인
+         .claude-keep-login-row보다 높음, class+태그 조합), 그냥 클래스만으로는 안 눌리고
+         체크박스가 100% 너비 인풋처럼 커지면서 줄바꿈되는 문제가 있었음. id 선택자로
+         specificity를 확실히 올려서 덮어씀. */
+      #claudeKeepLoginRow{
+        display:flex !important;align-items:center;gap:8px;margin:14px 0 4px;cursor:pointer;
         font-size:13px;color:var(--ink-soft);font-weight:600;user-select:none;
       }
-      .claude-keep-login-row input{width:16px;height:16px;min-height:auto;accent-color:var(--accent);cursor:pointer;}
+      #claudeKeepLoginRow input{
+        appearance:auto;-webkit-appearance:checkbox;
+        width:16px;height:16px;min-height:auto;flex:0 0 auto;
+        padding:0;border:none;border-radius:0;background:none;box-shadow:none;
+        accent-color:var(--accent);cursor:pointer;
+      }
+      #claudeKeepLoginRow span{font-size:13px;color:var(--ink-soft);font-weight:600;}
 
       /* ---------- 6. Inputs / Selects ----------
          버튼과 명확히 구분: 흰 배경, 얇은 테두리, radius 8px, 높이 42px, 포커스 시 Primary 링. */
