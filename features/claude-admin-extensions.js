@@ -182,6 +182,13 @@
       .menu-pop button{border-radius:6px;font-weight:600;font-size:13.5px;padding:9px 10px;}
       .menu-pop button:hover{background:var(--surface-soft);color:var(--accent);}
 
+      /* ===== [Claude 추가] 로그인 화면 "로그인 상태 유지" 체크박스 ===== */
+      .claude-keep-login-row{
+        display:flex;align-items:center;gap:8px;margin:14px 0 4px;cursor:pointer;
+        font-size:13px;color:var(--ink-soft);font-weight:600;user-select:none;
+      }
+      .claude-keep-login-row input{width:16px;height:16px;min-height:auto;accent-color:var(--accent);cursor:pointer;}
+
       /* ---------- 6. Inputs / Selects ----------
          버튼과 명확히 구분: 흰 배경, 얇은 테두리, radius 8px, 높이 42px, 포커스 시 Primary 링. */
       .login-card input,.mini-form input,.mini-form textarea,.mini-form select,
@@ -3318,7 +3325,89 @@
     document.head.appendChild(link);
   }
 
+  /* ==================================================================
+   * [Claude 추가] "로그인 상태 유지" 체크박스 — 개인정보(신청자 이름/연락처/
+   * 주민등록번호 등)를 다루는 관리자 화면이라, 요청에 따라 기본값을 "매번
+   * 로그인 필요"로 바꾸고 체크박스를 켰을 때만 브라우저에 로그인이 남아있게 함.
+   * admin.html의 로그인 로직(checkExistingSession/showDashboard/signInWithPassword)
+   * 자체는 건드리지 않고, Supabase가 로그인 세션을 저장해두는 localStorage의
+   * "sb-...-auth-token" 키를 이 스크립트에서 직접 관리하는 방식으로 구현함:
+   *   - 체크박스를 켜고 로그인하면 지금처럼 브라우저를 껐다 켜도 로그인이 유지됨.
+   *   - 체크박스를 끄고 로그인하면(기본값) 그 탭에 열려있는 동안은 정상적으로
+   *     로그인 상태가 유지되지만, 탭을 닫거나 새로고침하는 순간 저장된 로그인
+   *     토큰을 지워서 다음에 다시 열면 로그인 화면부터 시작하게 함.
+   *   - 페이지가 열릴 때 "유지"를 선택한 적이 없는데도(=기본값) 예전에 저장된
+   *     로그인이 남아있어서 자동으로 대시보드가 떠 있다면, 즉시 로그아웃 처리함.
+   * ================================================================== */
+  const CLAUDE_KEEP_LOGIN_KEY = 'khp_keep_login';
+
+  function claudeIsKeepLoginOn() {
+    return localStorage.getItem(CLAUDE_KEEP_LOGIN_KEY) === '1';
+  }
+
+  function claudeClearPersistedAuthToken() {
+    Object.keys(localStorage).forEach(key => {
+      if (/^sb-.*-auth-token$/.test(key)) localStorage.removeItem(key);
+    });
+  }
+
+  function claudeInjectKeepLoginCheckbox() {
+    if (document.getElementById('claudeKeepLoginRow')) return;
+    const loginBtn = document.getElementById('loginBtn');
+    if (!loginBtn || !loginBtn.parentNode) return;
+    const row = document.createElement('label');
+    row.id = 'claudeKeepLoginRow';
+    row.className = 'claude-keep-login-row';
+    row.innerHTML = '<input type="checkbox" id="claudeKeepLoginChk"><span>이 브라우저에 로그인 상태 유지</span>';
+    loginBtn.parentNode.insertBefore(row, loginBtn);
+  }
+
+  function claudeBindKeepLoginControls() {
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (loginBtn) {
+      loginBtn.addEventListener('click', () => {
+        const chk = document.getElementById('claudeKeepLoginChk');
+        localStorage.setItem(CLAUDE_KEEP_LOGIN_KEY, chk && chk.checked ? '1' : '0');
+      });
+    }
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem(CLAUDE_KEEP_LOGIN_KEY);
+      });
+    }
+  }
+
+  function claudeEnforceKeepLoginOnLoad() {
+    if (claudeIsKeepLoginOn()) return; // "유지"를 선택했으면 손대지 않음(기존 동작 그대로)
+    const dashboard = document.getElementById('dashboard');
+    const loginScreen = document.getElementById('loginScreen');
+    if (dashboard && dashboard.classList.contains('show')) {
+      // "유지"를 선택한 적 없는데 예전 로그인이 남아 자동으로 대시보드가 떠 있는 경우 — 즉시 되돌림
+      dashboard.classList.remove('show');
+      if (loginScreen) loginScreen.style.display = '';
+    }
+    claudeClearPersistedAuthToken();
+    if (typeof sb !== 'undefined' && sb && sb.auth && sb.auth.signOut) {
+      sb.auth.signOut().catch(() => {});
+    }
+  }
+
+  function claudeWipeAuthTokenOnUnload() {
+    if (claudeIsKeepLoginOn()) return;
+    claudeClearPersistedAuthToken();
+  }
+
+  function claudeInitKeepLogin() {
+    claudeEnforceKeepLoginOnLoad();
+    claudeInjectKeepLoginCheckbox();
+    claudeBindKeepLoginControls();
+    window.addEventListener('pagehide', claudeWipeAuthTokenOnUnload);
+    window.addEventListener('beforeunload', claudeWipeAuthTokenOnUnload);
+  }
+
   function init() {
+    claudeInitKeepLogin();
     injectStyle();
     claudeInjectReadableFont();
     buildNavAndSection();
