@@ -276,11 +276,25 @@
       }
       .application-course-meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
 
-      /* [Claude 추가] "과정 조회" 인라인 편집 버튼 영역 + 메모 컬럼 */
+      /* [Claude 추가] "과정 조회" 인라인 편집 버튼 영역 + 메모 컬럼(전체 메모 / 과정종류별 메모 2줄) */
       .lookup-table td[data-label="관리"]{display:flex;gap:6px;white-space:nowrap;}
       .claude-lookup-edit-btn,.claude-lookup-save-btn,.claude-lookup-cancel-btn{min-height:30px;padding:0 10px;font-size:12px;}
-      .claude-lookup-memo-td{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-soft);font-size:12.5px;}
-      .claude-lookup-memo-td textarea.row-memo{width:100%;min-width:120px;box-sizing:border-box;}
+      .claude-lookup-memo-td{max-width:220px;min-width:150px;color:var(--ink-soft);font-size:12.5px;white-space:normal;}
+      .claude-lookup-memo-line{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+      .claude-lookup-memo-line b{color:var(--ink);font-weight:700;}
+      .claude-lookup-memo-line+.claude-lookup-memo-line{margin-top:2px;}
+      .claude-lookup-memo-edit{display:flex;flex-direction:column;gap:6px;min-width:160px;}
+      .claude-lookup-memo-edit label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--ink-soft);font-weight:700;}
+      .claude-lookup-memo-edit textarea.row-memo{width:100%;min-width:150px;box-sizing:border-box;font-weight:400;}
+
+      /* [Claude 추가] "신청 현황" 메모 컬럼 — 훈련생 전체 공통 메모 + 과정종류별(드론/AI교육 등) 메모 */
+      .claude-memo-group{display:flex;flex-direction:column;gap:8px;min-width:150px;}
+      .claude-memo-box{display:flex;flex-direction:column;gap:3px;}
+      .claude-memo-label{font-size:11px;color:var(--ink-soft);font-weight:700;}
+      .claude-memo-readonly-text{
+        font-size:12.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;
+        white-space:nowrap;max-width:100%;padding:4px 0;
+      }
 
       /* [Claude 추가] 사이드바 하단(이메일 위)에 번호 없이 붙는 "알림 관리" */
       .claude-footer-nav-item{padding-bottom:12px;margin-bottom:2px;border-bottom:1px solid var(--line);}
@@ -676,6 +690,13 @@
       }
       .claude-cert-cat-badge.claude-cert-cat-대규모{background:var(--accent-soft);color:var(--accent);}
       .claude-cert-cat-badge.claude-cert-cat-자회사{background:#FBF0DE;color:var(--gold);}
+
+      /* [Claude 추가] "만족도 관리" 자리표시 화면 */
+      .claude-satisfaction-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:16px 0;}
+      .claude-satisfaction-option{border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);padding:18px 20px;}
+      .claude-satisfaction-option h3{font-size:15px;margin:0 0 8px;color:var(--ink);}
+      .claude-satisfaction-option p{margin:0;font-size:13px;color:var(--ink-soft);line-height:1.6;}
+      .claude-satisfaction-hint{font-size:13px;color:var(--ink-soft);}
 
       /* ===== [Claude 추가] 설정 메뉴 (활동 로그 등 자주 안 쓰는 항목을 여기로) ===== */
       .nav-item[data-view="log"]{display:none;}

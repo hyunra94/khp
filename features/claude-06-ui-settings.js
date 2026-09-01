@@ -465,3 +465,60 @@
     window.addEventListener('beforeunload', claudeWipeAuthTokenOnUnload);
   }
 
+  /* ==================================================================
+   * [Claude 추가] "만족도 관리" 탭(06번) — 요청: "6번을 만족도 관리로 탭 만들어줘."
+   * 다만 "당장 구현은 안 해도 되는데... 문자로 만족도 조사 링크를 보내면 지금은
+   * 탈리(Tally)로 답을 받고 있어. 연동 가능한지, 아니면 자체적으로 만들지 정해서
+   * 수집·분석까지 되면 좋겠다"는 답을 받아, 실제 데이터 수집/분석 기능은 아직
+   * 만들지 않고 우선 탭 자리와 앞으로의 방향(선택지)만 안내하는 자리표시 화면으로
+   * 둠. DB에도 만족도 관련 테이블이 아직 없음(추후 방향 정해지면 추가 예정).
+   * ================================================================== */
+  function buildSatisfactionSectionMarkup() {
+    return `
+      <div class="view-header">
+        <h2>만족도 관리</h2>
+        <p>아직 준비 중인 화면입니다. 방식을 정하면 실제 수집·집계·분석 기능을 만들어 채울 예정이에요.</p>
+      </div>
+      <section class="panel">
+        <div class="section-title"><div><h2>어떤 방식으로 만들지 정해주세요</h2></div></div>
+        <div class="claude-satisfaction-options">
+          <div class="claude-satisfaction-option">
+            <h3>① 탈리(Tally)와 연동</h3>
+            <p>지금처럼 문자로 탈리 설문 링크를 보내고, 탈리에 쌓인 응답을 이 화면에서 불러와 과정별·회차별로 집계해서 보여주는 방식. 탈리 쪽 API/웹훅 연결이 필요해요.</p>
+          </div>
+          <div class="claude-satisfaction-option">
+            <h3>② 자체 제작</h3>
+            <p>외부 도구 없이 이 시스템 안에서 만족도 문항을 만들고, 응답 링크를 문자로 보내고, 응답까지 이 시스템 DB(Supabase)에 바로 쌓아서 집계하는 방식. 처음부터 새로 만들어야 하지만 이후엔 완전히 자체 관리 가능해요.</p>
+          </div>
+        </div>
+        <p class="claude-satisfaction-hint">어느 쪽으로 진행할지(또는 다른 방식) 말씀해주시면 그때 실제 기능을 만들어 채워드릴게요.</p>
+      </section>
+    `;
+  }
+
+  function buildSatisfactionNavAndSection() {
+    const nav = document.querySelector('.nav');
+    const main = document.querySelector('.admin-main');
+    if (!nav || !main || document.getElementById('view-claude-satisfaction')) return;
+
+    const navBtn = document.createElement('button');
+    navBtn.className = 'nav-item';
+    navBtn.type = 'button';
+    navBtn.dataset.view = 'claude-satisfaction';
+    navBtn.innerHTML = '<span>06</span>만족도 관리';
+    nav.appendChild(navBtn);
+
+    const section = document.createElement('section');
+    section.className = 'view';
+    section.id = 'view-claude-satisfaction';
+    section.innerHTML = buildSatisfactionSectionMarkup();
+    main.appendChild(section);
+
+    navBtn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+      navBtn.classList.add('active');
+      section.classList.add('active');
+    });
+  }
+

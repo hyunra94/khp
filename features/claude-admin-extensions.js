@@ -11,6 +11,7 @@
     claudeInjectReadableFont();
     buildCertNavAndSection();
     buildNavAndSection();
+    buildSatisfactionNavAndSection();
     buildSettingsSection();
     injectSettingsFooterButton();
     claudeInitColumnResize();
@@ -27,6 +28,12 @@
     claudeLoadAllCourseSessions().then(() => {
       claudeRefreshCourseCalendar();
       claudeRefreshAllSessionToggleLabels();
+    });
+    /* [Claude 추가] 훈련생×과정종류별 메모(trainee_type_memos) 로드 후,
+       이미 그려져 있던 "신청 현황"/"과정 조회" 메모 칸을 최신값으로 다시 그림. */
+    claudeLoadTypeMemos().then(() => {
+      if (typeof renderApps === 'function') renderApps();
+      if (typeof claudeAugmentCourseLookupEdit === 'function') claudeAugmentCourseLookupEdit();
     });
   }
 

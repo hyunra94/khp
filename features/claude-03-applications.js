@@ -312,6 +312,53 @@
   }
 
   /* ==================================================================
+   * [Claude 추가] 훈련생 × 과정종류별 메모 (예: "드론 전용 메모", "AI교육 전용 메모").
+   * 요청: "메모가 드론에 국한되는 것도 있고, 훈련생 전체에 대한 것도 있고,
+   * AI교육에만 해당하는 것도 있다" — 기존 trainees.admin_memo(훈련생 전체 공통 메모)는
+   * 그대로 두고, 별도로 trainee_type_memos 테이블(훈련생ID+과정종류ID당 메모 1개,
+   * Supabase에 새로 만듦)을 추가해서 "훈련생 전체 메모"와 "과정종류별 메모"를 나눠 관리함.
+   * "신청 현황"의 메모 칸(admin.html의 appColumns.memo)과 "과정 조회"의 메모 칸
+   * 양쪽에서 이 전역들을 같이 씀(공유 스코프).
+   * ================================================================== */
+  let claudeTypeMemos = [];
+
+  async function claudeLoadTypeMemos() {
+    const { data, error } = await sb.from('trainee_type_memos').select('*');
+    if (error) { console.error('과정종류별 메모 로드 실패', error); return; }
+    claudeTypeMemos = data || [];
+  }
+
+  function claudeGetTypeMemo(traineeId, courseTypeId) {
+    if (!traineeId || !courseTypeId) return '';
+    return claudeTypeMemos.find(m => m.trainee_id === traineeId && m.course_type_id === courseTypeId)?.memo || '';
+  }
+
+  async function claudeSaveTypeMemo(traineeId, courseTypeId, memo) {
+    if (!traineeId || !courseTypeId) return { error: null };
+    const payload = { trainee_id: traineeId, course_type_id: courseTypeId, memo: memo || null, updated_at: new Date().toISOString() };
+    const { error } = await sb.from('trainee_type_memos').upsert(payload, { onConflict: 'trainee_id,course_type_id' });
+    if (!error) {
+      const existing = claudeTypeMemos.find(m => m.trainee_id === traineeId && m.course_type_id === courseTypeId);
+      if (existing) existing.memo = payload.memo;
+      else claudeTypeMemos.push(payload);
+    }
+    return { error };
+  }
+
+  /* 한 훈련생이 신청한 모든 건에서 등장하는 과정종류들(중복 제거) — "신청 현황"에서
+     그 훈련생이 여러 과정종류(예: 드론 + AI교육)에 걸쳐 신청했으면 종류별 메모 칸을
+     각각 다 보여주기 위해 씀. */
+  function claudeTraineeCourseTypes(traineeId) {
+    const seen = new Map();
+    (typeof allApps !== 'undefined' ? allApps : []).forEach(a => {
+      if (a.trainee_id !== traineeId) return;
+      const ctId = a.courses?.course_type_id;
+      if (ctId && !seen.has(ctId)) seen.set(ctId, a.courses?.course_types?.name || '과정');
+    });
+    return Array.from(seen, ([id, name]) => ({ id, name }));
+  }
+
+  /* ==================================================================
    * [Claude 추가] "신청 현황" 표의 "상태" 컬럼 — 상태 select(pill)가 컬럼 폭에
    * 안 맞아 잘리던 문제 + 그 밑에 항상 떠있던 신청일시가 공간을 잡아먹던 문제.
    * 요청: "컬럼 내에서 콜아웃이 반응형으로 됐으면 좋겠음(지금은 짤리잖아),
@@ -340,13 +387,17 @@
   /* ==================================================================
    * [Claude 추가] "과정 조회" 화면 — 지금까지는 이름/연락처/소속이 텍스트로만
    * 보여서 정보를 고치려면 "신청 현황" 화면으로 가야 했고, 메모도 아예 안 보였음.
-   * 요청: "과정 조회에서도 정보 수정 가능하게 해줘" + "메모도 떠야해".
+   * 요청: "과정 조회에서도 정보 수정 가능하게 해줘" + "메모도 떠야해" +
+   * "메모를 신청현황이랑 똑같이 입력할 수 있게 해달라" + "메모가 훈련생 전체에
+   * 대한 것도 있고 특정 과정종류(드론/AI교육 등)에만 해당하는 것도 있다".
    * admin.html의 renderLookupRound()가 그리는 테이블(.lookup-round table.lookup-table)에
-   * "메모"/"관리" 열을 새로 붙여서, "편집"을 누르면 이름/연락처/소속/메모 칸이 입력창으로
-   * 바뀌고 저장하면 trainees 테이블을 바로 업데이트함(신청 현황의 "저장" 버튼과 같은
-   * 테이블/같은 방식). 메모 원본 값은 admin.html의 전역 allApps(신청 현황 데이터, 이미
-   * trainees.admin_memo를 포함해서 불러옴)에서 같은 신청 건을 찾아 읽어옴. 개설 알림
-   * 관심자 표(.lookup-interest)는 신청 데이터가 아니라 건드리지 않음.
+   * "메모"/"관리" 열을 새로 붙여서, "편집"을 누르면 이름/연락처/소속과 함께
+   * "전체 메모"(훈련생 전체 공통, trainees.admin_memo)와 "{과정종류} 메모"(이 회차가
+   * 속한 과정종류 전용, trainee_type_memos)를 각각 입력창으로 바꿔서 보여줌 —
+   * 다른 과정종류의 메모는 여기 안 보이고(태그가 다르므로), 오직 훈련생 전체 메모와
+   * 이 회차와 같은 과정종류의 메모만 보임. 저장하면 trainees/trainee_type_memos
+   * 테이블을 각각 업데이트함(신청 현황의 "저장" 버튼과 사실상 같은 데이터를 다룸).
+   * 개설 알림 관심자 표(.lookup-interest)는 신청 데이터가 아니라 건드리지 않음.
    * ================================================================== */
   function claudeAugmentCourseLookupEdit() {
     const container = document.getElementById('courseLookupGroups');
@@ -375,13 +426,15 @@
         if (!nameTd || !phoneTd || !companyTd) return;
 
         const app = appId && typeof allApps !== 'undefined' ? allApps.find(a => a.id === appId) : null;
-        const memoText = app?.trainees?.admin_memo || '';
+        const generalMemo = app?.trainees?.admin_memo || '';
+        const courseTypeId = app?.courses?.course_type_id || '';
+        const courseTypeName = app?.courses?.course_types?.name || '';
+        const typeMemo = claudeGetTypeMemo(traineeId, courseTypeId);
 
         const memoTd = document.createElement('td');
         memoTd.dataset.label = '메모';
         memoTd.className = 'claude-lookup-memo-td';
-        memoTd.textContent = memoText || '-';
-        if (memoText) memoTd.title = memoText;
+        claudeRenderLookupMemoView(memoTd, generalMemo, courseTypeName, typeMemo);
         tr.appendChild(memoTd);
 
         const actionTd = document.createElement('td');
@@ -393,24 +446,42 @@
         actionTd.appendChild(editBtn);
         tr.appendChild(actionTd);
 
-        editBtn.addEventListener('click', () => claudeToggleLookupRowEdit(tr, traineeId, nameTd, phoneTd, companyTd, memoTd, actionTd));
+        editBtn.addEventListener('click', () => claudeToggleLookupRowEdit(tr, traineeId, courseTypeId, courseTypeName, nameTd, phoneTd, companyTd, memoTd, actionTd));
       });
     });
   }
 
-  function claudeToggleLookupRowEdit(tr, traineeId, nameTd, phoneTd, companyTd, memoTd, actionTd) {
+  /* 메모 칸을 "편집 아님" 상태(텍스트 미리보기)로 그림 — 전체 메모 + (있으면) 이 회차와
+     같은 과정종류의 메모, 이렇게 최대 2줄. 길면 잘리고 마우스를 올리면 전체가 뜸. */
+  function claudeRenderLookupMemoView(memoTd, generalMemo, courseTypeName, typeMemo) {
+    memoTd.innerHTML = `
+      <div class="claude-lookup-memo-line"><b>전체:</b> ${escapeHtml(generalMemo) || '-'}</div>
+      ${courseTypeName ? `<div class="claude-lookup-memo-line"><b>${escapeHtml(courseTypeName)}:</b> ${escapeHtml(typeMemo) || '-'}</div>` : ''}
+    `;
+    const full = [generalMemo && `전체: ${generalMemo}`, courseTypeName && typeMemo && `${courseTypeName}: ${typeMemo}`].filter(Boolean).join('\n');
+    memoTd.title = full || '';
+  }
+
+  function claudeToggleLookupRowEdit(tr, traineeId, courseTypeId, courseTypeName, nameTd, phoneTd, companyTd, memoTd, actionTd) {
     if (tr.dataset.claudeEditing === '1') return; // 이미 편집 중
     tr.dataset.claudeEditing = '1';
+    const app = typeof allApps !== 'undefined' ? allApps.find(a => a.trainee_id === traineeId) : null;
     const original = {
       name: nameTd.textContent.trim(),
       phone: phoneTd.textContent.trim(),
       company: companyTd.textContent.trim(),
-      memo: memoTd.textContent.trim(),
+      generalMemo: app?.trainees?.admin_memo || '',
+      typeMemo: claudeGetTypeMemo(traineeId, courseTypeId),
     };
     nameTd.innerHTML = `<input class="row-input" data-claude-field="name" value="${escapeHtml(original.name === '-' ? '' : original.name)}">`;
     phoneTd.innerHTML = `<input class="row-input" data-claude-field="phone" value="${escapeHtml(original.phone === '-' ? '' : original.phone)}">`;
     companyTd.innerHTML = `<input class="row-input" data-claude-field="company" value="${escapeHtml(original.company === '-' ? '' : original.company)}">`;
-    memoTd.innerHTML = `<textarea class="row-memo" data-claude-field="memo" placeholder="메모">${escapeHtml(original.memo === '-' ? '' : original.memo)}</textarea>`;
+    memoTd.innerHTML = `
+      <div class="claude-lookup-memo-edit">
+        <label>전체 메모<textarea class="row-memo" data-claude-field="general-memo" placeholder="훈련생 전체 공통 메모">${escapeHtml(original.generalMemo)}</textarea></label>
+        ${courseTypeId ? `<label>${escapeHtml(courseTypeName || '과정')} 메모<textarea class="row-memo" data-claude-field="type-memo" placeholder="${escapeHtml(courseTypeName || '과정')} 전용 메모">${escapeHtml(original.typeMemo)}</textarea></label>` : ''}
+      </div>
+    `;
     actionTd.innerHTML = `
       <button type="button" class="inline-btn claude-lookup-save-btn">저장</button>
       <button type="button" class="inline-btn light claude-lookup-cancel-btn">취소</button>
@@ -420,11 +491,10 @@
       nameTd.textContent = original.name;
       phoneTd.textContent = original.phone;
       companyTd.textContent = original.company;
-      memoTd.textContent = original.memo || '-';
-      memoTd.title = original.memo || '';
+      claudeRenderLookupMemoView(memoTd, original.generalMemo, courseTypeName, original.typeMemo);
       actionTd.innerHTML = '<button type="button" class="inline-btn claude-lookup-edit-btn">편집</button>';
       tr.dataset.claudeEditing = '';
-      actionTd.querySelector('.claude-lookup-edit-btn').addEventListener('click', () => claudeToggleLookupRowEdit(tr, traineeId, nameTd, phoneTd, companyTd, memoTd, actionTd));
+      actionTd.querySelector('.claude-lookup-edit-btn').addEventListener('click', () => claudeToggleLookupRowEdit(tr, traineeId, courseTypeId, courseTypeName, nameTd, phoneTd, companyTd, memoTd, actionTd));
     };
 
     actionTd.querySelector('.claude-lookup-cancel-btn').addEventListener('click', restore);
@@ -434,7 +504,7 @@
         name: nameTd.querySelector('input').value.trim(),
         phone: phoneTd.querySelector('input').value.trim(),
         company: companyTd.querySelector('input').value.trim(),
-        admin_memo: memoTd.querySelector('textarea').value.trim() || null,
+        admin_memo: memoTd.querySelector('[data-claude-field="general-memo"]').value.trim() || null,
       };
       if (!payload.name || !payload.phone) {
         alert('이름과 연락처는 비워둘 수 없습니다.');
@@ -449,10 +519,23 @@
         saveBtn.textContent = '저장';
         return;
       }
+      let typeMemoValue = original.typeMemo;
+      const typeMemoEl = memoTd.querySelector('[data-claude-field="type-memo"]');
+      if (courseTypeId && typeMemoEl) {
+        typeMemoValue = typeMemoEl.value.trim();
+        const { error: typeError } = await claudeSaveTypeMemo(traineeId, courseTypeId, typeMemoValue);
+        if (typeError) {
+          alert(`과정종류별 메모 저장 실패: ${typeError.message}`);
+          saveBtn.disabled = false;
+          saveBtn.textContent = '저장';
+          return;
+        }
+      }
       original.name = payload.name || '-';
       original.phone = payload.phone || '-';
       original.company = payload.company || '-';
-      original.memo = payload.admin_memo || '';
+      original.generalMemo = payload.admin_memo || '';
+      original.typeMemo = typeMemoValue;
       /* admin.html의 allApps 전역에도 같이 반영해서, "신청 현황" 화면으로 넘어가도
          방금 고친 메모/정보가 바로 보이게 함 */
       if (typeof allApps !== 'undefined') {
@@ -466,6 +549,7 @@
         });
       }
       restore();
+      if (typeof renderApps === 'function') renderApps(); /* [Claude 추가] 신청 현황 쪽 메모 칸도 같이 최신화 */
     });
   }
 
