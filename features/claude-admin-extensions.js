@@ -246,6 +246,15 @@
       .course-resizer:hover::before,.course-resizer.dragging::before{background:var(--accent);}
       .status-신청확정{background:var(--accent-soft);color:var(--accent);}
       .status-select.status-신청확정{border-color:var(--accent-soft);background:var(--accent-soft);color:var(--accent);}
+
+      /* ===== [Claude 추가] "신청 현황" 상태 컬럼 — select가 컬럼 폭에 맞춰 반응형으로
+         줄어들게 하고(글자가 짤려도 최소한 박스 밖으로 안 삐져나가게), 신청일시는
+         claudeHideStatusDatesAsTooltip()에서 display:none 처리하고 title 툴팁으로 옮김 */
+      .application-status-list,.application-status-item{width:100%;min-width:0;}
+      .application-status-list select.status-select{
+        width:100%;max-width:100%;box-sizing:border-box;
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      }
       .course-tag:hover,.course-tag.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
       .column-order-item input{accent-color:var(--accent);}
       .column-order-item.drag-over{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent);}
@@ -286,7 +295,20 @@
       .claude-course-meta-line .claude-sessions-toggle-btn:hover{
         color:var(--accent);background:transparent;text-decoration:underline;
       }
-      .course-edit-row{padding:20px 22px;border-radius:10px;row-gap:12px;}
+      /* [Claude 추가] 버그 수정: admin.html 원본 .course-edit-row는 80px/130px/130px/86px/72px처럼
+         고정 픽셀 열이 8개나 이어져 있어서 최소 폭이 1000px+ 필요함 — 예전엔 "등록된 회차" 패널이
+         충분히 넓어서 안 보이던 문제인데, v2에서 사이드바(240→272px)/카드 padding이 커지면서
+         왼쪽 패널이 좁아진 화면(전체 폭이 넉넉하지 않은 경우)에서 이 편집 행이 오른쪽 "회차 추가"
+         패널 위로 넘쳐 흘러(overflow) 겹쳐 보이는 문제가 있었음. 폭에 맞게 알아서 줄바꿈되도록
+         고정 픽셀 열 대신 auto-fit 반응형 그리드로 바꾸고, 저장/취소 버튼은 항상 맨 아래 한 줄로 뺌. */
+      .course-edit-row{
+        padding:20px 22px;border-radius:10px;
+        grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
+        row-gap:12px;
+      }
+      .course-edit-row>*{min-width:0;}
+      .course-edit-row select,.course-edit-row input{width:100%;box-sizing:border-box;}
+      .course-edit-row .course-row-actions{grid-column:1 / -1;justify-content:flex-end;display:flex;gap:8px;}
       @media (max-width:980px){
         .course-row{grid-template-columns:1fr;grid-template-rows:auto auto auto;}
         .course-row .course-row-actions{grid-column:1;grid-row:3;justify-content:flex-start;align-self:auto;}
@@ -1809,6 +1831,32 @@
     }
   }
 
+  /* ==================================================================
+   * [Claude 추가] "신청 현황" 표의 "상태" 컬럼 — 상태 select(pill)가 컬럼 폭에
+   * 안 맞아 잘리던 문제 + 그 밑에 항상 떠있던 신청일시가 공간을 잡아먹던 문제.
+   * 요청: "컬럼 내에서 콜아웃이 반응형으로 됐으면 좋겠음(지금은 짤리잖아),
+   * 날짜도 그냥 마우스 호버했을때 떴으면 좋겠음."
+   * admin.html의 renderApplicationStatusList()는 안 건드리고, 이미 그려진
+   * .application-status-item 안의 .compact-info(신청일시 텍스트)를 화면에서
+   * 빼서(display:none) 상태 select가 컬럼 전체 폭을 반응형으로 쓸 수 있게 하고,
+   * 그 텍스트는 select의 title 속성(브라우저 기본 호버 툴팁)으로 옮겨서
+   * 마우스를 올렸을 때만 보이게 함. ================================== */
+  function claudeHideStatusDatesAsTooltip() {
+    document.querySelectorAll('.application-status-item').forEach(item => {
+      const info = item.querySelector(':scope > .compact-info');
+      if (!info) return;
+      if (info.dataset.claudeTooltipped !== '1') {
+        const text = info.textContent.trim();
+        info.dataset.claudeTooltipped = '1';
+        info.style.display = 'none';
+        const select = item.querySelector(':scope > select.status-select');
+        const titleText = text ? `신청일시: ${text}` : '';
+        if (select) select.title = titleText;
+        else item.title = titleText;
+      }
+    });
+  }
+
   function claudeInitColumnResize() {
     claudeLoadColumnWidths();
     const head = document.getElementById('appHead');
@@ -1817,9 +1865,13 @@
     claudeInjectBulkBar();
     claudeRefreshColumnResize();
     claudeInjectColumnResetButton();
+    claudeHideStatusDatesAsTooltip();
     if (!claudeResizeObserverBound) {
       const observer = new MutationObserver(() => {
-        requestAnimationFrame(claudeRefreshColumnResize);
+        requestAnimationFrame(() => {
+          claudeRefreshColumnResize();
+          claudeHideStatusDatesAsTooltip();
+        });
       });
       observer.observe(head, { childList: true, subtree: true });
       if (body) observer.observe(body, { childList: true, subtree: true });
