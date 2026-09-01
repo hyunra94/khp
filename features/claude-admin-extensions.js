@@ -2562,6 +2562,7 @@
           claudeRefreshCourseCalendar();
           claudeRenderUpcomingPanel();
           claudeAugmentCourseRowsWithSessions();
+          claudeRefreshAllSessionToggleLabels();
           claudeRestructureAllCourseRows();
           claudeGroupCourseRowsByType();
           observer.observe(rowsEl, { childList: true, subtree: true });
@@ -2716,6 +2717,23 @@
       btn.textContent = n ? `개별일정 ${n}` : '개별일정';
       btn.addEventListener('click', () => claudeToggleSessionsPanel(courseId, row));
       actions.insertBefore(btn, actions.firstChild);
+    });
+  }
+
+  /* ===== [Claude 추가] 버그 수정: "개별일정" 버튼은 회차 행이 처음 그려질 때 딱 한 번
+     claudeAugmentCourseRowsWithSessions()가 텍스트("개별일정 N")를 붙이는데, 그 시점에
+     course_sessions 데이터(claudeAllCourseSessions)가 아직 서버에서 다 안 불러와진
+     상태면 N이 0으로 계산돼서 숫자 없이 "개별일정"만 붙어버림 — 실제 등록된 날짜가
+     지워진 게 아니라 화면에 숫자가 늦게 반영 안 된 것뿐임(DB 데이터는 그대로 있음).
+     claudeLoadAllCourseSessions()가 끝난 뒤 이미 그려진 버튼들의 숫자를 다시 맞춰줌. ===== */
+  function claudeRefreshAllSessionToggleLabels() {
+    const list = document.getElementById('courseRows');
+    if (!list) return;
+    list.querySelectorAll(':scope > .course-row[data-course-id] .claude-sessions-toggle-btn').forEach(btn => {
+      const row = btn.closest('.course-row[data-course-id]');
+      if (!row) return;
+      const n = (claudeAllCourseSessions[row.dataset.courseId] || []).length;
+      btn.textContent = n ? `개별일정 ${n}` : '개별일정';
     });
   }
 
@@ -3435,7 +3453,10 @@
     claudeInjectUpcomingPanel();
     claudeBindCourseDateHelpers();
     claudeWatchCourseTypeTabs();
-    claudeLoadAllCourseSessions().then(() => claudeRefreshCourseCalendar());
+    claudeLoadAllCourseSessions().then(() => {
+      claudeRefreshCourseCalendar();
+      claudeRefreshAllSessionToggleLabels();
+    });
   }
 
   if (document.readyState === 'loading') {
