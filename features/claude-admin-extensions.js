@@ -1473,7 +1473,7 @@
     navBtn.className = 'nav-item';
     navBtn.type = 'button';
     navBtn.dataset.view = 'claude-notify';
-    navBtn.innerHTML = '<span>05</span>알림 관리'; /* [Claude 추가] 활동 로그(구 05)가 설정으로 옮겨가면서 한 칸씩 당김 */
+    navBtn.innerHTML = '<span>06</span>알림 관리'; /* [Claude 추가] 요청: 수료 관리=5번, 알림 관리=6번으로 순서 변경 */
     nav.appendChild(navBtn);
 
     const section = document.createElement('section');
@@ -2955,7 +2955,7 @@
     navBtn.className = 'nav-item';
     navBtn.type = 'button';
     navBtn.dataset.view = 'claude-cert';
-    navBtn.innerHTML = '<span>06</span>수료 관리'; /* [Claude 추가] 활동 로그(구 05)가 설정으로 옮겨가면서 한 칸씩 당김 */
+    navBtn.innerHTML = '<span>05</span>수료 관리'; /* [Claude 추가] 요청: 수료 관리=5번, 알림 관리=6번으로 순서 변경 */
     nav.appendChild(navBtn);
 
     const section = document.createElement('section');
@@ -3439,8 +3439,8 @@
     claudeInitKeepLogin();
     injectStyle();
     claudeInjectReadableFont();
-    buildNavAndSection();
     buildCertNavAndSection();
+    buildNavAndSection();
     buildSettingsSection();
     injectSettingsFooterButton();
     claudeInitColumnResize();
