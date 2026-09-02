@@ -25,6 +25,7 @@
     claudeBindCourseDateHelpers();
     claudeWatchCourseTypeTabs();
     claudeWatchCourseLookup();
+    claudeBindMemoClickEdit();
     claudeLoadAllCourseSessions().then(() => {
       claudeRefreshCourseCalendar();
       claudeRefreshAllSessionToggleLabels();

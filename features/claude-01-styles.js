@@ -276,25 +276,31 @@
       }
       .application-course-meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
 
-      /* [Claude 추가] "과정 조회" 인라인 편집 버튼 영역 + 메모 컬럼(전체 메모 / 과정종류별 메모 2줄) */
+      /* [Claude 추가] "과정 조회" 인라인 편집 버튼 영역(이름/연락처/소속만, 메모는 아래 공용 스타일) */
       .lookup-table td[data-label="관리"]{display:flex;gap:6px;white-space:nowrap;}
       .claude-lookup-edit-btn,.claude-lookup-save-btn,.claude-lookup-cancel-btn{min-height:30px;padding:0 10px;font-size:12px;}
-      .claude-lookup-memo-td{max-width:220px;min-width:150px;color:var(--ink-soft);font-size:12.5px;white-space:normal;}
-      .claude-lookup-memo-line{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
-      .claude-lookup-memo-line b{color:var(--ink);font-weight:700;}
-      .claude-lookup-memo-line+.claude-lookup-memo-line{margin-top:2px;}
-      .claude-lookup-memo-edit{display:flex;flex-direction:column;gap:6px;min-width:160px;}
-      .claude-lookup-memo-edit label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--ink-soft);font-weight:700;}
-      .claude-lookup-memo-edit textarea.row-memo{width:100%;min-width:150px;box-sizing:border-box;font-weight:400;}
+      .claude-lookup-memo-td{max-width:220px;min-width:150px;white-space:normal;}
 
-      /* [Claude 추가] "신청 현황" 메모 컬럼 — 훈련생 전체 공통 메모 + 과정종류별(드론/AI교육 등) 메모 */
+      /* [Claude 추가] 메모 칸(전체 메모 / 과정종류별 메모) — "신청 현황"과 "과정 조회" 공용.
+         평소엔 글자로만 보이다가(claude-memo-readonly-text) 클릭하면 그 자리가 바로
+         입력창(textarea.claude-memo-edit-input)으로 바뀜(claudeBindMemoClickEdit 참고). */
       .claude-memo-group{display:flex;flex-direction:column;gap:8px;min-width:150px;}
       .claude-memo-box{display:flex;flex-direction:column;gap:3px;}
       .claude-memo-label{font-size:11px;color:var(--ink-soft);font-weight:700;}
       .claude-memo-readonly-text{
         font-size:12.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;
-        white-space:nowrap;max-width:100%;padding:4px 0;
+        white-space:nowrap;max-width:100%;padding:5px 7px;border-radius:6px;cursor:text;
+        box-sizing:border-box;border:1px solid transparent;
       }
+      .claude-memo-readonly-text:hover,.claude-memo-readonly-text:focus{
+        border-color:var(--line);background:var(--surface-soft);outline:none;
+        overflow:visible;white-space:normal;word-break:break-all;
+      }
+      textarea.claude-memo-edit-input{
+        width:100%;min-width:140px;box-sizing:border-box;font-size:12.5px;
+        min-height:56px;padding:5px 7px;
+      }
+      .claude-memo-status{display:block;margin-top:2px;}
 
       /* [Claude 추가] 사이드바 하단(이메일 위)에 번호 없이 붙는 "알림 관리" */
       .claude-footer-nav-item{padding-bottom:12px;margin-bottom:2px;border-bottom:1px solid var(--line);}

@@ -1793,8 +1793,9 @@ function renderApps(){
         name: row.querySelector('[data-field="name"]').value.trim(),
         phone: row.querySelector('[data-field="phone"]').value.trim(),
         email: row.querySelector('[data-field="email"]').value.trim(),
-        company: row.querySelector('[data-field="company"]').value.trim(),
-        admin_memo: row.querySelector('[data-field="admin_memo"]').value.trim() || null
+        company: row.querySelector('[data-field="company"]').value.trim()
+        /* [Claude 추가] 메모(전체/과정종류별)는 이제 이 편집/저장 흐름과 분리되어
+           클릭 한 번으로 상시 편집·자동 저장되므로 여기서 다루지 않음(claudeBindMemoClickEdit 참고) */
       };
       /* ===== [Claude 추가] 유입경로("진입 경로") 편집값도 같이 저장 시작 ===== */
       const referralSourceEl = row.querySelector('[data-field="referral_source"]');
@@ -1819,15 +1820,6 @@ function renderApps(){
       allApps.forEach(app => {
         if (app.trainee_id === traineeId && app.trainees) Object.assign(app.trainees, payload);
       });
-      /* ===== [Claude 추가] 과정종류별 메모(드론/AI교육 등)도 같이 저장 시작 ===== */
-      if (typeof claudeSaveTypeMemo === 'function') {
-        const typeMemoEls = row.querySelectorAll('.claude-type-memo');
-        for (const el of typeMemoEls) {
-          const { error: typeError } = await claudeSaveTypeMemo(traineeId, el.dataset.courseTypeId, el.value.trim());
-          if (typeError) { alert(`과정종류별 메모 저장 실패: ${typeError.message}`); }
-        }
-      }
-      /* ===== [Claude 추가] 끝 ===== */
       editingApplicationId = '';
       btn.textContent = '저장됨';
       btn.classList.add('saved');
@@ -2053,20 +2045,21 @@ const appColumns = {
     label: '메모',
     /* ===== [Claude 추가] 훈련생 전체 공통 메모 + 과정종류별(드론/AI교육 등) 메모를 나눠서 표시.
        요청: "메모가 드론에 국한되는 것도 있고, 훈련생에 대한 것도 있고, AI교육에만 해당하는
-       것도 있다" — 편집 모드일 때만 입력 가능(다른 필드와 동일한 편집/저장 흐름),
-       평소엔 읽기 전용 텍스트로 보여줌(길면 잘리고 마우스 올리면 전체 표시). ===== */
+       것도 있다" + "메모는 다른 필드처럼 편집 버튼 눌러야 하는 게 아니라 상시 편집 가능하게,
+       평소엔 글자로 보이다가 클릭하면 네모 박스로 바뀌게 해달라" — 그래서 이름/연락처 등
+       다른 필드와 달리 메모는 isEditingApp(편집 모드) 여부와 무관하게 항상 claudeMemoBoxMarkup()로
+       그려서, 클릭하면 그 자리에서 바로 입력창이 되고 포커스를 벗어나면 자동 저장됨
+       (claudeBindMemoClickEdit 참고). ===== */
     render: app => {
-      const editing = isEditingApp(app);
       const generalText = app.trainees?.admin_memo || '';
       const types = typeof claudeTraineeCourseTypes === 'function' ? claudeTraineeCourseTypes(app.trainee_id) : [];
-      const generalBox = editing
-        ? `<div class="claude-memo-box"><div class="claude-memo-label">전체 메모</div><textarea class="row-memo" data-field="admin_memo" placeholder="훈련생 전체 공통 메모">${escapeHtml(generalText)}</textarea></div>`
-        : `<div class="claude-memo-box"><div class="claude-memo-label">전체 메모</div><div class="claude-memo-readonly-text" title="${escapeHtml(generalText)}">${escapeHtml(generalText) || '-'}</div></div>`;
+      if (typeof claudeMemoBoxMarkup !== 'function') {
+        return `<textarea class="row-memo" data-field="admin_memo" placeholder="메모">${escapeHtml(generalText)}</textarea>`;
+      }
+      const generalBox = claudeMemoBoxMarkup('전체 메모', generalText, { kind: 'general', traineeId: app.trainee_id });
       const typeBoxes = types.map(t => {
         const memoVal = typeof claudeGetTypeMemo === 'function' ? claudeGetTypeMemo(app.trainee_id, t.id) : '';
-        return editing
-          ? `<div class="claude-memo-box"><div class="claude-memo-label">${escapeHtml(t.name)} 메모</div><textarea class="row-memo claude-type-memo" data-course-type-id="${escapeHtml(t.id)}" placeholder="${escapeHtml(t.name)} 전용 메모">${escapeHtml(memoVal)}</textarea></div>`
-          : `<div class="claude-memo-box"><div class="claude-memo-label">${escapeHtml(t.name)} 메모</div><div class="claude-memo-readonly-text" title="${escapeHtml(memoVal)}">${escapeHtml(memoVal) || '-'}</div></div>`;
+        return claudeMemoBoxMarkup(`${t.name} 메모`, memoVal, { kind: 'type', traineeId: app.trainee_id, courseTypeId: t.id });
       }).join('');
       return `<div class="claude-memo-group">${generalBox}${typeBoxes}</div>`;
     }
