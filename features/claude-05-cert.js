@@ -47,19 +47,24 @@
 
   async function claudeLoadCompletions() {
     const tbody = document.getElementById('claudeCertRows');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="empty-row">불러오는 중...</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="empty-row">불러오는 중...</td></tr>';
     const { data, error } = await sb
       .from('applications')
-      .select('id, status_updated_at, certificate_issued, certificate_number, certificate_issued_at, trainee_id, employment_category, trainees(name, phone, company, email), courses(id, name, round, course_type_id, course_types(id, name))')
+      /* [Claude 추가] part_a_completed/part_b_completed(신청 건별 A/B 파트 수료 여부) +
+         course_types.has_parts/part_a_label/part_b_label(이 과목이 A/B 파트로 나뉘어
+         있는지, 파트 이름은 뭔지)을 추가로 불러옴 — "드론 교육"처럼 한 과목이 실질적으로
+         두 파트로 나뉘어 있어서 한쪽만 수료하는 경우를 구분해서 보여주기 위함. */
+      .select('id, status_updated_at, certificate_issued, certificate_number, certificate_issued_at, trainee_id, employment_category, part_a_completed, part_b_completed, trainees(name, phone, company, email), courses(id, name, round, course_type_id, course_types(id, name, has_parts, part_a_label, part_b_label))')
       .eq('status', '수료')
       .order('status_updated_at', { ascending: false });
     if (error) {
-      if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</td></tr>`;
       return;
     }
     claudeCompletions = data || [];
     claudeRenderCertFilterOptions();
     claudeRenderCompletions();
+    claudeRenderPartSummary();
   }
 
   /* ==================================================================
@@ -150,6 +155,73 @@
     });
   }
 
+  /* ==================================================================
+   * [Claude 추가] "A/B 파트 이수 현황" — 요청: "우리가 한 과목이지만 실질적으로는
+   * 2과목(A/B)으로 나눠져 있는데, 수료생이 A는 수료했는데 B는 못한 경우도 있고
+   * 3회차에 B, 4회차에 A를 듣는 경우도 있다. 이걸 수료에서 어떻게 확인할 수 있을까?"
+   * 위 목록(claudeRenderCompletions)은 신청 건(=회차 등록) 1개당 1행이라 같은 훈련생이
+   * 여러 회차에 나뉘어 들은 걸 한눈에 보기 어려움. 그래서 A/B 파트가 있는 과목만
+   * 골라서(course_types.has_parts) 훈련생별로 다시 묶어, 그 훈련생이 참여한 모든 회차를
+   * 통틀어 A파트/B파트를 한 번이라도 이수했는지(여러 회차에 걸쳐 나눠 들었어도 합산)를
+   * 보여줌. 필터와 무관하게 항상 전체 수료생 기준으로 계산함(위 과정별 요약과 같은 방식).
+   * ================================================================== */
+  function claudeComputePartSummary() {
+    const byType = new Map();
+    claudeCompletions.forEach(c => {
+      const course = c.courses || {};
+      const ct = course.course_types || {};
+      if (!ct.has_parts) return;
+      const typeId = course.course_type_id || '__unknown__';
+      if (!byType.has(typeId)) {
+        byType.set(typeId, { name: ct.name || '과정', partALabel: ct.part_a_label || 'A', partBLabel: ct.part_b_label || 'B', trainees: new Map() });
+      }
+      const t = byType.get(typeId);
+      const traineeId = c.trainee_id;
+      if (!t.trainees.has(traineeId)) {
+        t.trainees.set(traineeId, { name: c.trainees?.name || '-', phone: c.trainees?.phone || '-', rounds: new Set(), aOk: false, bOk: false });
+      }
+      const tr = t.trainees.get(traineeId);
+      if (course.round !== null && course.round !== undefined) tr.rounds.add(course.round);
+      if (c.part_a_completed) tr.aOk = true;
+      if (c.part_b_completed) tr.bOk = true;
+    });
+    return byType;
+  }
+
+  function claudeRenderPartSummary() {
+    const panel = document.getElementById('claudeCertPartPanel');
+    const tbody = document.getElementById('claudeCertPartRows');
+    if (!panel || !tbody) return;
+    const byType = claudeComputePartSummary();
+    if (!byType.size) { panel.hidden = true; tbody.innerHTML = ''; return; }
+    panel.hidden = false;
+
+    const rows = [];
+    byType.forEach(t => {
+      const sortedTrainees = [...t.trainees.values()].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+      sortedTrainees.forEach(tr => {
+        const roundsText = [...tr.rounds].sort((a, b) => a - b).map(r => `${r}회차`).join(', ') || '-';
+        let overall;
+        if (tr.aOk && tr.bOk) overall = `<span class="claude-part-overall claude-part-overall-both">${escapeHtml(t.partALabel)}+${escapeHtml(t.partBLabel)} 모두 이수</span>`;
+        else if (tr.aOk) overall = `<span class="claude-part-overall claude-part-overall-partial">${escapeHtml(t.partALabel)}만 이수</span>`;
+        else if (tr.bOk) overall = `<span class="claude-part-overall claude-part-overall-partial">${escapeHtml(t.partBLabel)}만 이수</span>`;
+        else overall = `<span class="claude-part-overall claude-part-overall-none">둘 다 미이수</span>`;
+        rows.push(`
+          <tr>
+            <td>${escapeHtml(t.name)}</td>
+            <td>${escapeHtml(tr.name)}</td>
+            <td>${escapeHtml(tr.phone)}</td>
+            <td>${escapeHtml(roundsText)}</td>
+            <td style="text-align:center;">${tr.aOk ? '✓' : '-'}</td>
+            <td style="text-align:center;">${tr.bOk ? '✓' : '-'}</td>
+            <td>${overall}</td>
+          </tr>
+        `);
+      });
+    });
+    tbody.innerHTML = rows.join('') || '<tr><td colspan="7" class="empty-row">데이터가 없습니다</td></tr>';
+  }
+
   /* [Claude 추가] 필터(과정/회차/구분/검색) — 상세 목록에만 적용됨 */
   function claudeRenderCertFilterOptions() {
     const typeSel = document.getElementById('claudeCertTypeFilter');
@@ -216,13 +288,22 @@
 
     const filtered = claudeFilteredCompletions();
     if (!filtered.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="empty-row">${total ? '필터 조건에 맞는 수료생이 없습니다' : '수료 상태인 신청자가 없습니다'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-row">${total ? '필터 조건에 맞는 수료생이 없습니다' : '수료 상태인 신청자가 없습니다'}</td></tr>`;
       return;
     }
 
     tbody.innerHTML = filtered.map(c => {
       const course = c.courses || {};
       const cat = claudeCertCategory(c);
+      const ct = course.course_types || {};
+      /* [Claude 추가] A/B 파트가 있는 과목이면 신청 건(=이 회차 등록)별로 각 파트
+         수료 여부를 체크박스 2개로 보여줌. 없는 과목은 "-"만 표시. */
+      const partCell = ct.has_parts
+        ? `
+          <label class="claude-part-cb"><input type="checkbox" class="claude-part-a-cb" data-id="${escapeHtml(c.id)}" ${c.part_a_completed ? 'checked' : ''}> ${escapeHtml(ct.part_a_label || 'A')}</label>
+          <label class="claude-part-cb"><input type="checkbox" class="claude-part-b-cb" data-id="${escapeHtml(c.id)}" ${c.part_b_completed ? 'checked' : ''}> ${escapeHtml(ct.part_b_label || 'B')}</label>
+        `
+        : '-';
       return `
       <tr data-id="${escapeHtml(c.id)}">
         <td>${escapeHtml(c.trainees?.name || '-')}</td>
@@ -231,6 +312,7 @@
         <td><span class="claude-cert-cat-badge claude-cert-cat-${escapeHtml(cat)}">${escapeHtml(cat)}</span></td>
         <td>${escapeHtml((course.course_types?.name || '') + (course.round ? ` ${course.round}회차` : ''))}</td>
         <td>${escapeHtml(formatDateTime(c.status_updated_at))}</td>
+        <td class="claude-part-cell">${partCell}</td>
         <td><input type="text" class="claude-cert-num-input" data-id="${escapeHtml(c.id)}" placeholder="수료증 번호" value="${escapeHtml(c.certificate_number || '')}"></td>
         <td style="text-align:center;"><input type="checkbox" class="claude-cert-issued-cb" data-id="${escapeHtml(c.id)}" ${c.certificate_issued ? 'checked' : ''}></td>
       </tr>
@@ -244,6 +326,19 @@
     tbody.dataset.claudeBound = 'true';
 
     tbody.addEventListener('change', async (e) => {
+      /* [Claude 추가] A/B 파트 수료 체크박스 저장 */
+      const partCb = e.target.closest('.claude-part-a-cb, .claude-part-b-cb');
+      if (partCb) {
+        partCb.disabled = true;
+        const field = partCb.classList.contains('claude-part-a-cb') ? 'part_a_completed' : 'part_b_completed';
+        const { error } = await sb.from('applications').update({ [field]: partCb.checked }).eq('id', partCb.dataset.id);
+        partCb.disabled = false;
+        if (error) { alert(`저장 실패: ${error.message}`); partCb.checked = !partCb.checked; return; }
+        const item = claudeCompletions.find(c => c.id === partCb.dataset.id);
+        if (item) item[field] = partCb.checked;
+        claudeRenderPartSummary();
+        return;
+      }
       const cb = e.target.closest('.claude-cert-issued-cb');
       if (cb) {
         cb.disabled = true;
@@ -303,6 +398,16 @@
         </div>
       </section>
 
+      <section class="panel claude-cert-part-panel" id="claudeCertPartPanel" hidden>
+        <div class="section-title"><div><h2>A/B 파트 이수 현황</h2><p>한 과목이 A/B 두 파트로 나뉘어 있어, 회차와 무관하게 훈련생별로 두 파트를 각각 이수했는지 모아서 보여줍니다(여러 회차에 걸쳐 나눠 들은 경우도 합산됩니다).</p></div></div>
+        <div class="table-shell simple-table">
+          <table>
+            <thead><tr><th>과목</th><th>이름</th><th>연락처</th><th>참여 회차</th><th>A 이수</th><th>B 이수</th><th>종합</th></tr></thead>
+            <tbody id="claudeCertPartRows"></tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="panel claude-cert-list-panel">
         <div class="section-title"><div><h2>수료생 전체 목록</h2><p>필터를 걸어 특정 과정·회차·구분만 모아볼 수 있습니다.</p></div></div>
         <div class="claude-cert-filters">
@@ -318,8 +423,8 @@
         </div>
         <div class="table-shell simple-table">
           <table>
-            <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>구분</th><th>과정</th><th>수료 확정일</th><th>수료증 번호</th><th>발급</th></tr></thead>
-            <tbody id="claudeCertRows"><tr><td colspan="8" class="empty-row">불러오는 중...</td></tr></tbody>
+            <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>구분</th><th>과정</th><th>수료 확정일</th><th>A/B 파트</th><th>수료증 번호</th><th>발급</th></tr></thead>
+            <tbody id="claudeCertRows"><tr><td colspan="9" class="empty-row">불러오는 중...</td></tr></tbody>
           </table>
         </div>
       </section>

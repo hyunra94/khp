@@ -697,6 +697,19 @@
       .claude-cert-cat-badge.claude-cert-cat-대규모{background:var(--accent-soft);color:var(--accent);}
       .claude-cert-cat-badge.claude-cert-cat-자회사{background:#FBF0DE;color:var(--gold);}
 
+      /* [Claude 추가] "A/B 파트 이수" — 한 과목이 실질적으로 A/B 두 파트로 나뉘어 있어
+         출석에 따라 한쪽만 수료하는 경우를 표시(요청: "이걸 수료에서 어떻게 확인할 수 있을까") */
+      .claude-part-cell{white-space:nowrap;}
+      .claude-part-cb{display:inline-flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-soft);margin-right:10px;}
+      .claude-part-cb input{accent-color:var(--accent);}
+      .claude-part-overall{
+        display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;
+        background:var(--surface-soft);color:var(--ink-soft);white-space:nowrap;
+      }
+      .claude-part-overall-both{background:#E6F4EA;color:var(--green,#1F7A55);}
+      .claude-part-overall-partial{background:#FBF0DE;color:var(--gold);}
+      .claude-part-overall-none{background:#FDECEC;color:var(--danger,#C43D3D);}
+
       /* [Claude 추가] "만족도 관리" 자리표시 화면 */
       .claude-satisfaction-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:16px 0;}
       .claude-satisfaction-option{border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);padding:18px 20px;}
