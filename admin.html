@@ -1519,7 +1519,8 @@ function renderCourses(){
     return;
   }
 
-  const visibleCourses = activeCourseTypeId ? allCourses.filter(course => course.course_type_id === activeCourseTypeId) : allCourses;
+  const visibleCourses = (activeCourseTypeId ? allCourses.filter(course => course.course_type_id === activeCourseTypeId) : [...allCourses])
+    .sort((a, b) => String(b.start_date || '').localeCompare(String(a.start_date || '')) || Number(b.round || 0) - Number(a.round || 0) || String(a.id).localeCompare(String(b.id)));
   if (visibleCourses.length === 0){
     list.innerHTML = '<div class="empty-row">선택한 과정에 등록된 회차가 없습니다</div>';
     return;

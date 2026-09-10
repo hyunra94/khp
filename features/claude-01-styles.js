@@ -349,6 +349,7 @@
         grid-column:1;grid-row:2;display:flex;align-items:center;flex-wrap:wrap;gap:10px;
         color:var(--ink-soft);font-size:13.5px;
       }
+      #courseRows .course-open-toggle{width:58px;min-width:58px;max-width:58px;flex:0 0 58px;padding:4px 6px;min-height:32px;height:32px;border-radius:4px;white-space:nowrap;justify-self:start;}
       .claude-course-meta-line .claude-meta-dot{color:var(--line-strong);}
       .claude-course-meta-line .claude-meta-item{display:inline-flex;align-items:center;gap:5px;}
       .claude-course-meta-line .claude-meta-label{color:var(--muted);font-weight:600;font-size:12px;}
