@@ -1,6 +1,12 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const cert = require('../features/codex-certificates.js');
+test('number label includes year and ho without duplicating existing labels', () => {
+  assert.equal(cert.certificateLabel('2026-0012','2026-09-10'),'제2026-0012호');
+  assert.equal(cert.certificateLabel('12','2026-09-10'),'제2026-12호');
+  assert.equal(cert.certificateLabel('제2026-12호','2026-09-10'),'제2026-12호');
+  assert.equal(cert.certificateLabel(null,'2026-09-10'),'발급 시 자동 부여');
+});
 const row = (id, round, start, end, a, b) => ({ id, trainee_id: 'person', trainees: { name: '테스트' },
   part_a_completed: a, part_b_completed: b,
   courses: { round, start_date: start, end_date: end, course_type_id: 'drone', course_types: { name: '드론', has_parts: true } } });
@@ -18,6 +24,15 @@ test('one part uses one course; unchecked parts cannot generate a certificate', 
 });
 test('one-day course prints the date once', () => {
   assert.equal(cert.period({startDate:'2026-09-10',endDate:'2026-09-10'}),'2026. 09. 10.');
+});
+
+test('AB counts twice, duplicate registrations once per person round and part', () => {
+  const a=row('a',1,'2026-09-10',null,true,true);
+  assert.equal(cert.completionUnits([a]).length,2);
+  assert.equal(cert.completionUnits([a,{...a,id:'duplicate'}]).length,2);
+  assert.equal(cert.completionUnits([a,row('b',2,'2026-10-10',null,true,false)]).length,3);
+  assert.equal(cert.completionUnits([row('c',1,'2026-09-10',null,false,false)]).length,0);
+  assert.equal(new Set(cert.completionUnits([a]).map(x=>x.trainee_id)).size,1);
 });
 test('adding B to a previously completed A creates a distinct source identity', () => {
   const a=cert.groupCompletions([row('a',1,'2026-09-10',null,true,false)])[0];

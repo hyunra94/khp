@@ -13,6 +13,10 @@
     dialog.setAttribute('aria-labelledby', 'codexCourseNamesTitle');
     dialog.innerHTML = `<form><h2 id="codexCourseNamesTitle">수료증 승인 과목명</h2><p id="codexCourseNamesType"></p>${fields.map((field, i) => `<label>${['승인 과목명', 'A 과정 승인 과목명', 'B 과정 승인 과목명'][i]}<input name="${field}" maxlength="500" autocomplete="off"></label>`).join('')}<p id="codexCourseNamesMessage" role="status"></p><footer><button type="button" data-close>취소</button><button type="submit">저장</button></footer></form>`;
     document.body.append(dialog);
+    const mode = document.createElement('label');
+    mode.innerHTML = '과정 구성<select id="codexCourseMode"><option value="single">일반 과정</option><option value="parts">A/B 분할 과정</option></select>';
+    document.getElementById('codexCourseNamesType').after(mode);
+    mode.querySelector('select').addEventListener('change', updateFields);
     sb.auth.onAuthStateChange(event => { if (event === 'SIGNED_OUT' && dialog.open) dialog.close(); });
     dialog.querySelector('[data-close]').onclick = () => { if (!saving) dialog.close(); };
     dialog.addEventListener('cancel', event => { if (saving) event.preventDefault(); });
@@ -30,6 +34,7 @@
     currentId = id;
     document.getElementById('codexCourseNamesType').textContent = type.name;
     document.getElementById('codexCourseNamesMessage').textContent = '';
+    document.getElementById('codexCourseMode').value = type.has_parts ? 'parts' : 'single';
     fields.forEach((field, index) => {
       const input = dialog.querySelector(`[name="${field}"]`);
       input.value = type[field] || '';
@@ -41,10 +46,21 @@
     dialog.showModal(); document.body.classList.add('codex-course-names-open');
   }
 
+  function updateFields() {
+    const parts = document.getElementById('codexCourseMode').value === 'parts';
+    fields.forEach((field, index) => {
+      const input = dialog.querySelector(`[name="${field}"]`);
+      const visible = index === 0 ? !parts : parts;
+      input.closest('label').hidden = !visible;
+      input.disabled = !visible; input.required = visible;
+      input.setCustomValidity('');
+    });
+  }
+
   async function save(event) {
     event.preventDefault();
     if (saving || !currentId) return;
-    const payload = {};
+    const payload = {has_parts: document.getElementById('codexCourseMode').value === 'parts'};
     for (const field of fields) {
       const input = dialog.querySelector(`[name="${field}"]`);
       if (input.disabled) continue;

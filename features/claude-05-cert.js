@@ -113,7 +113,7 @@
    * ================================================================== */
   function claudeComputeCertSummary(list) {
     const byType = new Map();
-    list.forEach(c => {
+    (window.CodexCertificates ? window.CodexCertificates.completionUnits(list) : list).forEach(c => {
       const course = c.courses || {};
       const typeId = course.course_type_id || '__unknown__';
       const typeName = course.course_types?.name || '과정 미지정';
@@ -171,7 +171,7 @@
     const types = (typeof allCourseTypes !== 'undefined' && Array.isArray(allCourseTypes)) ? allCourseTypes : [];
     const order = types.map(t => t.id);
     const entries = [...byType.entries()].sort((a, b) => {
-      const ai = order.indexOf(a[0]); const bi = order.indexOf(b[0]);
+      const ai = order.indexOf(a[0].replace(/:(single|A|B)$/, '')); const bi = order.indexOf(b[0].replace(/:(single|A|B)$/, ''));
       return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
     });
     wrap.innerHTML = entries.map(([typeId, t]) => claudeCertSummaryRowHtml(typeId, t)).join('');
@@ -318,9 +318,12 @@
 
     const total = claudeCompletions.length;
     const issued = claudeCompletions.filter(c => c.certificate_issued).length;
+    const units = window.CodexCertificates?.completionUnits(claudeCompletions) || claudeCompletions;
+    const people = new Set(units.map(c => c.trainee_id || c.id)).size;
     if (statsEl) {
       statsEl.innerHTML = `
-        <div class="claude-cert-stat"><b>${total.toLocaleString('ko-KR')}</b><span>전체 수료생</span></div>
+        <div class="claude-cert-stat"><b>${people.toLocaleString('ko-KR')}</b><span>수료 실인원</span></div>
+        <div class="claude-cert-stat"><b>${units.length.toLocaleString('ko-KR')}</b><span>과목별 수료 합계 (연인원)</span></div>
         <div class="claude-cert-stat"><b>${issued.toLocaleString('ko-KR')}</b><span>수료증 발급 완료</span></div>
         <div class="claude-cert-stat"><b>${(total - issued).toLocaleString('ko-KR')}</b><span>미발급</span></div>
       `;
@@ -380,6 +383,7 @@
         const item = claudeCompletions.find(c => c.id === partCb.dataset.id);
         if (item) item[field] = partCb.checked;
         claudeRenderPartSummary();
+        claudeRenderCompletions();
         return;
       }
       const cb = e.target.closest('.claude-cert-issued-cb');

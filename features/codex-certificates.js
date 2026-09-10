@@ -9,6 +9,29 @@
   const dateText = value => value ? value.split('-').join('. ') + '.' : '';
   const sourceKey = ids => [...new Set(ids)].sort().join(',');
 
+  function completionUnits(items) {
+    const unique = new Map();
+    for (const item of items) {
+      const course = item.courses || {}, type = course.course_types || {};
+      const parts = type.has_parts ? [item.part_a_completed && 'A', item.part_b_completed && 'B'].filter(Boolean) : ['single'];
+      for (const part of parts) {
+        const key = JSON.stringify([item.trainee_id || item.id, course.id || `${course.course_type_id}:${course.round}`, part]);
+        if (unique.has(key)) continue;
+        unique.set(key, {...item, courses: {...course, course_types: {...type,
+          name: part === 'single' ? type.name : `${type.name} · ${part}`},
+          course_type_id: `${course.course_type_id || '__unknown__'}:${part}`}});
+      }
+    }
+    return [...unique.values()];
+  }
+
+  function certificateLabel(number, endDate) {
+    if (!number) return '발급 시 자동 부여';
+    const raw = String(number).trim();
+    if (/^제.*호$/.test(raw)) return raw;
+    return `제${/^\d{4}-/.test(raw) ? raw : `${endDate.slice(0,4)}-${raw}`}호`;
+  }
+
   function groupCompletions(items) {
     const map = new Map();
     for (const item of items) {
@@ -76,8 +99,7 @@
       page.drawRectangle({ x:67, y:83, width:472, height:676, borderWidth:1.2, borderColor:ink });
       page.drawImage(logo, { x:410, y:682, width:120, height:22 });
       const number = document.certificate_number;
-      const displayNumber = number ? (/^\d{4}-/.test(number) ? number.replace('-', ' - ') : `${s.endDate.slice(0,4)} - ${number}`) : '미리보기';
-      text(`제 ${displayNumber} 호`, 82, 711, 13);
+      text(certificateLabel(number, s.endDate), 82, 711, 13);
       text('수 료 증', 307, 603, 37, 350, true);
       const spaced = s.name.length <= 3 ? [...s.name].join('  ') : s.name;
       text('성       명  :', 92, 524, 14, 115); text(spaced, 219, 524, 16, 290);
@@ -157,7 +179,7 @@
     </tr>`).join('') || '<tr><td colspan="7" class="empty-row">발급 대상이 없습니다.</td></tr>';
     syncSelection();
     document.getElementById('codexCertificateHistory').innerHTML = history.map(record => `<tr>
-      <td>${escape(record.certificate_number)}</td><td>${escape(record.snapshot.name)}</td>
+      <td>${escape(certificateLabel(record.certificate_number, record.snapshot.endDate))}</td><td>${escape(record.snapshot.name)}</td>
       <td>${escape(record.snapshot.courseNames.join(' / '))}</td><td>${escape(dateText(record.snapshot.endDate))}</td>
       <td>${record.issued_at ? escape(formatDateTime(record.issued_at)) : '발급 준비'}</td>
       <td>${record.download_count}</td><td><button type="button" data-cert-history="${escape(record.id)}">${record.issued_at ? '재다운로드' : '발급 계속'}</button></td>
@@ -339,6 +361,6 @@
     try { await loadHistory(); render(); message(''); }
     catch (error) { message(`발급 이력: ${error.message}`, true); }
   }
-  root.CodexCertificates = { mount, render, refresh, groupCompletions, validate, period, buildPdf };
+  root.CodexCertificates = { mount, render, refresh, groupCompletions, validate, period, buildPdf, completionUnits, certificateLabel };
   if (typeof module !== 'undefined') module.exports = root.CodexCertificates;
 })(typeof window === 'undefined' ? globalThis : window);
