@@ -677,6 +677,22 @@
       .claude-cal-pill.claude-cal-closed{background:#EDEDED;color:#888;}
 
       /* ===== [Claude 추가] 수료 관리 탭 ===== */
+      .codex-cert-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;}
+      .codex-cert-tabs button{flex:0 1 160px;min-height:44px;padding:10px 16px;border:0;border-bottom:2px solid transparent;border-radius:4px 4px 0 0;background:transparent;color:var(--ink-soft);font:inherit;font-weight:700;cursor:pointer;}
+      .codex-cert-tabs button[aria-selected="true"]{border-bottom-color:var(--accent-dark);color:var(--ink);background:var(--surface-soft);}
+      .codex-cert-tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+      #codexCertPanel[data-tab="overview"] #codexCertIssuedFilter,
+      #codexCertPanel[data-tab="overview"] .codex-cert-detail-table tr > :nth-child(n+8),
+      #codexCertPanel[data-tab="issuance"] .claude-cert-summary-panel,
+      #codexCertPanel[data-tab="issuance"] .claude-cert-part-panel,
+      #codexCertPanel[data-tab="issuance"] .codex-cert-detail-table tr > :nth-child(7){display:none;}
+      #codexCertPanel .claude-cert-list-panel .table-shell{max-width:100%;overflow-x:auto;}
+      .codex-cert-detail-table{display:table;min-width:820px;width:100%;}
+      .codex-cert-detail-table thead{display:table-header-group;}
+      .codex-cert-detail-table tbody{display:table-row-group;}
+      .codex-cert-detail-table tr{display:table-row;width:auto;box-shadow:none;}
+      .codex-cert-detail-table th,.codex-cert-detail-table td{display:table-cell;width:auto;}
+      .codex-cert-detail-table td::before{display:none;}
       .claude-cert-stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
       .claude-cert-stat{
         flex:1;min-width:120px;border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:#fff;

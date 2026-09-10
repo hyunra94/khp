@@ -13,6 +13,44 @@
      집계된 요약본"을 같이 볼 수 있어야 함. 필터는 상세 목록에만 적용되고, 요약 집계는
      항상 전체 기준으로 계산함(둘을 헷갈리지 않게). */
   let claudeCertFilter = { typeId: '', round: '', category: '', q: '' };
+  let codexCertTab = 'overview';
+  let codexCertIssuedFilter = '';
+
+  function codexSetCertTab(tab) {
+    codexCertTab = tab === 'issuance' ? 'issuance' : 'overview';
+    const panel = document.getElementById('codexCertPanel');
+    if (panel) {
+      panel.dataset.tab = codexCertTab;
+      panel.setAttribute('aria-labelledby', `codexCertTab-${codexCertTab}`);
+    }
+    document.querySelectorAll('[data-cert-tab]').forEach(button => {
+      const active = button.dataset.certTab === codexCertTab;
+      button.setAttribute('aria-selected', String(active));
+      button.tabIndex = active ? 0 : -1;
+    });
+    const title = document.getElementById('codexCertListTitle');
+    if (title) title.textContent = codexCertTab === 'issuance' ? '수료증 발급 목록' : '수료생 전체 목록';
+    claudeRenderCompletions();
+  }
+
+  function codexBindCertTabs() {
+    const buttons = [...document.querySelectorAll('[data-cert-tab]')];
+    buttons.forEach((button, index) => {
+      button.addEventListener('click', () => codexSetCertTab(button.dataset.certTab));
+      button.addEventListener('keydown', event => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
+          : (index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
+        buttons[next].focus();
+        codexSetCertTab(buttons[next].dataset.certTab);
+      });
+    });
+    document.getElementById('codexCertIssuedFilter').addEventListener('change', event => {
+      codexCertIssuedFilter = event.target.value;
+      claudeRenderCompletions();
+    });
+  }
 
   /* "자회사" = 전주MBC/전주문화방송 소속(회사 필드로 판별). 고용형태(employment_category)는
      applications 테이블 값(대규모/우선지원기업/고용보험미가입)을 그대로 씀 — "자회사"가
@@ -47,7 +85,7 @@
 
   async function claudeLoadCompletions() {
     const tbody = document.getElementById('claudeCertRows');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="empty-row">불러오는 중...</td></tr>';
+    if (tbody) tbody.innerHTML = `<tr><td colspan="${codexCertTab === 'issuance' ? 9 : 7}" class="empty-row">불러오는 중...</td></tr>`;
     const { data, error } = await sb
       .from('applications')
       /* [Claude 추가] part_a_completed/part_b_completed(신청 건별 A/B 파트 수료 여부) +
@@ -58,7 +96,7 @@
       .eq('status', '수료')
       .order('status_updated_at', { ascending: false });
     if (error) {
-      if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="${codexCertTab === 'issuance' ? 9 : 7}" class="empty-row">불러오기 실패: ${escapeHtml(error.message)}</td></tr>`;
       return;
     }
     claudeCompletions = data || [];
@@ -255,6 +293,8 @@
     const { typeId, round, category, q } = claudeCertFilter;
     const query = q.trim().toLowerCase();
     return claudeCompletions.filter(c => {
+      if (codexCertTab === 'issuance' && codexCertIssuedFilter &&
+          Boolean(c.certificate_issued) !== (codexCertIssuedFilter === 'issued')) return false;
       const course = c.courses || {};
       if (typeId && (course.course_type_id || '__unknown__') !== typeId) return false;
       if (round) {
@@ -288,7 +328,7 @@
 
     const filtered = claudeFilteredCompletions();
     if (!filtered.length) {
-      tbody.innerHTML = `<tr><td colspan="9" class="empty-row">${total ? '필터 조건에 맞는 수료생이 없습니다' : '수료 상태인 신청자가 없습니다'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${codexCertTab === 'issuance' ? 9 : 7}" class="empty-row">${total ? '필터 조건에 맞는 수료생이 없습니다' : '수료 상태인 신청자가 없습니다'}</td></tr>`;
       return;
     }
 
@@ -315,6 +355,7 @@
         <td class="claude-part-cell">${partCell}</td>
         <td><input type="text" class="claude-cert-num-input" data-id="${escapeHtml(c.id)}" placeholder="수료증 번호" value="${escapeHtml(c.certificate_number || '')}"></td>
         <td style="text-align:center;"><input type="checkbox" class="claude-cert-issued-cb" data-id="${escapeHtml(c.id)}" ${c.certificate_issued ? 'checked' : ''}></td>
+        <td>${c.certificate_issued_at ? escapeHtml(formatDateTime(c.certificate_issued_at)) : '-'}</td>
       </tr>
     `;
     }).join('');
@@ -384,8 +425,12 @@
     return `
       <div class="view-header">
         <h2>수료 관리</h2>
-        <p>상태가 "수료"로 변경된 신청자를 모아 수료증 발급 여부와 번호를 관리합니다. "자회사"는 소속(회사명)에 전주MBC/전주문화방송이 포함된 경우로 자동 구분됩니다.</p>
       </div>
+      <div class="codex-cert-tabs" role="tablist" aria-label="수료 관리">
+        <button type="button" role="tab" id="codexCertTab-overview" data-cert-tab="overview" aria-controls="codexCertPanel" aria-selected="true">수료 현황</button>
+        <button type="button" role="tab" id="codexCertTab-issuance" data-cert-tab="issuance" aria-controls="codexCertPanel" aria-selected="false" tabindex="-1">수료증 발급</button>
+      </div>
+      <div id="codexCertPanel" role="tabpanel" aria-labelledby="codexCertTab-overview" data-tab="overview">
       <div class="claude-cert-stats" id="claudeCertStats"></div>
 
       <section class="panel claude-cert-summary-panel">
@@ -409,7 +454,7 @@
       </section>
 
       <section class="panel claude-cert-list-panel">
-        <div class="section-title"><div><h2>수료생 전체 목록</h2><p>필터를 걸어 특정 과정·회차·구분만 모아볼 수 있습니다.</p></div></div>
+        <div class="section-title"><div><h2 id="codexCertListTitle">수료생 전체 목록</h2></div></div>
         <div class="claude-cert-filters">
           <select id="claudeCertTypeFilter" aria-label="과정 필터"><option value="">전체 과정</option></select>
           <select id="claudeCertRoundFilter" aria-label="회차 필터"><option value="">전체 회차</option></select>
@@ -420,14 +465,20 @@
             <option value="자회사">자회사</option>
           </select>
           <input type="text" id="claudeCertSearch" placeholder="이름/소속/연락처 검색">
+          <select id="codexCertIssuedFilter" aria-label="수료증 발급 상태">
+            <option value="">전체 발급 상태</option>
+            <option value="pending">미발급</option>
+            <option value="issued">발급 완료</option>
+          </select>
         </div>
         <div class="table-shell simple-table">
-          <table>
-            <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>구분</th><th>과정</th><th>수료 확정일</th><th>A/B 파트</th><th>수료증 번호</th><th>발급</th></tr></thead>
-            <tbody id="claudeCertRows"><tr><td colspan="9" class="empty-row">불러오는 중...</td></tr></tbody>
+          <table class="codex-cert-detail-table">
+            <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>구분</th><th>과정</th><th>수료 확정일</th><th>A/B 파트</th><th>수료증 번호</th><th>발급</th><th>발급일</th></tr></thead>
+            <tbody id="claudeCertRows"><tr><td colspan="7" class="empty-row">불러오는 중...</td></tr></tbody>
           </table>
         </div>
       </section>
+      </div>
     `;
   }
 
@@ -485,6 +536,7 @@
     section.id = 'view-claude-cert';
     section.innerHTML = buildCertSectionMarkup();
     main.appendChild(section);
+    codexBindCertTabs();
     claudeBindCompletionsTable();
     claudeBindCertFilters();
     claudeBindCertSummaryToggle();
@@ -497,4 +549,3 @@
       claudeLoadCompletions();
     });
   }
-
