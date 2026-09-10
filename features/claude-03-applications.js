@@ -199,6 +199,7 @@
   const claudeSelectedTraineeIds = new Set();
 
   function claudeUpdateBulkBar() {
+    claudeSyncSelectAll();
     const bar = document.getElementById('claudeBulkBar');
     if (!bar) return;
     const count = claudeSelectedTraineeIds.size;
@@ -287,6 +288,16 @@
     });
   }
 
+  function claudeSyncSelectAll() {
+    const checkbox = document.getElementById('claudeSelectAllApplicants');
+    if (!checkbox) return;
+    const rows = [...document.querySelectorAll('#appRows .claude-row-select')];
+    const selected = rows.filter(cb => claudeSelectedTraineeIds.has(cb.dataset.traineeId)).length;
+    checkbox.checked = rows.length > 0 && selected === rows.length;
+    checkbox.indeterminate = selected > 0 && selected < rows.length;
+    checkbox.disabled = rows.length === 0;
+  }
+
   function claudeInjectRowSelectColumn() {
     const headRow = document.querySelector('#appHead tr');
     if (headRow && !headRow.querySelector('.claude-row-select-th')) {
@@ -294,6 +305,26 @@
       th.className = 'claude-row-select-th';
       th.setAttribute('aria-label', '선택');
       headRow.insertBefore(th, headRow.firstChild);
+    }
+    const selectionHead = headRow?.querySelector('.claude-row-select-th');
+    if (selectionHead && !selectionHead.querySelector('input')) {
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = 'claudeSelectAllApplicants';
+      checkbox.className = 'claude-row-select';
+      checkbox.style.opacity = '1';
+      checkbox.setAttribute('aria-label', '현재 목록 전체 선택');
+      checkbox.title = '현재 목록 전체 선택 / 해제';
+      checkbox.addEventListener('click', e => e.stopPropagation());
+      checkbox.addEventListener('change', () => {
+        document.querySelectorAll('#appRows .claude-row-select').forEach(cb => {
+          cb.checked = checkbox.checked;
+          if (cb.checked) claudeSelectedTraineeIds.add(cb.dataset.traineeId);
+          else claudeSelectedTraineeIds.delete(cb.dataset.traineeId);
+        });
+        claudeUpdateBulkBar();
+      });
+      selectionHead.appendChild(checkbox);
     }
     document.querySelectorAll('#appRows tr[data-trainee-id]').forEach(tr => {
       if (tr.querySelector('.claude-row-select-cell')) return;
@@ -313,6 +344,7 @@
         claudeUpdateBulkBar();
       });
     });
+    claudeSyncSelectAll();
   }
 
   /* [Claude 추가] 예전에 드래그로 저장해둔 컬럼 너비(localStorage)가 있으면 새 기본값보다
