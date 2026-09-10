@@ -667,24 +667,30 @@
 
         const actionTd = document.createElement('td');
         actionTd.dataset.label = '관리';
-        const editBtn = document.createElement('button');
-        editBtn.type = 'button';
-        editBtn.className = 'inline-btn claude-lookup-edit-btn';
-        editBtn.textContent = '편집';
-        actionTd.appendChild(editBtn);
-        /* [Claude 추가] 요청: "실제 신청건으로 바로 전환 등록하는 버튼도 필요해" —
-           관심 등록만 돼있던 사람을 특정 회차의 정식 신청 건으로 바로 등록할 수 있게 함. */
-        const convertBtn = document.createElement('button');
-        convertBtn.type = 'button';
-        convertBtn.className = 'inline-btn claude-lead-convert-btn';
-        convertBtn.textContent = '신청 전환';
-        actionTd.appendChild(convertBtn);
         tr.appendChild(actionTd);
-
-        editBtn.addEventListener('click', () => claudeToggleLeadRowEdit(tr, leadId, nameTd, phoneTd, companyTd, actionTd));
-        convertBtn.addEventListener('click', () => claudeToggleLeadConvertForm(tr, leadId));
+        claudeRenderLeadActionButtons(tr, leadId, nameTd, phoneTd, companyTd, actionTd);
       });
     });
+  }
+
+  function claudeRenderLeadActionButtons(tr, leadId, nameTd, phoneTd, companyTd, actionTd) {
+    actionTd.innerHTML = '';
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'inline-btn claude-lookup-edit-btn';
+    editBtn.textContent = '편집';
+
+    /* [Claude 추가] 요청: "실제 신청건으로 바로 전환 등록하는 버튼도 필요해" —
+       관심 등록만 돼있던 사람을 특정 회차의 정식 신청 건으로 바로 등록할 수 있게 함. */
+    const convertBtn = document.createElement('button');
+    convertBtn.type = 'button';
+    convertBtn.className = 'inline-btn claude-lead-convert-btn';
+    convertBtn.textContent = '신청 전환';
+
+    actionTd.append(editBtn, convertBtn);
+    editBtn.addEventListener('click', () => claudeToggleLeadRowEdit(tr, leadId, nameTd, phoneTd, companyTd, actionTd));
+    convertBtn.addEventListener('click', () => claudeToggleLeadConvertForm(tr, leadId));
   }
 
   /* ==================================================================
@@ -696,7 +702,7 @@
    * 이 자리에서 회차 선택 + 주민등록번호만 추가로 입력받아 그 RPC를 그대로 재사용함
    * (이름/연락처/소속/메모는 이미 입력돼 있는 관심 등록 값을 그대로 넘겨줌 — 같은
    * 사람이 이미 trainees에 있으면 RPC가 알아서 기존 훈련생에 신청만 추가함).
-   * 전환에 성공하면 이 관심 등록의 상태를 "등록완료"로 바꿔서 표시함(관심 등록
+   * 전환에 성공하면 이 관심 등록의 상태를 "신청전환"으로 바꿔서 표시함(관심 등록
    * 자체를 지우지는 않음 — 기록은 남겨둠).
    * ================================================================== */
   function claudeToggleLeadConvertForm(tr, leadId) {
@@ -786,13 +792,18 @@
         return;
       }
 
-      /* 관심 등록 자체는 지우지 않고 "등록완료"로 표시만 바꿔서 기록을 남겨둠 */
-      const { error: leadError } = await sb.from('course_interest_leads').update({ status: '등록완료' }).eq('id', leadId);
-      if (!leadError) {
-        lead.status = '등록완료';
-        const statusTd = tr.querySelector('td[data-label="상태"]');
-        if (statusTd) statusTd.textContent = '등록완료';
+      /* 관심 등록 자체는 지우지 않고, 기존 스키마의 허용 상태값인 "신청전환"으로 표시만 바꿔 기록을 남겨둠 */
+      const convertedStatus = '신청전환';
+      const { error: leadError } = await sb.from('course_interest_leads').update({ status: convertedStatus }).eq('id', leadId);
+      if (leadError) {
+        msgEl.textContent = `정식 신청 건은 등록됐지만 관심자 상태 변경은 실패했습니다: ${leadError.message}`;
+        msgEl.classList.add('error');
+        if (typeof loadApplications === 'function') loadApplications();
+        return;
       }
+      lead.status = convertedStatus;
+      const statusTd = tr.querySelector('td[data-label="상태"]');
+      if (statusTd) statusTd.textContent = convertedStatus;
 
       msgEl.textContent = '정식 신청 건으로 등록되었습니다. "신청 현황"에서 확인할 수 있습니다.';
       msgEl.classList.add('success');
@@ -821,9 +832,8 @@
       nameTd.textContent = original.name;
       phoneTd.textContent = original.phone;
       companyTd.textContent = original.company;
-      actionTd.innerHTML = '<button type="button" class="inline-btn claude-lookup-edit-btn">편집</button>';
       tr.dataset.claudeEditing = '';
-      actionTd.querySelector('.claude-lookup-edit-btn').addEventListener('click', () => claudeToggleLeadRowEdit(tr, leadId, nameTd, phoneTd, companyTd, actionTd));
+      claudeRenderLeadActionButtons(tr, leadId, nameTd, phoneTd, companyTd, actionTd);
     };
 
     actionTd.querySelector('.claude-lookup-cancel-btn').addEventListener('click', restore);
@@ -1170,4 +1180,3 @@
       });
     }
   }
-
