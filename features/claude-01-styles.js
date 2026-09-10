@@ -278,7 +278,21 @@
 
       /* [Claude 추가] "과정 조회" 인라인 편집 버튼 영역(이름/연락처/소속만, 메모는 아래 공용 스타일) */
       .lookup-table td[data-label="관리"]{display:flex;gap:6px;white-space:nowrap;}
-      .claude-lookup-edit-btn,.claude-lookup-save-btn,.claude-lookup-cancel-btn{min-height:30px;padding:0 10px;font-size:12px;}
+      .claude-lookup-edit-btn,.claude-lookup-save-btn,.claude-lookup-cancel-btn,.claude-lead-convert-btn{min-height:30px;padding:0 10px;font-size:12px;}
+
+      /* [Claude 추가] "개설 알림 관심자"를 정식 신청 건으로 전환 등록하는 폼(요청: "실제
+         신청건으로 바로 전환 등록하는 버튼도 필요해") */
+      .claude-lead-convert-row td{background:var(--surface-soft);}
+      .claude-lead-convert-form{padding:12px 4px;}
+      .claude-lead-convert-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px;}
+      .claude-lead-convert-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:10px;}
+      .claude-lead-convert-grid label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--ink-soft);font-weight:700;}
+      .claude-lead-convert-grid select,.claude-lead-convert-grid input{
+        min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#fff;
+        font-family:inherit;font-size:13px;color:var(--ink);font-weight:400;
+      }
+      .claude-lead-convert-actions{display:flex;gap:8px;}
+      .claude-lead-convert-msg{margin:0 0 10px;min-height:16px;}
       .claude-lookup-memo-td{max-width:220px;min-width:150px;white-space:normal;}
 
       /* [Claude 추가] 메모 칸(전체 메모 / 과정종류별 메모) — "신청 현황"과 "과정 조회" 공용.

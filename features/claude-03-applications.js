@@ -672,10 +672,132 @@
         editBtn.className = 'inline-btn claude-lookup-edit-btn';
         editBtn.textContent = '편집';
         actionTd.appendChild(editBtn);
+        /* [Claude 추가] 요청: "실제 신청건으로 바로 전환 등록하는 버튼도 필요해" —
+           관심 등록만 돼있던 사람을 특정 회차의 정식 신청 건으로 바로 등록할 수 있게 함. */
+        const convertBtn = document.createElement('button');
+        convertBtn.type = 'button';
+        convertBtn.className = 'inline-btn claude-lead-convert-btn';
+        convertBtn.textContent = '신청 전환';
+        actionTd.appendChild(convertBtn);
         tr.appendChild(actionTd);
 
         editBtn.addEventListener('click', () => claudeToggleLeadRowEdit(tr, leadId, nameTd, phoneTd, companyTd, actionTd));
+        convertBtn.addEventListener('click', () => claudeToggleLeadConvertForm(tr, leadId));
       });
+    });
+  }
+
+  /* ==================================================================
+   * [Claude 추가] "개설 알림 관심자"를 특정 회차의 정식 신청 건으로 바로 전환 등록.
+   * 요청: "실제 신청건으로 바로 전환 등록하는 버튼도 필요해" — 관심 등록 단계에서는
+   * 주민등록번호를 안 받아서(정식 신청서를 아직 안 낸 상태이므로) trainees 테이블에
+   * 넣을 수 없었는데, 정식 신청으로 전환할 때는 주민등록번호가 꼭 필요해서(과거
+   * "신청자 직접 등록" 기능에서 쓰던 claude_admin_add_application RPC가 이를 요구함)
+   * 이 자리에서 회차 선택 + 주민등록번호만 추가로 입력받아 그 RPC를 그대로 재사용함
+   * (이름/연락처/소속/메모는 이미 입력돼 있는 관심 등록 값을 그대로 넘겨줌 — 같은
+   * 사람이 이미 trainees에 있으면 RPC가 알아서 기존 훈련생에 신청만 추가함).
+   * 전환에 성공하면 이 관심 등록의 상태를 "등록완료"로 바꿔서 표시함(관심 등록
+   * 자체를 지우지는 않음 — 기록은 남겨둠).
+   * ================================================================== */
+  function claudeToggleLeadConvertForm(tr, leadId) {
+    const existing = tr.nextElementSibling;
+    if (existing && existing.classList.contains('claude-lead-convert-row')) {
+      existing.remove();
+      return;
+    }
+    // 다른 행에 열려있던 전환 폼이 있으면 닫음(한 번에 하나만)
+    document.querySelectorAll('.claude-lead-convert-row').forEach(el => el.remove());
+
+    const lead = (typeof allInterestLeads !== 'undefined' ? allInterestLeads : []).find(l => l.id === leadId);
+    if (!lead) return;
+
+    const courses = (typeof allCourses !== 'undefined' && Array.isArray(allCourses)) ? allCourses : [];
+    const sortedCourses = [...courses].sort((a, b) => {
+      const aMatch = a.course_type_id === lead.course_type_id ? 0 : 1;
+      const bMatch = b.course_type_id === lead.course_type_id ? 0 : 1;
+      return aMatch - bMatch; // 관심 등록한 것과 같은 과정종류를 먼저 보여줌
+    });
+    const courseOptions = '<option value="">회차 선택</option>' + sortedCourses.map(c =>
+      `<option value="${escapeHtml(c.id)}">${escapeHtml((c.course_types?.name || '') + ' ' + c.name)}${c.start_date ? ` (${escapeHtml(c.start_date)})` : ''}</option>`
+    ).join('');
+    const statuses = (typeof APPLICATION_STATUSES !== 'undefined') ? APPLICATION_STATUSES : ['대기', '승인', '중복신청', '신청확정', '수료', '거절', '취소'];
+    const statusOptions = statuses.map(s => `<option value="${escapeHtml(s)}" ${s === '대기' ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('');
+
+    const colCount = tr.children.length;
+    const formRow = document.createElement('tr');
+    formRow.className = 'claude-lead-convert-row';
+    formRow.innerHTML = `
+      <td colspan="${colCount}">
+        <div class="claude-lead-convert-form">
+          <div class="claude-lead-convert-title">"${escapeHtml(lead.name || '-')}" 님을 정식 신청 건으로 등록</div>
+          <div class="claude-lead-convert-grid">
+            <label>등록할 회차<select class="claude-lead-course">${courseOptions}</select></label>
+            <label>주민등록번호<input class="claude-lead-rrn" placeholder="000000-0000000"></label>
+            <label>상태<select class="claude-lead-status">${statusOptions}</select></label>
+            <label>재직 구분
+              <select class="claude-lead-employment">
+                <option value="">선택 안 함</option>
+                <option value="대규모">대규모</option>
+                <option value="우선지원기업">우선지원기업</option>
+                <option value="고용보험미가입">고용보험미가입</option>
+              </select>
+            </label>
+          </div>
+          <div class="claude-msg claude-lead-convert-msg"></div>
+          <div class="claude-lead-convert-actions">
+            <button type="button" class="inline-btn claude-lead-convert-submit">등록</button>
+            <button type="button" class="inline-btn light claude-lead-convert-cancel">취소</button>
+          </div>
+        </div>
+      </td>
+    `;
+    tr.after(formRow);
+
+    formRow.querySelector('.claude-lead-convert-cancel').addEventListener('click', () => formRow.remove());
+    formRow.querySelector('.claude-lead-convert-submit').addEventListener('click', async () => {
+      const msgEl = formRow.querySelector('.claude-lead-convert-msg');
+      const courseId = formRow.querySelector('.claude-lead-course').value;
+      const rrn = formRow.querySelector('.claude-lead-rrn').value.trim();
+      const status = formRow.querySelector('.claude-lead-status').value;
+      const employmentCategory = formRow.querySelector('.claude-lead-employment').value || null;
+      msgEl.className = 'claude-msg claude-lead-convert-msg';
+      if (!courseId) { msgEl.textContent = '등록할 회차를 선택해주세요.'; msgEl.classList.add('error'); return; }
+      if (!rrn) { msgEl.textContent = '주민등록번호를 입력해주세요.'; msgEl.classList.add('error'); return; }
+
+      const submitBtn = formRow.querySelector('.claude-lead-convert-submit');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '등록 중...';
+      const { error } = await sb.rpc('claude_admin_add_application', {
+        p_name: lead.name,
+        p_phone: lead.phone,
+        p_email: lead.email || null,
+        p_company: lead.company || null,
+        p_resident_number: rrn,
+        p_course_id: courseId,
+        p_status: status,
+        p_employment_category: employmentCategory,
+        p_note: lead.note || null,
+      });
+      submitBtn.disabled = false;
+      submitBtn.textContent = '등록';
+      if (error) {
+        msgEl.textContent = `등록 실패: ${error.message}`;
+        msgEl.classList.add('error');
+        return;
+      }
+
+      /* 관심 등록 자체는 지우지 않고 "등록완료"로 표시만 바꿔서 기록을 남겨둠 */
+      const { error: leadError } = await sb.from('course_interest_leads').update({ status: '등록완료' }).eq('id', leadId);
+      if (!leadError) {
+        lead.status = '등록완료';
+        const statusTd = tr.querySelector('td[data-label="상태"]');
+        if (statusTd) statusTd.textContent = '등록완료';
+      }
+
+      msgEl.textContent = '정식 신청 건으로 등록되었습니다. "신청 현황"에서 확인할 수 있습니다.';
+      msgEl.classList.add('success');
+      if (typeof loadApplications === 'function') loadApplications(); /* 신청 현황 쪽에 새 신청 건 반영 */
+      setTimeout(() => formRow.remove(), 1600);
     });
   }
 
