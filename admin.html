@@ -1920,12 +1920,10 @@ function bindResidentNumberControls(scope){
       const traineeId = toggle.dataset.traineeId;
       const row = toggle.closest('tr');
       const valueEl = row.querySelector(`.rrn-value[data-trainee-id="${traineeId}"]`);
-      if (toggle.checked && !confirm('주민등록번호 전체를 조회합니다. 이 열람 기록은 감사 로그에 남습니다. 계속할까요?')){
-        toggle.checked = false;
-        return;
-      }
       if (!toggle.checked){
-        valueEl.textContent = RRN_READY_LABEL;
+        const app = allApps.find(item => item.trainee_id === traineeId);
+        const birth6 = app?.trainees?.birth6;
+        valueEl.textContent = birth6 ? `${birth6}-*******` : MASKED_RRN;
         return;
       }
       valueEl.textContent = '조회 중...';

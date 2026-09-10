@@ -571,7 +571,7 @@
       .application-table th .claude-col-resizer{position:absolute;top:0;right:0;width:6px;height:100%;cursor:col-resize;user-select:none;z-index:5;}
       .application-table th .claude-col-resizer:hover, .application-table th .claude-col-resizer.dragging{background:rgba(23,107,135,0.35);}
 
-      /* [Claude 추가] 신청현황 행 왼쪽 선택 체크박스 (호버 시 노출) + 일괄 삭제 바 */
+      /* [Claude 추가] 신청현황 행 왼쪽 선택 체크박스 (호버 시 노출) + 주민번호 일괄 조회 바 */
       .application-table th.claude-row-select-th, .application-table td.claude-row-select-cell{
         width:32px;min-width:32px;max-width:32px;text-align:center;padding:0 !important;overflow:visible !important;
       }
@@ -585,7 +585,7 @@
         background:#FFF7E8;border:1px solid #E4B75E;border-radius:8px;font-size:12.5px;font-weight:800;color:#7A5C1E;
       }
       .claude-bulk-delete-btn{
-        background:var(--danger,#A33C3C);color:#fff;border:none;border-radius:6px;padding:6px 14px;
+        background:var(--accent-dark,#0F465A);color:#fff;border:none;border-radius:4px;padding:6px 14px;
         font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;
       }
       .claude-bulk-delete-btn:disabled{opacity:.6;cursor:default;}
@@ -795,4 +795,3 @@
     `;
     document.head.appendChild(style);
   }
-

@@ -194,11 +194,7 @@
   /* ==================================================================
    * [Claude 추가] 신청현황 테이블 각 행 맨 왼쪽에 체크박스를 추가함.
    * 평소엔 숨겨져 있다가 그 행에 마우스를 올리면 나타나고, 체크된 행이 있으면
-   * 계속 보임. 여러 명을 선택해서 한 번에 삭제할 수 있음 (요청: "왼쪽에 가져다
-   * 대면 체크박스 나타나서 체크하면 일괄 삭제 가능하게").
-   * 한 행 = 한 신청자(trainee)이므로, 삭제 시 그 신청자의 신청 건 전체를
-   * 지움(신청 건이 여러 개로 묶인 신청자도 전부 삭제됨 — 개별 건만 남기고
-   * 싶으면 기존의 "이 건 삭제"를 사용해주세요).
+   * 계속 보임. 여러 명을 선택해서 주민등록번호를 한 번에 조회할 수 있음.
    * ================================================================== */
   const claudeSelectedTraineeIds = new Set();
 
@@ -211,27 +207,21 @@
     if (countEl) countEl.textContent = `${count}명 선택됨`;
   }
 
-  async function claudeBulkDeleteSelected() {
+  async function claudeBulkRevealResidentNumbers() {
     const ids = [...claudeSelectedTraineeIds];
     if (ids.length === 0) return;
-    if (!confirm(`선택한 ${ids.length}명의 신청 내역을 전부 삭제할까요?\n(같은 신청자의 신청 건이 여러 개면 전부 함께 삭제됩니다)`)) return;
-    const btn = document.getElementById('claudeBulkDeleteBtn');
-    if (btn) { btn.disabled = true; btn.textContent = '삭제 중...'; }
-    const results = await Promise.all(ids.map(traineeId => sb.from('applications').delete().eq('trainee_id', traineeId)));
-    const failed = results.filter(r => r && r.error);
-    claudeSelectedTraineeIds.clear();
-    if (btn) { btn.disabled = false; btn.textContent = '선택 삭제'; }
-    claudeUpdateBulkBar();
-    if (failed.length) {
-      alert(`${failed.length}건 삭제 중 실패했습니다: ${failed[0].error.message}`);
+    const btn = document.getElementById('claudeBulkRevealRrnBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '조회 중...'; }
+    ids.forEach(traineeId => {
+      const toggle = document.querySelector(`.rrn-toggle[data-trainee-id="${CSS.escape(traineeId)}"]`);
+      if (!toggle || toggle.checked) return;
+      toggle.checked = true;
+      toggle.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '주민등록번호 일괄 조회';
     }
-    if (typeof loadApplications === 'function') {
-      await loadApplications();
-    } else if (typeof renderApps === 'function') {
-      renderApps();
-    }
-    if (typeof renderMetrics === 'function') renderMetrics();
-    if (typeof loadRecentActivity === 'function') loadRecentActivity();
   }
 
   function claudeInjectBulkBar() {
@@ -244,17 +234,11 @@
     bar.style.display = 'none';
     bar.innerHTML = `
       <span class="claude-bulk-count">0명 선택됨</span>
-      <button type="button" id="claudeBulkDeleteBtn" class="claude-bulk-delete-btn">선택 삭제</button>
-      <button type="button" id="claudeBulkClearBtn" class="claude-bulk-clear-btn">선택 해제</button>
+      <button type="button" id="claudeBulkRevealRrnBtn" class="claude-bulk-delete-btn">주민등록번호 일괄 조회</button>
     `;
     if (anchor) view.insertBefore(bar, anchor);
     else view.appendChild(bar);
-    bar.querySelector('#claudeBulkDeleteBtn').addEventListener('click', claudeBulkDeleteSelected);
-    bar.querySelector('#claudeBulkClearBtn').addEventListener('click', () => {
-      claudeSelectedTraineeIds.clear();
-      document.querySelectorAll('.claude-row-select:checked').forEach(cb => { cb.checked = false; });
-      claudeUpdateBulkBar();
-    });
+    bar.querySelector('#claudeBulkRevealRrnBtn').addEventListener('click', claudeBulkRevealResidentNumbers);
   }
 
   function claudeInjectRowSelectColumn() {
@@ -695,13 +679,11 @@
 
   /* ==================================================================
    * [Claude 추가] "개설 알림 관심자"를 특정 회차의 정식 신청 건으로 바로 전환 등록.
-   * 요청: "실제 신청건으로 바로 전환 등록하는 버튼도 필요해" — 관심 등록 단계에서는
-   * 주민등록번호를 안 받아서(정식 신청서를 아직 안 낸 상태이므로) trainees 테이블에
-   * 넣을 수 없었는데, 정식 신청으로 전환할 때는 주민등록번호가 꼭 필요해서(과거
-   * "신청자 직접 등록" 기능에서 쓰던 claude_admin_add_application RPC가 이를 요구함)
-   * 이 자리에서 회차 선택 + 주민등록번호만 추가로 입력받아 그 RPC를 그대로 재사용함
-   * (이름/연락처/소속/메모는 이미 입력돼 있는 관심 등록 값을 그대로 넘겨줌 — 같은
-   * 사람이 이미 trainees에 있으면 RPC가 알아서 기존 훈련생에 신청만 추가함).
+   * 요청: "실제 신청건으로 바로 전환 등록하는 버튼도 필요해" — 관심 등록자가 이미
+   * 정식 신청 이력이 있는 사람이라면 주민등록번호는 이미 trainees에 암호화 저장돼
+   * 있으므로 다시 요구하지 않고 기존 trainee_id로 신청 건만 추가함. 기존 신청자를
+   * 찾지 못한 경우에만 이 자리에서 주민등록번호를 추가 입력받아 기존
+   * claude_admin_add_application RPC를 재사용함.
    * 전환에 성공하면 이 관심 등록의 상태를 "신청전환"으로 바꿔서 표시함(관심 등록
    * 자체를 지우지는 않음 — 기록은 남겨둠).
    * ================================================================== */
@@ -716,6 +698,7 @@
 
     const lead = (typeof allInterestLeads !== 'undefined' ? allInterestLeads : []).find(l => l.id === leadId);
     if (!lead) return;
+    const existingTrainee = claudeFindExistingTraineeForLead(lead);
 
     const courses = (typeof allCourses !== 'undefined' && Array.isArray(allCourses)) ? allCourses : [];
     const sortedCourses = [...courses].sort((a, b) => {
@@ -738,7 +721,13 @@
           <div class="claude-lead-convert-title">"${escapeHtml(lead.name || '-')}" 님을 정식 신청 건으로 등록</div>
           <div class="claude-lead-convert-grid">
             <label>등록할 회차<select class="claude-lead-course">${courseOptions}</select></label>
-            <label>주민등록번호<input class="claude-lead-rrn" placeholder="000000-0000000"></label>
+            ${existingTrainee ? `
+              <label>신청자 확인
+                <input class="claude-lead-existing" value="기존 신청자: ${escapeHtml(existingTrainee.trainees?.name || lead.name || '-')}" readonly>
+              </label>
+            ` : `
+              <label>주민등록번호<input class="claude-lead-rrn" placeholder="000000-0000000"></label>
+            `}
             <label>상태<select class="claude-lead-status">${statusOptions}</select></label>
             <label>재직 구분
               <select class="claude-lead-employment">
@@ -763,27 +752,30 @@
     formRow.querySelector('.claude-lead-convert-submit').addEventListener('click', async () => {
       const msgEl = formRow.querySelector('.claude-lead-convert-msg');
       const courseId = formRow.querySelector('.claude-lead-course').value;
-      const rrn = formRow.querySelector('.claude-lead-rrn').value.trim();
+      const rrn = formRow.querySelector('.claude-lead-rrn')?.value.trim() || '';
       const status = formRow.querySelector('.claude-lead-status').value;
       const employmentCategory = formRow.querySelector('.claude-lead-employment').value || null;
       msgEl.className = 'claude-msg claude-lead-convert-msg';
       if (!courseId) { msgEl.textContent = '등록할 회차를 선택해주세요.'; msgEl.classList.add('error'); return; }
-      if (!rrn) { msgEl.textContent = '주민등록번호를 입력해주세요.'; msgEl.classList.add('error'); return; }
+      if (!existingTrainee && !rrn) { msgEl.textContent = '기존 신청자를 찾지 못했습니다. 주민등록번호를 입력해주세요.'; msgEl.classList.add('error'); return; }
 
       const submitBtn = formRow.querySelector('.claude-lead-convert-submit');
       submitBtn.disabled = true;
       submitBtn.textContent = '등록 중...';
-      const { error } = await sb.rpc('claude_admin_add_application', {
-        p_name: lead.name,
-        p_phone: lead.phone,
-        p_email: lead.email || null,
-        p_company: lead.company || null,
-        p_resident_number: rrn,
-        p_course_id: courseId,
-        p_status: status,
-        p_employment_category: employmentCategory,
-        p_note: lead.note || null,
-      });
+      const result = existingTrainee
+        ? await claudeAddApplicationForExistingLead(existingTrainee, lead, courseId, status, employmentCategory)
+        : await sb.rpc('claude_admin_add_application', {
+          p_name: lead.name,
+          p_phone: lead.phone,
+          p_email: lead.email || null,
+          p_company: lead.company || null,
+          p_resident_number: rrn,
+          p_course_id: courseId,
+          p_status: status,
+          p_employment_category: employmentCategory,
+          p_note: lead.note || null,
+        });
+      const { error } = result;
       submitBtn.disabled = false;
       submitBtn.textContent = '등록';
       if (error) {
@@ -810,6 +802,63 @@
       if (typeof loadApplications === 'function') loadApplications(); /* 신청 현황 쪽에 새 신청 건 반영 */
       setTimeout(() => formRow.remove(), 1600);
     });
+  }
+
+  function claudeNormalizeLeadPhone(value) {
+    return String(value || '').replace(/\D/g, '');
+  }
+
+  function claudeFindExistingTraineeForLead(lead) {
+    const apps = (typeof allApps !== 'undefined' && Array.isArray(allApps)) ? allApps : [];
+    const phone = claudeNormalizeLeadPhone(lead.phone);
+    const email = String(lead.email || '').trim().toLowerCase();
+    const name = String(lead.name || '').trim();
+    return apps.find(app => {
+      const trainee = app.trainees || {};
+      const samePhone = phone && claudeNormalizeLeadPhone(trainee.phone) === phone;
+      const sameEmailAndName = email &&
+        String(trainee.email || '').trim().toLowerCase() === email &&
+        (!name || String(trainee.name || '').trim() === name);
+      return samePhone || sameEmailAndName;
+    }) || null;
+  }
+
+  async function claudeAddApplicationForExistingLead(existingApp, lead, courseId, status, employmentCategory) {
+    const traineeId = existingApp.trainee_id;
+    const course = (typeof allCourses !== 'undefined' && Array.isArray(allCourses))
+      ? allCourses.find(c => c.id === courseId)
+      : null;
+    if (!traineeId) return { error: new Error('기존 신청자 정보를 찾지 못했습니다.') };
+    if (!course) return { error: new Error('등록할 회차 정보를 찾지 못했습니다.') };
+
+    const apps = (typeof allApps !== 'undefined' && Array.isArray(allApps)) ? allApps : [];
+    const existingSameType = apps.filter(app =>
+      app.trainee_id === traineeId &&
+      app.courses?.course_type_id === course.course_type_id &&
+      app.status !== '취소'
+    );
+    if (existingSameType.length >= 2) {
+      return { error: new Error(`${course.name || '선택한 과정'} 과정은 취소되지 않은 신청/수강 건이 이미 2건입니다.`) };
+    }
+
+    const traineePayload = {
+      name: lead.name,
+      phone: lead.phone,
+      email: lead.email || existingApp.trainees?.email || null,
+      company: lead.company || existingApp.trainees?.company || null,
+    };
+    const traineeUpdate = await sb.from('trainees').update(traineePayload).eq('id', traineeId);
+    if (traineeUpdate.error) return { error: traineeUpdate.error };
+
+    const payload = {
+      trainee_id: traineeId,
+      course_id: courseId,
+      attempt_no: existingSameType.length + 1,
+      status,
+      employment_category: employmentCategory,
+    };
+    if (status && status !== '대기') payload.status_updated_at = new Date().toISOString();
+    return sb.from('applications').insert(payload);
   }
 
   function claudeToggleLeadRowEdit(tr, leadId, nameTd, phoneTd, companyTd, actionTd) {
