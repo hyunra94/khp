@@ -1310,7 +1310,7 @@ function renderLookupInterest(leads){
         <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>이메일</th><th>메모</th><th>상태</th></tr></thead>
         <tbody>
           ${leads.map(lead => `
-            <tr>
+            <tr data-lead-id="${escapeHtml(lead.id)}">
               <td data-label="이름">${escapeHtml(lead.name || '-')}</td>
               <td data-label="연락처">${escapeHtml(lead.phone || '-')}</td>
               <td data-label="소속">${escapeHtml(lead.company || '-')}</td>

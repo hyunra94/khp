@@ -379,6 +379,7 @@
       `data-kind="${escapeHtml(meta.kind)}"`,
       `data-trainee-id="${escapeHtml(meta.traineeId || '')}"`,
       meta.courseTypeId ? `data-course-type-id="${escapeHtml(meta.courseTypeId)}"` : '',
+      meta.leadId ? `data-lead-id="${escapeHtml(meta.leadId)}"` : '',
     ].filter(Boolean).join(' ');
     return `
       <div class="claude-memo-box" ${attrs}>
@@ -441,6 +442,17 @@
         error = r.error;
         if (!error && typeof allApps !== 'undefined') {
           allApps.forEach(a => { if (a.trainee_id === traineeId && a.trainees) a.trainees.admin_memo = newVal; });
+        }
+      } else if (kind === 'lead') {
+        /* [Claude 추가] "개설 알림 관심자"(course_interest_leads)의 메모(note) — 훈련생이
+           아니라 아직 정식 신청 전인 사람이라 trainees/trainee_type_memos가 아니라
+           이 테이블에 바로 저장함. */
+        const leadId = box.dataset.leadId;
+        const r = await sb.from('course_interest_leads').update({ note: newVal || null }).eq('id', leadId);
+        error = r.error;
+        if (!error && typeof allInterestLeads !== 'undefined') {
+          const lead = allInterestLeads.find(l => l.id === leadId);
+          if (lead) lead.note = newVal;
         }
       } else {
         const r = await claudeSaveTypeMemo(traineeId, box.dataset.courseTypeId, newVal);
@@ -618,12 +630,122 @@
     });
   }
 
+  /* ==================================================================
+   * [Claude 추가] "과정 조회" 화면의 "개설 알림 관심자" 표(.lookup-interest, 아직 정식
+   * 신청 전에 "이 과정 열리면 알려주세요"라고 등록해둔 사람들, course_interest_leads
+   * 테이블)에도 위(확정 신청자 표)와 똑같이 정보 수정 + 메모 기능을 추가함.
+   * 요청: "어쨌거나 그 사람들도 신청한 사람들이고 안내를 통해서 다른 과정을 신청
+   * 요청하면 바로 옮겨줘야 할 수도 있잖아" — 다만 이 사람들은 아직 trainees 테이블에
+   * 없는 "관심 등록"일 뿐이라, 이름/연락처/소속/메모 수정은 trainees가 아니라
+   * course_interest_leads 테이블에 바로 저장됨(admin.html의 renderLookupInterest가
+   * <tr>에 붙여둔 data-lead-id로 어느 관심자인지 찾음).
+   * ================================================================== */
+  function claudeAugmentInterestLeadsEdit() {
+    const container = document.getElementById('courseLookupGroups');
+    if (!container) return;
+    container.querySelectorAll('.lookup-interest table.lookup-table').forEach(table => {
+      const headRow = table.querySelector('thead tr');
+      if (headRow && !headRow.dataset.claudeEditColAdded) {
+        headRow.dataset.claudeEditColAdded = '1';
+        const th = document.createElement('th');
+        th.textContent = '관리';
+        headRow.appendChild(th);
+      }
+      table.querySelectorAll('tbody tr').forEach(tr => {
+        if (tr.dataset.claudeEditBound) return;
+        const leadId = tr.dataset.leadId;
+        if (!leadId) return; // admin.html 구조가 바뀌어 data-lead-id를 못 찾으면 손대지 않고 넘어감
+        tr.dataset.claudeEditBound = '1';
+
+        const cells = tr.querySelectorAll('td');
+        const nameTd = cells[0], phoneTd = cells[1], companyTd = cells[2], memoTd = cells[4];
+        if (!nameTd || !phoneTd || !companyTd || !memoTd) return;
+
+        /* "메모"(note)는 "신청 현황"/확정 신청자 표와 똑같이 클릭 한 번으로 상시 편집 가능하게 */
+        const memoText = memoTd.textContent.trim();
+        memoTd.innerHTML = claudeMemoBoxMarkup('메모', memoText === '-' ? '' : memoText, { kind: 'lead', leadId });
+
+        const actionTd = document.createElement('td');
+        actionTd.dataset.label = '관리';
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'inline-btn claude-lookup-edit-btn';
+        editBtn.textContent = '편집';
+        actionTd.appendChild(editBtn);
+        tr.appendChild(actionTd);
+
+        editBtn.addEventListener('click', () => claudeToggleLeadRowEdit(tr, leadId, nameTd, phoneTd, companyTd, actionTd));
+      });
+    });
+  }
+
+  function claudeToggleLeadRowEdit(tr, leadId, nameTd, phoneTd, companyTd, actionTd) {
+    if (tr.dataset.claudeEditing === '1') return;
+    tr.dataset.claudeEditing = '1';
+    const original = {
+      name: nameTd.textContent.trim(),
+      phone: phoneTd.textContent.trim(),
+      company: companyTd.textContent.trim(),
+    };
+    nameTd.innerHTML = `<input class="row-input" value="${escapeHtml(original.name === '-' ? '' : original.name)}">`;
+    phoneTd.innerHTML = `<input class="row-input" value="${escapeHtml(original.phone === '-' ? '' : original.phone)}">`;
+    companyTd.innerHTML = `<input class="row-input" value="${escapeHtml(original.company === '-' ? '' : original.company)}">`;
+    actionTd.innerHTML = `
+      <button type="button" class="inline-btn claude-lookup-save-btn">저장</button>
+      <button type="button" class="inline-btn light claude-lookup-cancel-btn">취소</button>
+    `;
+
+    const restore = () => {
+      nameTd.textContent = original.name;
+      phoneTd.textContent = original.phone;
+      companyTd.textContent = original.company;
+      actionTd.innerHTML = '<button type="button" class="inline-btn claude-lookup-edit-btn">편집</button>';
+      tr.dataset.claudeEditing = '';
+      actionTd.querySelector('.claude-lookup-edit-btn').addEventListener('click', () => claudeToggleLeadRowEdit(tr, leadId, nameTd, phoneTd, companyTd, actionTd));
+    };
+
+    actionTd.querySelector('.claude-lookup-cancel-btn').addEventListener('click', restore);
+    actionTd.querySelector('.claude-lookup-save-btn').addEventListener('click', async () => {
+      const saveBtn = actionTd.querySelector('.claude-lookup-save-btn');
+      const payload = {
+        name: nameTd.querySelector('input').value.trim(),
+        phone: phoneTd.querySelector('input').value.trim(),
+        company: companyTd.querySelector('input').value.trim(),
+      };
+      if (!payload.name || !payload.phone) {
+        alert('이름과 연락처는 비워둘 수 없습니다.');
+        return;
+      }
+      saveBtn.disabled = true;
+      saveBtn.textContent = '저장 중...';
+      const { error } = await sb.from('course_interest_leads').update(payload).eq('id', leadId);
+      if (error) {
+        alert(`저장 실패: ${error.message}`);
+        saveBtn.disabled = false;
+        saveBtn.textContent = '저장';
+        return;
+      }
+      original.name = payload.name || '-';
+      original.phone = payload.phone || '-';
+      original.company = payload.company || '-';
+      if (typeof allInterestLeads !== 'undefined') {
+        const lead = allInterestLeads.find(l => l.id === leadId);
+        if (lead) Object.assign(lead, payload);
+      }
+      restore();
+    });
+  }
+
   function claudeWatchCourseLookup() {
     const container = document.getElementById('courseLookupGroups');
     if (!container) return;
     claudeAugmentCourseLookupEdit();
+    claudeAugmentInterestLeadsEdit();
     const observer = new MutationObserver(() => {
-      requestAnimationFrame(claudeAugmentCourseLookupEdit);
+      requestAnimationFrame(() => {
+        claudeAugmentCourseLookupEdit();
+        claudeAugmentInterestLeadsEdit();
+      });
     });
     observer.observe(container, { childList: true, subtree: true });
   }
