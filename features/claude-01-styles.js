@@ -581,7 +581,7 @@
       }
       #appRows tr:hover .claude-row-select, .claude-row-select:checked{opacity:1;}
       .claude-bulk-bar{
-        display:none;align-items:center;gap:12px;margin:0 0 10px;padding:9px 14px;
+        display:none;align-items:center;flex-wrap:wrap;gap:12px;margin:0 0 10px;padding:9px 14px;
         background:#FFF7E8;border:1px solid #E4B75E;border-radius:8px;font-size:12.5px;font-weight:800;color:#7A5C1E;
       }
       .claude-bulk-delete-btn{

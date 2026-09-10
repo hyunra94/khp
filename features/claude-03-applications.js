@@ -213,7 +213,7 @@
     const btn = document.getElementById('claudeBulkRevealRrnBtn');
     if (btn) { btn.disabled = true; btn.textContent = '조회 중...'; }
     ids.forEach(traineeId => {
-      const toggle = document.querySelector(`.rrn-toggle[data-trainee-id="${CSS.escape(traineeId)}"]`);
+      const toggle = document.querySelector(`#appRows .rrn-toggle[data-trainee-id="${CSS.escape(traineeId)}"]`);
       if (!toggle || toggle.checked) return;
       toggle.checked = true;
       toggle.dispatchEvent(new Event('change', { bubbles: true }));
@@ -221,6 +221,42 @@
     if (btn) {
       btn.disabled = false;
       btn.textContent = '주민등록번호 일괄 조회';
+    }
+  }
+
+  function claudeBulkHideResidentNumbers() {
+    claudeSelectedTraineeIds.forEach(traineeId => {
+      const toggle = document.querySelector(`#appRows .rrn-toggle[data-trainee-id="${CSS.escape(traineeId)}"]`);
+      if (!toggle || !toggle.checked) return;
+      toggle.checked = false;
+      toggle.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+  async function claudeBulkDeleteSelected() {
+    const ids = [...claudeSelectedTraineeIds];
+    if (!ids.length) return;
+    if (!confirm(`선택한 ${ids.length}명의 신청 내역을 전부 삭제할까요?\n(같은 신청자의 신청 건이 여러 개면 전부 함께 삭제됩니다)`)) return;
+    const btn = document.getElementById('claudeBulkDeleteBtn');
+    btn.disabled = true;
+    btn.textContent = '삭제 중...';
+    try {
+      const results = await Promise.allSettled(ids.map(traineeId => sb.from('applications').delete().eq('trainee_id', traineeId)));
+      const failures = [];
+      results.forEach((result, index) => {
+        const error = result.status === 'rejected' ? result.reason : result.value?.error;
+        if (error) failures.push(error);
+        else claudeSelectedTraineeIds.delete(ids[index]);
+      });
+      if (failures.length) alert(`${failures.length}명 삭제 실패: ${failures[0].message || failures[0]}`);
+      if (typeof loadApplications === 'function') await loadApplications();
+      else if (typeof renderApps === 'function') renderApps();
+      if (typeof renderMetrics === 'function') renderMetrics();
+      if (typeof loadRecentActivity === 'function') loadRecentActivity();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '선택 삭제';
+      claudeUpdateBulkBar();
     }
   }
 
@@ -235,10 +271,20 @@
     bar.innerHTML = `
       <span class="claude-bulk-count">0명 선택됨</span>
       <button type="button" id="claudeBulkRevealRrnBtn" class="claude-bulk-delete-btn">주민등록번호 일괄 조회</button>
+      <button type="button" id="claudeBulkHideRrnBtn" class="claude-bulk-clear-btn">주민등록번호 일괄 조회 해제</button>
+      <button type="button" id="claudeBulkDeleteBtn" class="claude-bulk-clear-btn">선택 삭제</button>
+      <button type="button" id="claudeBulkClearBtn" class="claude-bulk-clear-btn">선택 해제</button>
     `;
     if (anchor) view.insertBefore(bar, anchor);
     else view.appendChild(bar);
     bar.querySelector('#claudeBulkRevealRrnBtn').addEventListener('click', claudeBulkRevealResidentNumbers);
+    bar.querySelector('#claudeBulkHideRrnBtn').addEventListener('click', claudeBulkHideResidentNumbers);
+    bar.querySelector('#claudeBulkDeleteBtn').addEventListener('click', claudeBulkDeleteSelected);
+    bar.querySelector('#claudeBulkClearBtn').addEventListener('click', () => {
+      claudeSelectedTraineeIds.clear();
+      document.querySelectorAll('#appRows .claude-row-select:checked').forEach(cb => { cb.checked = false; });
+      claudeUpdateBulkBar();
+    });
   }
 
   function claudeInjectRowSelectColumn() {

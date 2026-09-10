@@ -1916,7 +1916,9 @@ function firstEmploymentCategory(apps){
 
 function bindResidentNumberControls(scope){
   scope.querySelectorAll('.rrn-toggle').forEach(toggle => {
+    let lookupVersion = 0;
     toggle.addEventListener('change', async () => {
+      const version = ++lookupVersion;
       const traineeId = toggle.dataset.traineeId;
       const row = toggle.closest('tr');
       const valueEl = row.querySelector(`.rrn-value[data-trainee-id="${traineeId}"]`);
@@ -1928,6 +1930,7 @@ function bindResidentNumberControls(scope){
       }
       valueEl.textContent = '조회 중...';
       const { data, error } = await sb.rpc('get_trainee_rrn_full', { p_trainee_id: traineeId });
+      if (version !== lookupVersion || !toggle.checked) return;
       if (!error && data){
         valueEl.textContent = formatResidentNumber(data);
       } else {
