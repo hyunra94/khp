@@ -211,7 +211,7 @@
     }
     document.getElementById('codexCertificateNames').innerHTML = s.courseNames.map((name, i) => `<label>과정명 ${s.courseNames.length > 1 ? i + 1 : ''}<input data-cert-name="${i}" value="${escape(name)}" ${draft.id ? 'disabled' : ''}></label>`).join('');
     clearPreview();
-    document.getElementById('codexCertificateDialogMessage').textContent = draft.id ? `${draft.certificate_number} · 기존 발급 내용` : '내용 확인 후 미리보기를 눌러주세요.';
+    document.getElementById('codexCertificateDialogMessage').textContent = draft.id ? `${draft.certificate_number} · 기존 발급 내용` : !s.birthDate ? '저장된 정보에서 유효한 생년월일을 확인하지 못했습니다. 실제 생년월일을 확인해 입력해주세요. 원본 주민등록번호는 변경되지 않습니다.' : '내용 확인 후 미리보기를 눌러주세요.';
   }
 
   function readForm() {

@@ -56,7 +56,12 @@ begin
     when '9' then 1800 when '0' then 1800 else null end;
   insert into public.rrn_access_log(trainee_id,accessed_by,revealed_full)
     values(p_trainee_id,auth.jwt()->>'email',false);
-  return make_date(v_year+substring(v_digits,1,2)::integer,substring(v_digits,3,2)::integer,substring(v_digits,5,2)::integer);
+  -- Invalid stored dates require manual confirmation; auth/decryption errors still propagate.
+  begin
+    return make_date(v_year+substring(v_digits,1,2)::integer,substring(v_digits,3,2)::integer,substring(v_digits,5,2)::integer);
+  exception when datetime_field_overflow then
+    return null;
+  end;
 end $$;
 revoke all on function certificate_private.birth_date(uuid) from public, anon;
 grant execute on function certificate_private.birth_date(uuid) to authenticated;
