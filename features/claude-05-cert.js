@@ -92,7 +92,7 @@
          course_types.has_parts/part_a_label/part_b_label(이 과목이 A/B 파트로 나뉘어
          있는지, 파트 이름은 뭔지)을 추가로 불러옴 — "드론 교육"처럼 한 과목이 실질적으로
          두 파트로 나뉘어 있어서 한쪽만 수료하는 경우를 구분해서 보여주기 위함. */
-      .select('id, status_updated_at, certificate_issued, certificate_number, certificate_issued_at, trainee_id, employment_category, part_a_completed, part_b_completed, trainees(name, phone, company, email), courses(id, name, round, start_date, end_date, course_type_id, course_types(id, name, has_parts, part_a_label, part_b_label))')
+      .select('id, status_updated_at, certificate_issued, certificate_number, certificate_issued_at, trainee_id, employment_category, part_a_completed, part_b_completed, trainees(name, phone, company, email), courses(id, name, round, start_date, end_date, course_type_id, course_types(id, name, has_parts, part_a_label, part_b_label, certificate_course_name, certificate_part_a_name, certificate_part_b_name))')
       .eq('status', '수료')
       .order('status_updated_at', { ascending: false });
     if (error) {

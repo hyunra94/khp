@@ -24,9 +24,9 @@
       const starts = completed.map(item => item.courses?.start_date).filter(Boolean).sort();
       const ends = completed.map(item => item.courses?.end_date || item.courses?.start_date).filter(Boolean).sort();
       const names = group.type.has_parts ? [
-        completed.some(item => item.part_a_completed) ? `${group.type.name} · ${group.type.part_a_label || 'A'}` : '',
-        completed.some(item => item.part_b_completed) ? `${group.type.name} · ${group.type.part_b_label || 'B'}` : ''
-      ].filter(Boolean) : [group.type.name || completed[0]?.courses?.name || ''];
+        ...(completed.some(item => item.part_a_completed) ? [group.type.certificate_part_a_name || ''] : []),
+        ...(completed.some(item => item.part_b_completed) ? [group.type.certificate_part_b_name || ''] : [])
+      ] : [group.type.certificate_course_name || ''];
       const parts = group.type.has_parts ? `${completed.some(item => item.part_a_completed) ? 'A' : ''}${completed.some(item => item.part_b_completed) ? 'B' : ''}` : 'single';
       return { ...group, ids, sourceKey: `${sourceKey(ids)}:${parts}`, snapshot: {
         parts,
@@ -43,7 +43,7 @@
     if (!snapshot.name.trim()) throw new Error('성명을 입력해주세요.');
     if (!validDate(snapshot.birthDate)) throw new Error('생년월일을 확인해주세요.');
     if (!validDate(snapshot.startDate) || !validDate(snapshot.endDate) || snapshot.startDate > snapshot.endDate) throw new Error('훈련기간을 확인해주세요.');
-    if (snapshot.courseNames.length < 1 || snapshot.courseNames.length > 2 || snapshot.courseNames.some(name => !name.trim())) throw new Error('수료한 과정명을 확인해주세요.');
+    if (snapshot.courseNames.length < 1 || snapshot.courseNames.length > 2 || snapshot.courseNames.some(name => !name.trim())) throw new Error('승인 과목명을 입력해주세요. 과정 관리에서 기본값을 저장할 수 있습니다.');
   }
 
   function period(snapshot) {
@@ -209,7 +209,7 @@
       const input = document.querySelector(`[data-cert-field="${key}"]`);
       input.value = s[key]; input.disabled = Boolean(draft.id);
     }
-    document.getElementById('codexCertificateNames').innerHTML = s.courseNames.map((name, i) => `<label>과정명 ${s.courseNames.length > 1 ? i + 1 : ''}<input data-cert-name="${i}" value="${escape(name)}" ${draft.id ? 'disabled' : ''}></label>`).join('');
+    document.getElementById('codexCertificateNames').innerHTML = s.courseNames.map((name, i) => `<label>승인 과목명 ${s.parts === 'AB' ? (i === 0 ? 'A' : 'B') : s.parts === 'single' ? '' : s.parts}<input data-cert-name="${i}" value="${escape(name)}" placeholder="승인받은 정식 과목명" ${draft.id ? 'disabled' : ''}></label>`).join('');
     clearPreview();
     document.getElementById('codexCertificateDialogMessage').textContent = draft.id ? `${draft.certificate_number} · 기존 발급 내용` : !s.birthDate ? '저장된 정보에서 유효한 생년월일을 확인하지 못했습니다. 실제 생년월일을 확인해 입력해주세요. 원본 주민등록번호는 변경되지 않습니다.' : '내용 확인 후 미리보기를 눌러주세요.';
   }

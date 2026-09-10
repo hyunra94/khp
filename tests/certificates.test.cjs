@@ -40,3 +40,22 @@ test('invalid birthdays and reversed ranges are rejected', () => {
   assert.throws(()=>cert.validate(s));
   assert.throws(()=>cert.validate({...s,birthDate:'1990-01-01',endDate:'2026-09-09'}));
 });
+
+test('certificate uses approved names without display names or part labels', () => {
+  const a = row('a',1,'2026-09-10',null,true,true);
+  Object.assign(a.courses.course_types, {certificate_part_a_name:'승인 과정 A',certificate_part_b_name:'승인 과정 B'});
+  assert.deepEqual(cert.groupCompletions([a])[0].snapshot.courseNames,['승인 과정 A','승인 과정 B']);
+  a.part_a_completed=false;
+  assert.deepEqual(cert.groupCompletions([a])[0].snapshot.courseNames,['승인 과정 B']);
+  a.courses.course_types.has_parts=false;
+  a.courses.course_types.certificate_course_name='승인 단일 과정';
+  assert.deepEqual(cert.groupCompletions([a])[0].snapshot.courseNames,['승인 단일 과정']);
+});
+
+test('missing approved names keep their slots and block issuance', () => {
+  const a = row('a',1,'2026-09-10',null,true,true);
+  a.courses.course_types.certificate_part_b_name='승인 B';
+  const s=cert.groupCompletions([a])[0].snapshot;
+  assert.deepEqual(s.courseNames,['','승인 B']);
+  assert.throws(()=>cert.validate({...s,birthDate:'1990-01-01'}),/승인 과목명/);
+});
