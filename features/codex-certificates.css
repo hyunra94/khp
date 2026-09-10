@@ -29,3 +29,34 @@
 #codexCertificatePreview{width:100%;height:auto;aspect-ratio:595.28/841.89;border:1px solid #ccd2d8;background:white}
 #codexCertificateDialogMessage{font-size:13px;min-height:20px}
 @media(max-width:600px){#codexCertificateDialog{padding:14px}.codex-cert-fields{grid-template-columns:1fr}.codex-cert-actions button{flex:1 1 auto}}
+/* Keep course totals and expanded round totals on the same column tracks. */
+.claude-cert-summary-panel .claude-cert-summary-table,
+.claude-cert-summary-panel .claude-cert-summary-subtable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.claude-cert-summary-panel .claude-cert-summary-table > thead > tr > th:first-child,
+.claude-cert-summary-panel .claude-cert-summary-subtable > thead > tr > th:first-child {
+  width: 40%;
+}
+.claude-cert-summary-panel .claude-cert-summary-table > thead > tr > th:not(:first-child),
+.claude-cert-summary-panel .claude-cert-summary-subtable > thead > tr > th:not(:first-child) {
+  width: 15%;
+}
+.claude-cert-summary-panel .claude-cert-summary-table th,
+.claude-cert-summary-panel .claude-cert-summary-table td {
+  box-sizing: border-box;
+  padding: 10px 16px;
+  font-variant-numeric: tabular-nums;
+}
+.claude-cert-summary-panel .claude-cert-summary-detail > td {
+  padding: 0;
+  border-left: 0;
+  border-right: 0;
+}
+.claude-cert-summary-panel .claude-cert-summary-toggle {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
