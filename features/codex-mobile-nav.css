@@ -1,5 +1,8 @@
 .codex-mobile-nav-bar { display: none; }
+.codex-mobile-nav-drawer { display: contents; }
 @media (max-width: 980px) {
+  #dashboard .codex-mobile-nav-drawer { display:none;position:absolute;right:0;top:100%;width:300px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 68px);overflow-y:auto;overscroll-behavior:contain;background:#fff;border:1px solid #d9dfe3;box-shadow:0 10px 28px #0003;z-index:150; }
+  #dashboard .codex-mobile-nav-open > .codex-mobile-nav-drawer { display:block; }
   #dashboard .codex-mobile-nav-bar { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;background:#fff;min-height:52px;box-sizing:border-box; }
   #dashboard .codex-mobile-nav-title { font-size:16px;font-weight:700;color:#24332f; }
   #dashboard .codex-mobile-nav-bar button { width:44px;height:44px;padding:0;display:grid;place-items:center;border:0;border-radius:4px;background:transparent;color:#24332f;font-size:26px;line-height:1; }
@@ -9,12 +12,12 @@
     width: 100%; max-width: 100%; flex: none; height: auto; position: relative;
     background: #fff; border-right: 0; border-bottom: 1px solid #d9dfe3; box-shadow: none;
   }
-  #dashboard > .sidebar > .nav {
+  #dashboard > .sidebar .nav {
     display: grid; grid-template-columns: 1fr;
     gap: 6px; padding: 12px; width: 100%; box-sizing: border-box;
     overflow: visible; background: #fff; align-content: start;
   }
-  #dashboard > .sidebar > .nav > .nav-item {
+  #dashboard > .sidebar .nav > .nav-item {
     grid-column: auto; min-width: 0; width: 100%; min-height: 44px;
     display: flex; align-items: center; justify-content: flex-start;
     padding: 10px 14px; margin: 0; border: 1px solid #dfe4e7;
@@ -22,15 +25,15 @@
     font-size: 13px; font-weight: 600; line-height: 1.35;
     white-space: normal; overflow-wrap: anywhere; box-shadow: none;
   }
-  #dashboard > .sidebar > .nav > .nav-item[data-view="log"] { display: none; }
-  #dashboard > .sidebar > .nav > .nav-item > span { display: none; }
-  #dashboard > .sidebar > .nav > .nav-item.active {
+  #dashboard > .sidebar .nav > .nav-item[data-view="log"] { display: none; }
+  #dashboard > .sidebar .nav > .nav-item > span { display: none; }
+  #dashboard > .sidebar .nav > .nav-item.active {
     color: #fff; background: #245e56; border-color: #245e56; font-weight: 700;
   }
-  #dashboard > .sidebar > .nav > .nav-item:focus-visible {
+  #dashboard > .sidebar .nav > .nav-item:focus-visible {
     outline: 2px solid #245e56; outline-offset: 2px;
   }
-  #dashboard > .sidebar > .sidebar-footer {
+  #dashboard > .sidebar .sidebar-footer {
     display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center;
     padding: 10px 12px; border-top: 1px solid #edf0f2; background: #fff;
   }

@@ -7,6 +7,10 @@
   bar.innerHTML = '<span class="codex-mobile-nav-title"></span><button type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="codexMobileNavigation"><span aria-hidden="true">☰</span></button>';
   sidebar.prepend(bar);
   const nav = sidebar.querySelector('.nav');
+  const drawer = document.createElement('div');
+  drawer.className = 'codex-mobile-nav-drawer';
+  sidebar.append(drawer);
+  drawer.append(nav, sidebar.querySelector('.sidebar-footer'));
   nav.id = 'codexMobileNavigation';
   const toggle = bar.querySelector('button');
   function setOpen(open) {
