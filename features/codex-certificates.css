@@ -68,3 +68,6 @@
   overflow-wrap: anywhere;
   text-align: left;
 }
+.claude-cert-summary-subtable .codex-cert-subject-row td { background:#edf2f4; font-weight:700; border-top:1px solid #dbe2e6; }
+.claude-cert-summary-subtable td.claude-cert-summary-round { padding-left:32px; }
+.claude-cert-summary-round small { color:#67747d; font-weight:400; }

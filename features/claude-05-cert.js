@@ -131,17 +131,27 @@
   }
 
   function claudeCertSummaryRowHtml(typeId, t) {
-    const roundRows = [...t.rounds.values()]
+    const subjects = new Map();
+    [...t.rounds.values()].forEach(r => {
+      if (!subjects.has(r.part)) subjects.set(r.part, {name:r.name, rows:[], 일반:0, 대규모:0, 자회사:0, total:0});
+      const subject = subjects.get(r.part);
+      subject.rows.push(r);
+      ['일반','대규모','자회사','total'].forEach(key => subject[key] += r[key]);
+    });
+    const roundRows = [...subjects.entries()].sort(([a],[b]) => a.localeCompare(b)).map(([,subject]) => `
+      <tr class="codex-cert-subject-row"><td>${escapeHtml(subject.name)}</td>
+        <td>${subject.일반.toLocaleString('ko-KR')}</td><td>${subject.대규모.toLocaleString('ko-KR')}</td>
+        <td>${subject.자회사.toLocaleString('ko-KR')}</td><td><b>${subject.total.toLocaleString('ko-KR')}</b></td></tr>` + subject.rows
       .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999') || (parseFloat(a.round) || 0) - (parseFloat(b.round) || 0) || a.part.localeCompare(b.part))
       .map(r => `
         <tr>
-          <td class="claude-cert-summary-round">${escapeHtml(r.name)} · ${escapeHtml(r.round)}회차${r.date ? `<br><small>${escapeHtml(r.date)}</small>` : ''}</td>
+          <td class="claude-cert-summary-round">${escapeHtml(r.round)}회차${r.date ? `<br><small>${escapeHtml(r.date)}</small>` : ''}</td>
           <td>${r.일반.toLocaleString('ko-KR')}</td>
           <td>${r.대규모.toLocaleString('ko-KR')}</td>
           <td>${r.자회사.toLocaleString('ko-KR')}</td>
           <td><b>${r.total.toLocaleString('ko-KR')}</b></td>
         </tr>
-      `).join('');
+      `).join('')).join('');
     return `
       <tr class="claude-cert-summary-row" data-type-id="${escapeHtml(typeId)}">
         <td><button type="button" class="claude-cert-summary-toggle">▸ ${escapeHtml(t.name)}</button></td>

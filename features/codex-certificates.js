@@ -101,7 +101,14 @@
       page.drawImage(logo, { x:410, y:682, width:120, height:22 });
       const number = document.certificate_number;
       text(certificateLabel(number, s.endDate), 82, 711, 13);
-      text('수 료 증', 307, 603, 37, 350, true);
+      const spreadText = (value, center, y, size, width) => {
+        const chars = [...value];
+        const natural = font.widthOfTextAtSize(value, size);
+        const gap = chars.length > 1 ? (width - natural) / (chars.length - 1) : 0;
+        let x = center - width / 2;
+        chars.forEach(char => { text(char, x, y, size, width); x += font.widthOfTextAtSize(char, size) + gap; });
+      };
+      spreadText('수료증', 307, 590, 40, 170);
       const spaced = s.name.length <= 3 ? [...s.name].join('  ') : s.name;
       const fieldLabel = (label, y) => {
         [...label].forEach((char, index) => text(char, 92 + index * (88 / (label.length - 1)), y, 14, 18));
@@ -118,8 +125,8 @@
       const [year, month, day] = s.endDate.split('-').map(Number);
       text(`${year}년  ${month}월  ${day}일`, 307, 225, 16, 350, true);
       page.drawImage(seal, { x:411, y:119, width:81, height:81 });
-      text('전주문화방송(주)', 303, 169, 22, 320, true);
-      text('대표이사 정 희 찬', 307, 130, 22, 330, true);
+      spreadText('전주문화방송(주)', 307, 169, 22, 180);
+      spreadText('대표이사 정 희 찬', 307, 132, 22, 198);
       if (!document.certificate_number) text('미리보기 · 미발급', 307, 42, 11, 400, true);
     }
     pdf.setTitle('전주MBC 교육 수료증');
