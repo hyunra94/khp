@@ -17,9 +17,10 @@
       for (const part of parts) {
         const key = JSON.stringify([item.trainee_id || item.id, course.id || `${course.course_type_id}:${course.round}`, part]);
         if (unique.has(key)) continue;
-        unique.set(key, {...item, courses: {...course, course_types: {...type,
-          name: part === 'single' ? type.name : `${type.name} · ${part}`},
-          course_type_id: `${course.course_type_id || '__unknown__'}:${part}`}});
+        const approved = part === 'single' ? type.certificate_course_name : part === 'A' ? type.certificate_part_a_name : type.certificate_part_b_name;
+        unique.set(key, {...item, completionPart: part,
+          completionName: approved?.trim() || `${type.name || '과정 미지정'}${part === 'single' ? '' : ` ${part}`}`,
+          courses: course});
       }
     }
     return [...unique.values()];

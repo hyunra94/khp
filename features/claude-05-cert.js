@@ -122,8 +122,9 @@
       if (!byType.has(typeId)) byType.set(typeId, { name: typeName, total: 0, 일반: 0, 대규모: 0, 자회사: 0, rounds: new Map() });
       const t = byType.get(typeId);
       t.total++; t[cat]++;
-      if (!t.rounds.has(round)) t.rounds.set(round, { round, total: 0, 일반: 0, 대규모: 0, 자회사: 0 });
-      const r = t.rounds.get(round);
+      const detailKey = `${course.id || round}:${c.completionPart || 'single'}`;
+      if (!t.rounds.has(detailKey)) t.rounds.set(detailKey, { round, name: c.completionName || typeName, part: c.completionPart || 'single', date: course.start_date || '', total: 0, 일반: 0, 대규모: 0, 자회사: 0 });
+      const r = t.rounds.get(detailKey);
       r.total++; r[cat]++;
     });
     return byType;
@@ -131,10 +132,10 @@
 
   function claudeCertSummaryRowHtml(typeId, t) {
     const roundRows = [...t.rounds.values()]
-      .sort((a, b) => (parseFloat(a.round) || 0) - (parseFloat(b.round) || 0))
+      .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999') || (parseFloat(a.round) || 0) - (parseFloat(b.round) || 0) || a.part.localeCompare(b.part))
       .map(r => `
         <tr>
-          <td class="claude-cert-summary-round">${escapeHtml(r.round)}회차</td>
+          <td class="claude-cert-summary-round">${escapeHtml(r.name)} · ${escapeHtml(r.round)}회차${r.date ? `<br><small>${escapeHtml(r.date)}</small>` : ''}</td>
           <td>${r.일반.toLocaleString('ko-KR')}</td>
           <td>${r.대규모.toLocaleString('ko-KR')}</td>
           <td>${r.자회사.toLocaleString('ko-KR')}</td>
@@ -152,7 +153,7 @@
       <tr class="claude-cert-summary-detail" data-type-id="${escapeHtml(typeId)}" hidden>
         <td colspan="5">
           <table class="claude-cert-summary-subtable">
-            <thead><tr><th>회차</th><th>일반</th><th>대규모</th><th>자회사</th><th>합계</th></tr></thead>
+            <colgroup><col style="width:40%"><col style="width:15%"><col style="width:15%"><col style="width:15%"><col style="width:15%"></colgroup>
             <tbody>${roundRows}</tbody>
           </table>
         </td>
@@ -319,10 +320,8 @@
     const total = claudeCompletions.length;
     const issued = claudeCompletions.filter(c => c.certificate_issued).length;
     const units = window.CodexCertificates?.completionUnits(claudeCompletions) || claudeCompletions;
-    const people = new Set(units.map(c => c.trainee_id || c.id)).size;
     if (statsEl) {
       statsEl.innerHTML = `
-        <div class="claude-cert-stat"><b>${people.toLocaleString('ko-KR')}</b><span>수료 실인원</span></div>
         <div class="claude-cert-stat"><b>${units.length.toLocaleString('ko-KR')}</b><span>과목별 수료 합계 (연인원)</span></div>
         <div class="claude-cert-stat"><b>${issued.toLocaleString('ko-KR')}</b><span>수료증 발급 완료</span></div>
         <div class="claude-cert-stat"><b>${(total - issued).toLocaleString('ko-KR')}</b><span>미발급</span></div>

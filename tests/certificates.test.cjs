@@ -1,6 +1,23 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const cert = require('../features/codex-certificates.js');
+test('summary groups AB under one course with approved names and counts subsidiaries twice', () => {
+  const fs=require('node:fs'),vm=require('node:vm');
+  const source=fs.readFileSync(require.resolve('../features/claude-05-cert.js'),'utf8');
+  const context={window:{CodexCertificates:cert},claudeCertCategory:()=> '자회사'};
+  vm.createContext(context);
+  vm.runInContext(source.slice(source.indexOf('function claudeComputeCertSummary('),source.indexOf('function claudeCertSummaryRowHtml(')),context);
+  const a=row('a',1,'2026-09-10',null,true,true);
+  a.courses.course_types.certificate_part_a_name='승인 A';
+  const result=context.claudeComputeCertSummary([a,{...a,id:'duplicate'}]);
+  assert.equal(result.size,1);
+  const group=result.get('drone');
+  assert.equal(group.name,'드론');
+  assert.equal(group.자회사,2);
+  assert.equal(group.total,2);
+  assert.deepEqual([...group.rounds.values()].map(r=>r.name),['승인 A','드론 B']);
+  assert.deepEqual([...group.rounds.values()].map(r=>r.자회사),[1,1]);
+});
 test('number label includes year and ho without duplicating existing labels', () => {
   assert.equal(cert.certificateLabel('2026-0012','2026-09-10'),'제2026-0012호');
   assert.equal(cert.certificateLabel('12','2026-09-10'),'제2026-12호');

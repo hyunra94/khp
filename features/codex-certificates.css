@@ -30,6 +30,14 @@
 #codexCertificateDialogMessage{font-size:13px;min-height:20px}
 @media(max-width:600px){#codexCertificateDialog{padding:14px}.codex-cert-fields{grid-template-columns:1fr}.codex-cert-actions button{flex:1 1 auto}}
 /* Keep course totals and expanded round totals on the same column tracks. */
+.claude-cert-summary-panel .claude-cert-summary-table { min-width: 600px; }
+.claude-cert-summary-panel table { display: table; }
+.claude-cert-summary-panel thead { display: table-header-group; }
+.claude-cert-summary-panel tbody { display: table-row-group; }
+.claude-cert-summary-panel tr { display: table-row; }
+.claude-cert-summary-panel td,
+.claude-cert-summary-panel th { display: table-cell; width: auto; }
+.claude-cert-summary-panel td::before { display: none; }
 .claude-cert-summary-panel .claude-cert-summary-table,
 .claude-cert-summary-panel .claude-cert-summary-subtable {
   width: 100%;
