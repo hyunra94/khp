@@ -103,11 +103,16 @@
       text(certificateLabel(number, s.endDate), 82, 711, 13);
       text('수 료 증', 307, 603, 37, 350, true);
       const spaced = s.name.length <= 3 ? [...s.name].join('  ') : s.name;
-      text('성       명  :', 92, 524, 14, 115); text(spaced, 219, 524, 16, 290);
-      text('생 년 월 일  :', 92, 483, 14, 115); text(dateText(s.birthDate), 219, 483, 14, 300);
-      text('훈련과정명  :', 92, 443, 14, 115);
-      s.courseNames.forEach((name, index) => text(name, 219, 453 - index * 23, 14, 310));
-      text('훈 련 기 간  :', 92, 394, 14, 115); text(period(s), 219, 394, 13, 310);
+      const fieldLabel = (label, y) => {
+        [...label].forEach((char, index) => text(char, 92 + index * (88 / (label.length - 1)), y, 14, 18));
+        text(':', 204, y, 14, 10);
+      };
+      fieldLabel('성명', 524); text(spaced, 225, 524, 14, 300);
+      fieldLabel('생년월일', 482); text(dateText(s.birthDate), 225, 482, 14, 300);
+      fieldLabel('훈련과정명', 440);
+      s.courseNames.forEach((name, index) => text(name, 225, 440 - index * 26, 14, 302));
+      const periodY = s.courseNames.length === 1 ? 398 : 372;
+      fieldLabel('훈련기간', periodY); text(period(s), 225, periodY, 13, 302);
       text('위 사람은 사업주 직업능력개발훈련지원규정 제8조 규정에 의하여 위의', 307, 323, 14, 455, true);
       text('직업능력개발 훈련과정을 수료하였으므로 이 증서를 수여합니다.', 307, 299, 14, 455, true);
       const [year, month, day] = s.endDate.split('-').map(Number);

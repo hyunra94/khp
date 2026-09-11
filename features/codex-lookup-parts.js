@@ -3,7 +3,7 @@
   let panel, active, busy = false;
   function find(select) {
     const app = allApps.find(item => item.id === select.dataset.id);
-    const course = allCourses.find(item => item.id === app?.course_id) || app?.courses;
+    const course = allCourses.find(item => item.id === (app?.course_id || app?.courses?.id)) || app?.courses;
     const type = allCourseTypes.find(item => item.id === course?.course_type_id) || course?.course_types;
     return type?.has_parts ? {app, type, select} : null;
   }
@@ -31,6 +31,9 @@
     panel.addEventListener('submit', save);
     panel.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); close(); select.focus(); } });
     document.body.append(panel);
+    const mail = document.createElement('label');
+    mail.innerHTML = '<input type="checkbox" name="sendMail">수료 안내 메일 발송';
+    panel.querySelector('footer').before(mail);
     const state = document.createElement('select');
     state.name = 'status'; state.setAttribute('aria-label','신청 상태');
     APPLICATION_STATUSES.forEach(value => state.add(new Option(value,value)));
@@ -46,6 +49,7 @@
     if (busy || !active) return;
     const {app} = active, form = panel;
     const status = form.elements.status.value;
+    const sendMail = form.elements.sendMail.checked && status === '수료';
     const payload = {status, cancelled_at:status === '취소' ? new Date().toISOString() : null, part_a_completed:form.elements.a.checked, part_b_completed:form.elements.b.checked};
     if (status === '수료' && !payload.part_a_completed && !payload.part_b_completed) {
       form.querySelector('p').textContent = '수료한 과목을 하나 이상 선택해주세요.'; return;
@@ -59,7 +63,8 @@
       const changed = app.status !== status;
       Object.assign(app,payload);
       busy = false; close();
-      if (changed) sb.functions.invoke('notify-status-change',{body:{applicationId:app.id}}).catch(()=>{});
+      if (sendMail) await window.CodexCompletionMail.send(app.id);
+      else if (changed && status !== '수료') sb.functions.invoke('notify-status-change',{body:{applicationId:app.id}}).catch(()=>{});
       renderMetrics(); renderApps(); renderCourseLookup();
       if (typeof claudeLoadCompletions === 'function') await claudeLoadCompletions();
     } catch (error) {
@@ -69,6 +74,15 @@
     }
   }
   function bind(select) {
+    if (select.dataset.codexPartsBound) return;
+    select.dataset.codexPartsBound = 'true';
+    if (select.value === '수료' && find(select)) {
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'status-select status-수료';
+      button.textContent = '수료'; button.setAttribute('aria-label','수료: A/B 수료 수정');
+      button.onclick = () => open(select);
+      select.hidden = true; select.style.display = 'none'; select.after(button);
+    }
     select.addEventListener('pointerdown', event => {
       if (select.value === '수료' && find(select)) { event.preventDefault(); open(select); }
     });

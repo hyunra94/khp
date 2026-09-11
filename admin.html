@@ -1382,6 +1382,12 @@ function bindCourseLookupEmployment(scope){
 async function updateApplicationStatus(id, status, select){
   const app = allApps.find(item => item.id === id);
   const previous = app?.status;
+  let completionMail = false;
+  if (status === '수료') {
+    const choice = await window.CodexCompletionMail.ask();
+    if (!choice) { select.value = previous; updateStatusSelectClass(select, previous); return false; }
+    completionMail = choice.send;
+  }
   const payload = { status, cancelled_at: status === '취소' ? new Date().toISOString() : null };
   select.disabled = true;
   const { error } = await sb.from('applications').update(payload).eq('id', id);
@@ -1394,10 +1400,14 @@ async function updateApplicationStatus(id, status, select){
     }
     return false;
   }
+  if (status !== '수료') {
   /* ===== [Claude 추가] 상태 변경 알림 시작 ===== */
   sb.functions.invoke('notify-status-change', { body: { applicationId: id } })
     .catch(err => console.warn('[Claude] 상태 변경 알림 발송 요청 실패:', err));
   /* ===== [Claude 추가] 상태 변경 알림 끝 ===== */
+  } else if (completionMail) {
+    await window.CodexCompletionMail.send(id);
+  }
 
   if (app){
     app.status = status;
@@ -2111,7 +2121,7 @@ function renderApplicationCourseList(app){
   return `
     <div class="application-course-list">
       ${getApplicationItems(app).map(item => `
-        <div class="application-course-item" tabindex="0" aria-label="${escapeHtml(item.courses?.name || '신청과정')} 접수 상세">
+        <div class="application-course-item" tabindex="0" role="button" data-codex-lookup-app="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.courses?.name || '신청과정')} 과정 조회로 이동">
           <b>${escapeHtml(item.courses?.name || '-')}</b>
           <div class="application-course-meta">
             ${escapeHtml(item.courses?.course_types?.name || '과정 미지정')}
@@ -2473,10 +2483,12 @@ function escapeHtml(value){
 <link rel="stylesheet" href="features/codex-certificates.css">
 <script src="features/codex-course-names.js"></script>
 <script src="features/codex-lookup-parts.js"></script>
+<script src="features/codex-completion-mail.js"></script>
 <link rel="stylesheet" href="features/codex-lookup-layout.css">
 <link rel="stylesheet" href="features/codex-mobile-nav.css">
 <script src="features/codex-mobile-nav.js"></script>
 <script src="features/codex-memo-display.js"></script>
+<script src="features/codex-admin-review.js"></script>
 <script src="features/codex-certificates.js"></script>
 <script src="features/claude-05-cert.js"></script>
 <script src="features/claude-06-ui-settings.js"></script>
