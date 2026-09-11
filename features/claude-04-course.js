@@ -459,16 +459,21 @@
       const observer = new MutationObserver(() => {
         requestAnimationFrame(() => {
           observer.disconnect();
-          claudeRefreshCourseCalendar();
-          claudeRenderUpcomingPanel();
+          try {
           claudeAugmentCourseRowsWithSessions();
           claudeRefreshAllSessionToggleLabels();
           claudeRestructureAllCourseRows();
           claudeGroupCourseRowsByType();
+          claudeRefreshCourseCalendar();
+          claudeRenderUpcomingPanel();
+          } finally {
           observer.observe(rowsEl, { childList: true, subtree: true });
+          }
         });
       });
       observer.observe(rowsEl, { childList: true, subtree: true });
+      claudeAugmentCourseRowsWithSessions();
+      claudeRestructureAllCourseRows();
     }
 
     const typeFilterSel = document.getElementById('courseTypeTabs');
@@ -739,4 +744,3 @@
     await claudeLoadAllCourseSessions();
     claudeRefreshSessionsUI(courseId);
   }
-

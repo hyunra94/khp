@@ -1530,6 +1530,8 @@ function renderCourses(){
 
   list.innerHTML = visibleCourses.map(course => courseRowHtml(course)).join('');
   bindCourseButtons(list);
+  if (typeof claudeAugmentCourseRowsWithSessions === 'function') claudeAugmentCourseRowsWithSessions();
+  if (typeof claudeRestructureAllCourseRows === 'function') claudeRestructureAllCourseRows();
 }
 
 function courseRowHtml(course){
