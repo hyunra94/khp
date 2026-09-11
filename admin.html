@@ -1288,7 +1288,7 @@ function renderCourseLookup(){
       <section class="lookup-course-group">
         <div class="lookup-course-head">
           <h3>${escapeHtml(group.name)}</h3>
-          <span class="pill">${total.toLocaleString('ko-KR')}명 · 알림 ${(group.leads || []).length.toLocaleString('ko-KR')}명</span>
+          <span class="pill">${Object.keys(group.rounds).length}개 회차 · 신청 ${total.toLocaleString('ko-KR')}건 · 개설 알림 ${(group.leads || []).length.toLocaleString('ko-KR')}명</span>
         </div>
         <div class="lookup-rounds">${rounds || '<div class="empty-row">확정/수료 대상 신청자가 없습니다</div>'}${interest}</div>
       </section>
@@ -1336,7 +1336,7 @@ function renderLookupRound(typeName, round){
           <div class="lookup-round-title">${escapeHtml(getRoundLabel(round.name, typeName))}</div>
           <div class="lookup-round-date">${escapeHtml(period || '일정 미정')}</div>
         </div>
-        <span class="pill">${round.apps.length.toLocaleString('ko-KR')}명</span>
+        <span class="pill">신청 ${round.apps.length.toLocaleString('ko-KR')}건</span>
       </div>
       <table class="lookup-table">
         <thead><tr><th>이름</th><th>연락처</th><th>소속</th><th>재직 구분</th><th>주민등록번호</th><th>운영 상태</th></tr></thead>
@@ -2471,6 +2471,7 @@ function escapeHtml(value){
 <link rel="stylesheet" href="features/codex-certificates.css">
 <script src="features/codex-course-names.js"></script>
 <script src="features/codex-lookup-parts.js"></script>
+<link rel="stylesheet" href="features/codex-lookup-layout.css">
 <script src="features/codex-certificates.js"></script>
 <script src="features/claude-05-cert.js"></script>
 <script src="features/claude-06-ui-settings.js"></script>

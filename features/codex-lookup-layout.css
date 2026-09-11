@@ -1,0 +1,46 @@
+#courseLookupGroups { display: grid; gap: 36px; }
+#courseLookupGroups .lookup-course-group {
+  border: 0; border-radius: 0; background: transparent; box-shadow: none; min-width: 0;
+}
+#courseLookupGroups .lookup-course-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 16px 0; border-top: 3px solid #303b43; border-bottom: 1px solid #ccd4d9;
+  background: transparent; border-radius: 0;
+}
+#courseLookupGroups .lookup-course-head h3 {
+  font-size: 21px; font-weight: 800; line-height: 1.4; margin: 0; color: #172127;
+  min-width: 0; overflow-wrap: anywhere;
+}
+#courseLookupGroups .lookup-course-head > .pill {
+  background: transparent; border: 0; padding: 0; color: #53616a;
+  white-space: normal; text-align: right; flex-shrink: 0; font-size: 12px;
+}
+#courseLookupGroups .lookup-rounds { padding: 20px 0 0; gap: 26px; min-width: 0; }
+#courseLookupGroups .lookup-round {
+  border: 0; border-radius: 0; background: #fff; box-shadow: none; min-width: 0;
+}
+#courseLookupGroups .lookup-round-head {
+  padding: 12px 16px; background: #edf3f2; border-left: 4px solid #39776b;
+  border-bottom: 1px solid #c8d9d4; align-items: center; gap: 12px;
+}
+#courseLookupGroups .lookup-round-head > div { min-width: 0; }
+#courseLookupGroups .lookup-round-title { font-size: 16px; font-weight: 800; color: #203e36; line-height: 1.45; overflow-wrap: anywhere; }
+#courseLookupGroups .lookup-round-date { font-size: 13px; font-weight: 500; color: #53635d; margin-top: 4px; }
+#courseLookupGroups .lookup-round-head > .pill { border: 0; background: transparent; color: #203e36; white-space: nowrap; font-size: 12px; }
+#courseLookupGroups .lookup-table th { background: #f4f6f7; color: #53616a; font-weight: 600; }
+#courseLookupGroups .lookup-table td { border-bottom-color: #e3e7ea; }
+#courseLookupGroups .lookup-table tbody tr:hover { background: #f7faf9; }
+#courseLookupGroups .lookup-table td[data-label="이름"] { font-weight: 700; color: #202a31; }
+#courseLookupGroups .lookup-round-divider { padding: 8px 0; margin: 4px 0; color: #626970; font-size: 13px; font-weight: 700; }
+#courseLookupGroups .lookup-interest { border: 0; border-radius: 0; padding: 0; margin-top: 8px; background: #fff; }
+#courseLookupGroups .lookup-interest-title { margin: 0; padding: 14px 16px; border-left: 4px solid #8a7443; background: #f5f3ed; color: #63522b; font-size: 15px; font-weight: 700; }
+@media (max-width: 700px) {
+  #courseLookupGroups { gap: 28px; }
+  #courseLookupGroups .lookup-course-head { align-items: flex-start; flex-direction: column; gap: 6px; padding: 12px 0; }
+  #courseLookupGroups .lookup-course-head h3 { font-size: 19px; }
+  #courseLookupGroups .lookup-course-head > .pill { text-align: left; }
+  #courseLookupGroups .lookup-round-head { padding: 12px; }
+  #courseLookupGroups .lookup-round-head > .pill { padding: 0; }
+  #courseLookupGroups .lookup-table tr { border-radius: 0; box-shadow: none; border-bottom: 2px solid #d3dadf; padding: 14px 12px; }
+  #courseLookupGroups .lookup-table td[data-label="이름"] { font-size: 15px; }
+}
