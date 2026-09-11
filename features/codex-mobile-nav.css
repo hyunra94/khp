@@ -9,7 +9,7 @@
   #dashboard > .sidebar:not(.codex-mobile-nav-open) > .nav,
   #dashboard > .sidebar:not(.codex-mobile-nav-open) > .sidebar-footer { display:none; }
   #dashboard > .sidebar {
-    width: 100%; max-width: 100%; flex: none; height: auto; position: relative;
+    width: 100%; max-width: 100%; flex: none; height: auto; position: sticky; top: 0; z-index: 150;
     background: #fff; border-right: 0; border-bottom: 1px solid #d9dfe3; box-shadow: none;
   }
   #dashboard > .sidebar .nav {
